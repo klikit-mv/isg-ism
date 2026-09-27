@@ -3,6 +3,7 @@
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AnnualFeeController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BadgeRequestController;
 use App\Http\Controllers\CertificateController;
@@ -23,6 +24,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SelfController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TelegramConnectController;
@@ -181,5 +183,10 @@ Route::middleware(['auth', 'module.access'])->group(function () {
         Route::get('/parent-links', [ParentLinkController::class, 'index'])->name('parent-links.index');
         Route::post('/parent-links', [ParentLinkController::class, 'store'])->name('parent-links.store');
         Route::post('/parent-links/{parentLink}', [ParentLinkController::class, 'update'])->name('parent-links.update');
+        Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('/settings/test/drive', [SettingsController::class, 'testDrive'])->middleware('throttle:integration-tests')->name('settings.test.drive');
+        Route::post('/settings/test/telegram', [SettingsController::class, 'testTelegram'])->middleware('throttle:integration-tests')->name('settings.test.telegram');
+        Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
     });
 });
