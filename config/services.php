@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'google' => [
+        'service_account_json' => env('GOOGLE_SERVICE_ACCOUNT_JSON'),
+    ],
+
 ];

@@ -1,8 +1,16 @@
 <?php
 
+use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\ParentLinkController;
+use App\Http\Controllers\ParentRegistrationController;
+use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\SelfController;
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TelegramConnectController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -30,10 +38,51 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/notifications/{id}', [NotificationController::class, 'show'])->name('notifications.show');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 
+    Route::get('/photos/{fileId}', [PhotoController::class, 'show'])->name('photos.show');
+
+    // Scout operations: students, promotion, registrations, groups.
+    Route::get('/students/promote', [PromotionController::class, 'index'])->name('promotion.index');
+    Route::post('/students/promote', [PromotionController::class, 'store'])->name('promotion.store');
+    Route::resource('students', StudentController::class);
+    Route::get('/students/{student}/certificates', [StudentController::class, 'certificates'])->name('students.certificates');
+    Route::get('/students/{student}/badge-requests', [StudentController::class, 'badgeRequests'])->name('students.badge-requests');
+    Route::get('/students/{student}/leadership', [StudentController::class, 'leadership'])->name('students.leadership');
+    Route::post('/students/{student}/photo', [StudentController::class, 'photo'])->name('students.photo');
+    Route::post('/students/{student}/verify', [StudentController::class, 'verify'])->name('students.verify');
+    Route::post('/students/{student}/reject', [StudentController::class, 'reject'])->name('students.reject');
+
+    Route::get('/parent-registrations', [ParentRegistrationController::class, 'index'])->name('parent-registrations.index');
+    Route::post('/parent-registrations/{user}/verify', [ParentRegistrationController::class, 'verify'])->name('parent-registrations.verify');
+    Route::post('/parent-registrations/{user}/reject', [ParentRegistrationController::class, 'reject'])->name('parent-registrations.reject');
+
+    Route::get('/groups', [GroupController::class, 'index'])->name('groups.index');
+    Route::post('/groups', [GroupController::class, 'store'])->name('groups.store');
+    Route::get('/groups/{group}', [GroupController::class, 'show'])->name('groups.show');
+    Route::put('/groups/{group}', [GroupController::class, 'update'])->name('groups.update');
+    Route::delete('/groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
+    Route::put('/groups/{group}/membership', [GroupController::class, 'membership'])->name('groups.membership');
+
+    // Family (parents) and My record (scouts).
+    Route::get('/family', [FamilyController::class, 'index'])->name('family.index');
+    Route::get('/family/attendance', [FamilyController::class, 'attendance'])->name('family.attendance');
+    Route::get('/family/students/{student}', [FamilyController::class, 'show'])->name('family.show');
+    Route::get('/family/students/{student}/certificates', [FamilyController::class, 'certificates'])->name('family.student.certificates');
+    Route::get('/family/students/{student}/badge-requests', [FamilyController::class, 'badgeRequests'])->name('family.student.badge-requests');
+    Route::get('/family/students/{student}/leadership', [FamilyController::class, 'leadership'])->name('family.student.leadership');
+
+    Route::get('/me', [SelfController::class, 'show'])->name('self.show');
+    Route::get('/me/certificates', [SelfController::class, 'certificates'])->name('self.certificates');
+    Route::get('/me/badge-requests', [SelfController::class, 'badgeRequests'])->name('self.badge-requests');
+    Route::get('/me/leadership', [SelfController::class, 'leadership'])->name('self.leadership');
+    Route::get('/me/attendance', [SelfController::class, 'attendance'])->name('self.attendance');
+
     // Administration (admin only).
     Route::middleware('can:admin')->group(function () {
         Route::resource('users', UserController::class)->except('show');
         Route::post('/users/{user}/pin', [UserController::class, 'pin'])->name('users.pin');
         Route::post('/users/{user}/signature', [UserController::class, 'signature'])->name('users.signature');
+        Route::get('/parent-links', [ParentLinkController::class, 'index'])->name('parent-links.index');
+        Route::post('/parent-links', [ParentLinkController::class, 'store'])->name('parent-links.store');
+        Route::post('/parent-links/{parentLink}', [ParentLinkController::class, 'update'])->name('parent-links.update');
     });
 });
