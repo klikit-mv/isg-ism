@@ -3,9 +3,15 @@
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AnnualFeeController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\BadgeController;
+use App\Http\Controllers\BadgeRequestController;
+use App\Http\Controllers\CertificateController;
+use App\Http\Controllers\CertificateTemplateController;
+use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ClassFeeController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\LeadershipController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ParentLinkController;
@@ -26,6 +32,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
 
 require __DIR__.'/auth.php';
+
+// Public certificate verification (no sign-in).
+Route::middleware('throttle:certificate-verify')->group(function () {
+    Route::get('/certificates/verify', [CertificateVerificationController::class, 'verify'])->name('certificates.verify');
+    Route::get('/certificates/verify/view', [CertificateVerificationController::class, 'view'])->name('certificates.verify.view');
+    Route::get('/certificates/verify/download', [CertificateVerificationController::class, 'download'])->name('certificates.verify.download');
+});
 
 Route::middleware(['auth', 'module.access'])->group(function () {
     // Hub, profile and notifications (always open).
@@ -106,6 +119,44 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::post('/purchases/{purchase}/ready', [PurchaseController::class, 'ready'])->name('purchases.ready');
     Route::post('/purchases/{purchase}/deliver', [PurchaseController::class, 'deliver'])->name('purchases.deliver');
     Route::post('/purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+
+    // Certificates, badges, requests, templates and leadership.
+    Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
+    Route::get('/certificates/create', [CertificateController::class, 'create'])->name('certificates.create');
+    Route::post('/certificates', [CertificateController::class, 'store'])->name('certificates.store');
+    Route::get('/certificates/bulk-create', [CertificateController::class, 'bulkCreate'])->name('certificates.bulk-create');
+    Route::post('/certificates/bulk-create', [CertificateController::class, 'bulkStore'])->name('certificates.bulk-store');
+    Route::post('/certificates/bulk-download', [CertificateController::class, 'bulkDownload'])->name('certificates.bulk-download');
+    Route::post('/certificates/activities/{activity}/issue', [CertificateController::class, 'issueActivity'])->name('certificates.activities.issue');
+    Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
+    Route::get('/certificates/{certificate}/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
+    Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::post('/certificates/{certificate}/regenerate', [CertificateController::class, 'regenerate'])->name('certificates.regenerate');
+    Route::post('/certificates/{certificate}/sign', [CertificateController::class, 'sign'])->name('certificates.sign');
+
+    Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
+    Route::post('/badges', [BadgeController::class, 'store'])->name('badges.store');
+    Route::put('/badges/{badge}', [BadgeController::class, 'update'])->name('badges.update');
+    Route::delete('/badges/{badge}', [BadgeController::class, 'destroy'])->name('badges.destroy');
+
+    Route::get('/badge-requests', [BadgeRequestController::class, 'index'])->name('badge-requests.index');
+    Route::get('/badge-requests/create', [BadgeRequestController::class, 'create'])->name('badge-requests.create');
+    Route::post('/badge-requests', [BadgeRequestController::class, 'store'])->name('badge-requests.store');
+    Route::get('/badge-requests/{badgeRequest}', [BadgeRequestController::class, 'show'])->name('badge-requests.show');
+    Route::post('/badge-requests/{badgeRequest}/approve', [BadgeRequestController::class, 'approve'])->name('badge-requests.approve');
+    Route::post('/badge-requests/{badgeRequest}/reject', [BadgeRequestController::class, 'reject'])->name('badge-requests.reject');
+    Route::post('/badge-requests/{badgeRequest}/generate', [BadgeRequestController::class, 'generate'])->name('badge-requests.generate');
+
+    Route::get('/certificate-templates', [CertificateTemplateController::class, 'index'])->name('certificate-templates.index');
+    Route::post('/certificate-templates', [CertificateTemplateController::class, 'store'])->name('certificate-templates.store');
+    Route::post('/certificate-templates/test-slide', [CertificateTemplateController::class, 'testSlide'])->middleware('throttle:integration-tests')->name('certificate-templates.test-slide');
+    Route::put('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'update'])->name('certificate-templates.update');
+    Route::delete('/certificate-templates/{certificateTemplate}', [CertificateTemplateController::class, 'destroy'])->name('certificate-templates.destroy');
+    Route::post('/certificate-templates/{certificateTemplate}/activate', [CertificateTemplateController::class, 'activate'])->name('certificate-templates.activate');
+    Route::get('/certificate-templates/{certificateTemplate}/preview', [CertificateTemplateController::class, 'preview'])->name('certificate-templates.preview');
+
+    Route::resource('leadership', LeadershipController::class);
+    Route::post('/leadership/{leadership}/generate', [LeadershipController::class, 'generate'])->name('leadership.generate');
 
     // Family (parents) and My record (scouts).
     Route::get('/family', [FamilyController::class, 'index'])->name('family.index');

@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Student;
 use App\Services\ActivityRosterService;
 use App\Services\AttendanceService;
+use App\Services\CertificateService;
 use App\Services\ClassFeeService;
 use App\Support\Money;
 use Illuminate\Support\Facades\Auth;
@@ -161,9 +162,31 @@ class Mark extends Component
     }
 
     /**
-     * Hook for work that runs after the register is saved.
+     * Issue activity certificates after the register is committed. Failures
+     * are reported without undoing the saved marks.
      */
-    protected function afterSave(Activity $activity): void {}
+    protected function afterSave(Activity $activity): void
+    {
+        if ($activity->certificate_template_id === null) {
+            return;
+        }
+
+        try {
+            $result = app(CertificateService::class)->issueForActivityAttendance($activity, Auth::user());
+        } catch (\Throwable $e) {
+            $this->error = 'Attendance was saved, but certificates could not be issued: '.$e->getMessage();
+
+            return;
+        }
+
+        if ($result['issued'] > 0) {
+            $this->flash .= " {$result['issued']} certificate(s) issued.";
+        }
+
+        if ($result['failed'] !== []) {
+            $this->error = 'Attendance was saved, but '.count($result['failed']).' certificate(s) could not be issued. Use Issue on the Certificates page to retry.';
+        }
+    }
 
     private function resetMessages(): void
     {

@@ -6,6 +6,8 @@ use App\Models\AnnualFee;
 use App\Models\ClassFee;
 use App\Models\Purchase;
 use App\Models\User;
+use App\Services\Certificates\CertificateDocumentRenderer;
+use App\Services\Certificates\DompdfCertificateRenderer;
 use App\Services\SettingsService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SettingsService::class);
+        $this->app->bind(CertificateDocumentRenderer::class, DompdfCertificateRenderer::class);
     }
 
     public function boot(): void

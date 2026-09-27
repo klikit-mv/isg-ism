@@ -2,18 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CertificateType;
 use App\Enums\PaymentMethod;
 use App\Models\Activity;
 use App\Models\AnnualFeeYear;
+use App\Models\Badge;
+use App\Models\CertificateTemplate;
 use App\Models\ClassFee;
 use App\Models\Group;
+use App\Models\LeadershipRecord;
 use App\Models\ShopItem;
 use App\Models\Student;
 use App\Models\User;
 use App\Notifications\ScoutAlert;
 use App\Services\AttendanceService;
+use App\Services\CertificateGenerationService;
+use App\Services\CertificateService;
 use App\Services\PaymentService;
 use App\Services\PurchaseService;
+use App\Support\CertificateTemplateDefaults;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -79,6 +86,38 @@ class PageRenderTest extends TestCase
         }
 
         $this->actingAs($this->studentUser($student))->get('/me/fees')->assertOk();
+    }
+
+    public function test_certificate_pages_render(): void
+    {
+        Storage::fake('certificates');
+        $admin = $this->admin();
+        $student = Student::factory()->create();
+        $parent = $this->parentOf($student);
+        $template = CertificateTemplate::query()->create(['template_id' => 'TPL-AAAAAA', 'name' => 'General', 'type' => 'general', 'google_slide_id' => 'local-general', 'template_content' => CertificateTemplateDefaults::for(CertificateType::General), 'active' => true]);
+        $certificate = app(CertificateGenerationService::class)->generateGeneralCertificate($student, 'Award', '2026-01-01', $template, $admin);
+        $badge = Badge::query()->create(['badge_id' => 'BAAAAA', 'name' => 'Camping', 'code' => 'CAMP', 'section' => 'Scout']);
+        $request = app(CertificateService::class)->requestBadge($student, $badge, $admin);
+        $record = LeadershipRecord::query()->create(['student_id' => $student->id, 'patrol_or_six' => 'Eagle', 'troop_or_group' => 'Group', 'start_date' => '2026-01-01']);
+        Activity::factory()->forAll()->create(['certificate_template_id' => $template->id]);
+
+        $pages = [
+            '/certificates', '/certificates/create', '/certificates/bulk-create', "/certificates/{$certificate->uuid}", "/certificates/{$certificate->uuid}/preview",
+            '/badges', '/badge-requests', '/badge-requests/create', "/badge-requests/{$request->uuid}",
+            '/certificate-templates', "/certificate-templates/{$template->uuid}/preview",
+            '/leadership', '/leadership/create', "/leadership/{$record->uuid}", "/leadership/{$record->uuid}/edit",
+            "/students/{$student->uuid}/certificates", "/students/{$student->uuid}/badge-requests", "/students/{$student->uuid}/leadership",
+        ];
+
+        foreach ($pages as $page) {
+            $this->actingAs($admin)->get($page)->assertOk();
+        }
+
+        foreach (['/certificates', '/badge-requests', '/badge-requests/create', "/badge-requests/{$request->uuid}", '/leadership', "/certificates/{$certificate->uuid}"] as $page) {
+            $this->actingAs($parent)->get($page)->assertOk();
+        }
+
+        $this->get('/certificates/verify')->assertOk();
     }
 
     public function test_family_and_self_pages_render(): void
