@@ -35,8 +35,8 @@ class ReportTest extends TestCase
 
         $this->actingAs($this->admin())->get('/reports/class-fees')
             ->assertOk()
-            ->assertSee('MVR 250.00')
-            ->assertSee('MVR 240.00')
+            ->assertSee(scout_money('250.00'))
+            ->assertSee(scout_money('240.00'))
             ->assertSee('Next');
     }
 
@@ -45,7 +45,7 @@ class ReportTest extends TestCase
         $this->seedFees(3);
 
         $this->actingAs($this->admin())->get('/reports/class-fees?status=Paid')
-            ->assertOk()->assertSee('MVR 10.00')->assertDontSee('MVR 30.00');
+            ->assertOk()->assertSee(scout_money('10.00'))->assertDontSee(scout_money('30.00'));
     }
 
     public function test_leader_reports_are_scoped(): void

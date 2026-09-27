@@ -219,7 +219,7 @@ class PaymentTest extends TestCase
         $this->feeFor(Student::factory()->create(), '30.00');
 
         $this->actingAs($this->parentOf($student))->get('/class-fees')
-            ->assertOk()->assertSee('MVR 20.00')->assertDontSee('MVR 50.00');
-        $this->actingAs($this->admin())->get('/class-fees')->assertSee('MVR 50.00');
+            ->assertOk()->assertSee(scout_money('20.00'))->assertDontSee(scout_money('50.00'));
+        $this->actingAs($this->admin())->get('/class-fees')->assertSee(scout_money('50.00'));
     }
 }

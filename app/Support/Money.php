@@ -77,7 +77,7 @@ final class Money
     {
         $cents = self::toCents($value);
 
-        return config('scout.currency_symbol', 'MVR').' '.number_format($cents / 100, 2);
+        return config('scout.currency_symbol', 'MVR')."\u{00A0}".number_format($cents / 100, 2);
     }
 
     public static function compact(string|int|float|null $value): string
