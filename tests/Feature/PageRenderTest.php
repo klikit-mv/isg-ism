@@ -49,7 +49,7 @@ class PageRenderTest extends TestCase
             '/students', '/students/create', "/students/{$student->uuid}", "/students/{$student->uuid}/edit",
             "/students/{$student->uuid}/certificates", "/students/{$student->uuid}/badge-requests", "/students/{$student->uuid}/leadership",
             '/students/promote', '/students/promote?from=Scout', '/parent-registrations', '/groups', "/groups/{$group->uuid}",
-            '/settings', '/audit-logs',
+            '/settings', '/audit-logs', '/import', '/students/import', '/reports',
         ];
 
         foreach ($pages as $page) {

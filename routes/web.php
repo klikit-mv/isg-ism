@@ -12,6 +12,7 @@ use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ClassFeeController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LeadershipController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
@@ -23,10 +24,12 @@ use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SelfController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StudentController;
+use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\TelegramConnectController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +69,10 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     // Scout operations: students, promotion, registrations, groups.
     Route::get('/students/promote', [PromotionController::class, 'index'])->name('promotion.index');
     Route::post('/students/promote', [PromotionController::class, 'store'])->name('promotion.store');
+    Route::get('/students/import', [StudentImportController::class, 'index'])->name('students.import');
+    Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
+    Route::post('/students/import/preview', [StudentImportController::class, 'preview'])->name('students.import.preview');
+    Route::post('/students/import/confirm', [StudentImportController::class, 'confirm'])->name('students.import.confirm');
     Route::resource('students', StudentController::class);
     Route::get('/students/{student}/certificates', [StudentController::class, 'certificates'])->name('students.certificates');
     Route::get('/students/{student}/badge-requests', [StudentController::class, 'badgeRequests'])->name('students.badge-requests');
@@ -160,6 +167,11 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::resource('leadership', LeadershipController::class);
     Route::post('/leadership/{leadership}/generate', [LeadershipController::class, 'generate'])->name('leadership.generate');
 
+    // Reports.
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{type}', [ReportController::class, 'show'])->name('reports.show');
+    Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+
     // Family (parents) and My record (scouts).
     Route::get('/family', [FamilyController::class, 'index'])->name('family.index');
     Route::get('/family/attendance', [FamilyController::class, 'attendance'])->name('family.attendance');
@@ -188,5 +200,9 @@ Route::middleware(['auth', 'module.access'])->group(function () {
         Route::post('/settings/test/drive', [SettingsController::class, 'testDrive'])->middleware('throttle:integration-tests')->name('settings.test.drive');
         Route::post('/settings/test/telegram', [SettingsController::class, 'testTelegram'])->middleware('throttle:integration-tests')->name('settings.test.telegram');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+        Route::get('/import', [ImportController::class, 'index'])->name('import.index');
+        Route::post('/import/preview', [ImportController::class, 'preview'])->name('import.preview');
+        Route::post('/import/confirm', [ImportController::class, 'confirm'])->name('import.confirm');
+        Route::get('/import/errors', [ImportController::class, 'errors'])->name('import.errors');
     });
 });
