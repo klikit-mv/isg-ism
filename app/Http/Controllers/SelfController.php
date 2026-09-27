@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FeeStatus;
+use App\Models\AnnualFee;
+use App\Models\ClassFee;
 use App\Models\Student;
 use App\Support\AttendanceHistory;
 use App\Support\StudentRecord;
@@ -47,6 +50,17 @@ class SelfController extends Controller
             'title' => 'My attendance',
             'records' => AttendanceHistory::paginate($request, $student ? [$student->id] : []),
             'children' => [],
+        ]);
+    }
+
+    public function fees(Request $request): View
+    {
+        $student = $this->ownStudent($request);
+        $studentId = $student?->id ?? 0;
+
+        return view('self.fees', [
+            'classFees' => ClassFee::query()->where('student_id', $studentId)->where('status', '!=', FeeStatus::Void->value)->with('activity')->latest()->get(),
+            'annualFees' => AnnualFee::query()->where('student_id', $studentId)->with('feeYear')->latest()->get(),
         ]);
     }
 

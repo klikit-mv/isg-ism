@@ -1,15 +1,23 @@
 <?php
 
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AnnualFeeController;
+use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\ClassFeeController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ParentLinkController;
 use App\Http\Controllers\ParentRegistrationController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PaymentVerificationController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\SelfController;
+use App\Http\Controllers\ShopController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TelegramConnectController;
 use App\Http\Controllers\UserController;
@@ -62,6 +70,43 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::delete('/groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
     Route::put('/groups/{group}/membership', [GroupController::class, 'membership'])->name('groups.membership');
 
+    // Activities and attendance.
+    Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
+    Route::post('/activities', [ActivityController::class, 'store'])->name('activities.store');
+    Route::get('/activities/{activity}/edit', [ActivityController::class, 'edit'])->name('activities.edit');
+    Route::put('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
+    Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/{activity}/mark', [AttendanceController::class, 'mark'])->name('attendance.mark');
+    Route::get('/rover-attendance', [AttendanceController::class, 'roverIndex'])->name('rover-attendance.index');
+    Route::get('/rover-attendance/{activity}/mark', [AttendanceController::class, 'roverMark'])->name('rover-attendance.mark');
+
+    // Fees and payments.
+    Route::get('/class-fees', [ClassFeeController::class, 'index'])->name('class-fees.index');
+    Route::get('/annual-fees', [AnnualFeeController::class, 'index'])->name('annual-fees.index');
+    Route::get('/annual-fees/years', [AnnualFeeController::class, 'years'])->name('annual-fees.years');
+    Route::post('/annual-fees/years', [AnnualFeeController::class, 'storeYear'])->name('annual-fees.years.store');
+    Route::post('/annual-fees/years/{year}/status', [AnnualFeeController::class, 'yearStatus'])->name('annual-fees.years.status');
+    Route::get('/annual-fees/years/{year}/generate', [AnnualFeeController::class, 'generateForm'])->name('annual-fees.generate');
+    Route::post('/annual-fees/years/{year}/generate', [AnnualFeeController::class, 'generate'])->name('annual-fees.generate.store');
+    Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
+    Route::get('/payments/{payment}/proof', [PaymentController::class, 'proof'])->name('payments.proof');
+    Route::get('/payment-verification', [PaymentVerificationController::class, 'index'])->name('payment-verification.index');
+    Route::post('/payments/{payment}/approve', [PaymentVerificationController::class, 'approve'])->name('payments.approve');
+    Route::post('/payments/{payment}/reject', [PaymentVerificationController::class, 'reject'])->name('payments.reject');
+
+    // Shop.
+    Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+    Route::post('/shop', [ShopController::class, 'store'])->name('shop.store');
+    Route::put('/shop/{item}', [ShopController::class, 'update'])->name('shop.update');
+    Route::delete('/shop/{item}', [ShopController::class, 'destroy'])->name('shop.destroy');
+    Route::post('/shop/{item}/buy', [ShopController::class, 'buy'])->name('shop.buy');
+    Route::get('/purchases', [PurchaseController::class, 'index'])->name('purchases.index');
+    Route::post('/purchases/{purchase}/ready', [PurchaseController::class, 'ready'])->name('purchases.ready');
+    Route::post('/purchases/{purchase}/deliver', [PurchaseController::class, 'deliver'])->name('purchases.deliver');
+    Route::post('/purchases/{purchase}/cancel', [PurchaseController::class, 'cancel'])->name('purchases.cancel');
+
     // Family (parents) and My record (scouts).
     Route::get('/family', [FamilyController::class, 'index'])->name('family.index');
     Route::get('/family/attendance', [FamilyController::class, 'attendance'])->name('family.attendance');
@@ -75,6 +120,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/me/badge-requests', [SelfController::class, 'badgeRequests'])->name('self.badge-requests');
     Route::get('/me/leadership', [SelfController::class, 'leadership'])->name('self.leadership');
     Route::get('/me/attendance', [SelfController::class, 'attendance'])->name('self.attendance');
+    Route::get('/me/fees', [SelfController::class, 'fees'])->name('self.fees');
 
     // Administration (admin only).
     Route::middleware('can:admin')->group(function () {

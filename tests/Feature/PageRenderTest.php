@@ -2,11 +2,21 @@
 
 namespace Tests\Feature;
 
+use App\Enums\PaymentMethod;
+use App\Models\Activity;
+use App\Models\AnnualFeeYear;
+use App\Models\ClassFee;
 use App\Models\Group;
+use App\Models\ShopItem;
 use App\Models\Student;
 use App\Models\User;
 use App\Notifications\ScoutAlert;
+use App\Services\AttendanceService;
+use App\Services\PaymentService;
+use App\Services\PurchaseService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -37,6 +47,38 @@ class PageRenderTest extends TestCase
         foreach ($pages as $page) {
             $this->actingAs($admin)->get($page)->assertOk();
         }
+    }
+
+    public function test_operations_finance_and_shop_pages_render(): void
+    {
+        Storage::fake('local');
+        $admin = $this->admin();
+        $student = Student::factory()->create();
+        $parent = $this->parentOf($student);
+        $activity = Activity::factory()->forAll()->charged()->create();
+        app(AttendanceService::class)->mark($activity, $admin, [$student->id => ['status' => 'Present']]);
+        $fee = ClassFee::query()->firstOrFail();
+        app(PaymentService::class)->submit($fee, $parent, '10', PaymentMethod::Online, UploadedFile::fake()->image('p.png'));
+        $year = AnnualFeeYear::query()->create(['year' => 2026, 'amount' => '100', 'status' => 'Active']);
+        $item = ShopItem::query()->create(['name' => 'Scarf', 'price' => '10', 'stock_qty' => 3, 'status' => 'Active']);
+        app(PurchaseService::class)->create($item, $student, 1, $admin);
+
+        $pages = [
+            '/activities', "/activities/{$activity->uuid}/edit", '/attendance', "/attendance/{$activity->uuid}/mark",
+            '/rover-attendance', "/rover-attendance/{$activity->uuid}/mark",
+            '/class-fees', '/annual-fees', '/annual-fees/years', "/annual-fees/years/{$year->uuid}/generate",
+            '/payments', '/payment-verification', '/shop', '/purchases',
+        ];
+
+        foreach ($pages as $page) {
+            $this->actingAs($admin)->get($page)->assertOk();
+        }
+
+        foreach (['/class-fees', '/annual-fees', '/payments', '/shop', '/purchases'] as $page) {
+            $this->actingAs($parent)->get($page)->assertOk();
+        }
+
+        $this->actingAs($this->studentUser($student))->get('/me/fees')->assertOk();
     }
 
     public function test_family_and_self_pages_render(): void
