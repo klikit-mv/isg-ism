@@ -2,60 +2,116 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Enums\UserStatus;
+use App\Models\User;
+use App\Services\AuditLogService;
 use Illuminate\Auth\Events\Lockout;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['national_id' => Str::upper(trim((string) $this->input('national_id')))]);
+    }
+
     /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'national_id' => ['required', 'string', 'max:64'],
+            'pin' => ['required', 'string', 'max:32'],
         ];
     }
 
     /**
-     * Attempt to authenticate the request's credentials.
+     * Check National ID + PIN, accepting a legacy SHA-256 PIN once and rehashing it.
      *
      * @throws ValidationException
      */
-    public function authenticate(): void
+    public function authenticate(): User
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $user = User::query()->where('national_id', $this->input('national_id'))->first();
+        $pin = (string) $this->input('pin');
+
+        if ($user === null || ! $this->pinMatches($user, $pin)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'email' => trans('auth.failed'),
+                'national_id' => 'These details do not match an active account.',
             ]);
         }
 
+        if ($user->status !== UserStatus::Active) {
+            RateLimiter::hit($this->throttleKey());
+
+            $message = $user->verified_at === null
+                ? 'Your registration is waiting for a leader to verify it.'
+                : 'These details do not match an active account.';
+
+            throw ValidationException::withMessages(['national_id' => $message]);
+        }
+
         RateLimiter::clear($this->throttleKey());
+        Auth::login($user, $this->boolean('remember'));
+
+        return $user;
+    }
+
+    private function pinMatches(User $user, string $pin): bool
+    {
+        if ($user->legacy_pin_hash === null && $this->isBcrypt($user->password) && Hash::check($pin, $user->password)) {
+            return true;
+        }
+
+        if ($user->legacy_pin_hash !== null && $this->legacyMatches($user->legacy_pin_hash, (string) $user->legacy_pin_salt, $pin)) {
+            $user->forceFill([
+                'password' => $pin,
+                'legacy_pin_hash' => null,
+                'legacy_pin_salt' => null,
+            ])->save();
+
+            app(AuditLogService::class)->record('auth.pin_rehashed', $user, [], $user);
+
+            return true;
+        }
+
+        return $this->isBcrypt($user->password) && Hash::check($pin, $user->password);
+    }
+
+    private function legacyMatches(string $hash, string $salt, string $pin): bool
+    {
+        $hash = strtolower($hash);
+
+        foreach ([$salt.$pin, $pin.$salt, $pin] as $candidate) {
+            if (hash_equals($hash, hash('sha256', $candidate))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function isBcrypt(?string $value): bool
+    {
+        return is_string($value) && str_starts_with($value, '$2');
     }
 
     /**
-     * Ensure the login request is not rate limited.
-     *
      * @throws ValidationException
      */
     public function ensureIsNotRateLimited(): void
@@ -69,18 +125,12 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
+            'national_id' => "Too many sign-in attempts. Please try again in {$seconds} seconds.",
         ]);
     }
 
-    /**
-     * Get the rate limiting throttle key for the request.
-     */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower((string) $this->input('national_id')).'|'.$this->ip());
     }
 }
