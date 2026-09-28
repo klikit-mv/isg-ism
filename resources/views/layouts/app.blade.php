@@ -33,6 +33,8 @@
             <div class="ml-auto flex items-center gap-2">
                 <a href="{{ route('dashboard') }}" class="hidden rounded-lg px-3 py-1.5 text-sm hover:bg-navy-700 sm:inline-block">Modules</a>
 
+                <x-theme-switch/>
+
                 {{-- Notifications bell --}}
                 <div x-data="{ open: false, expanded: null }" class="relative">
                     <button type="button" x-on:click="open = !open" class="relative rounded-lg p-1.5 hover:bg-navy-700" aria-label="Notifications">
@@ -70,7 +72,6 @@
                         <div class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400">{{ $user->national_id }}</div>
                         <a href="{{ route('dashboard') }}" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">Modules</a>
                         <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700">Profile</a>
-                        <div class="px-4 py-2"><x-theme-toggle/></div>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
                             <button type="submit" class="block w-full px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700">Sign out</button>

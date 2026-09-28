@@ -32,6 +32,17 @@ class ProfileTest extends TestCase
             ->assertDontSee('Audit logs');
     }
 
+    public function test_theme_switch_sits_in_the_header_not_the_user_menu(): void
+    {
+        $html = $this->actingAs(User::factory()->create())->get('/dashboard')->assertOk()->getContent();
+
+        $switch = strpos($html, 'data-testid="theme-switch"');
+        $bell = strpos($html, 'aria-label="Notifications"');
+        $this->assertNotFalse($switch);
+        $this->assertLessThan($bell, $switch);
+        $this->assertStringNotContainsString('aria-label="Theme"', $html);
+    }
+
     public function test_user_uploads_a_profile_picture_shown_in_the_header(): void
     {
         $user = User::factory()->create();
