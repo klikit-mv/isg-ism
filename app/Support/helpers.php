@@ -71,9 +71,9 @@ if (! function_exists('photo_url')) {
         }
 
         if (str_starts_with($path, 'drive:')) {
-            return route('photos.show', substr($path, 6));
+            return route('photos.show', substr($path, 6), false);
         }
 
-        return asset('storage/'.$path);
+        return route('media.show', ['path' => $path], false);
     }
 }

@@ -17,7 +17,7 @@ final class ScoutModules
      */
     public const ALWAYS_OPEN = [
         'dashboard', 'modules.enter', 'profile.*', 'password.*', 'logout', 'notifications.*',
-        'certificates.verify', 'certificates.verify.*', 'photos.show', 'livewire.*',
+        'certificates.verify', 'certificates.verify.*', 'photos.show', 'media.show', 'livewire.*',
     ];
 
     /**

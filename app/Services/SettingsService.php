@@ -131,7 +131,7 @@ class SettingsService
     {
         $path = $this->logoPath();
 
-        return $path ? Storage::disk('public')->url($path).'?v='.substr(md5($path), 0, 8) : null;
+        return $path ? route('branding.logo', ['v' => substr(md5($path), 0, 8)], false) : null;
     }
 
     /**

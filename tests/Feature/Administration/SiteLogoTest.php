@@ -42,9 +42,31 @@ class SiteLogoTest extends TestCase
         $this->assertNotNull($path);
         Storage::disk('public')->assertExists($path);
 
-        $this->actingAs($admin)->get('/dashboard')->assertSee('data-testid="site-logo"', false)->assertSee(basename($path));
+        $this->actingAs($admin)->get('/dashboard')->assertSee('data-testid="site-logo"', false)->assertSee('src="/branding/logo?v=', false);
         auth()->logout();
         $this->get('/login')->assertSee('data-testid="site-logo"', false)->assertSee('rel="icon"', false);
+    }
+
+    /**
+     * The logo is served by the app, so it loads without `storage:link`
+     * and regardless of APP_URL (a broken image was shown before).
+     */
+    public function test_logo_url_serves_the_image_to_guests(): void
+    {
+        $this->actingAs($this->admin())->post('/settings', $this->payload(['logo' => UploadedFile::fake()->image('logo.png', 64, 64)]));
+        auth()->logout();
+
+        $url = app(SettingsService::class)->logoUrl();
+        $this->assertStringStartsWith('/branding/logo?v=', $url);
+
+        $response = $this->get($url);
+        $response->assertOk()->assertHeader('Content-Type', 'image/png')->assertHeader('X-Content-Type-Options', 'nosniff');
+        $this->assertSame(Storage::disk('public')->get(app(SettingsService::class)->logoPath()), $response->streamedContent());
+    }
+
+    public function test_logo_url_is_not_found_without_an_upload(): void
+    {
+        $this->get('/branding/logo')->assertNotFound();
     }
 
     public function test_replacing_the_logo_deletes_the_old_file_and_removing_restores_the_default(): void

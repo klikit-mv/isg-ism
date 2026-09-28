@@ -14,6 +14,7 @@ use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LeadershipController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\ModuleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ParentLinkController;
@@ -37,6 +38,9 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
 
 require __DIR__.'/auth.php';
+
+// Website logo (shown on the sign-in page, so no sign-in needed).
+Route::get('/branding/logo', [MediaController::class, 'logo'])->name('branding.logo');
 
 // Public certificate verification (no sign-in).
 Route::middleware('throttle:certificate-verify')->group(function () {
@@ -65,6 +69,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
 
     Route::get('/photos/{fileId}', [PhotoController::class, 'show'])->name('photos.show');
+    Route::get('/media/{path}', [MediaController::class, 'show'])->where('path', '.*')->name('media.show');
 
     // Scout operations: students, promotion, registrations, groups.
     Route::get('/students/promote', [PromotionController::class, 'index'])->name('promotion.index');

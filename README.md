@@ -55,7 +55,7 @@ Run the tests with `php artisan test`.
 
 ### Website logo
 
-Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 MB). It replaces the built-in logo in the header, on the sign-in page, as the browser icon and on certificates. It is stored on the public disk, so `php artisan storage:link` must have been run.
+Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 MB). It replaces the built-in logo in the header, on the sign-in page, as the browser icon and on certificates. It is stored on the public disk and served by the app at `/branding/logo`, so it works without `storage:link` and whatever `APP_URL` is set to.
 
 ### Optional integrations
 
