@@ -25,7 +25,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'national_id', 'email', 'password', 'status', 'student_id',
-        'verified_at', 'verified_by', 'signature_path',
+        'verified_at', 'verified_by', 'signature_path', 'avatar_path',
         'email_notifications_enabled', 'telegram_notifications_enabled', 'telegram_chat_id',
         'telegram_connect_token', 'telegram_connect_token_expires_at',
         'legacy_pin_hash', 'legacy_pin_salt', 'last_login_at', 'legacy_id',
@@ -248,6 +248,23 @@ class User extends Authenticatable
             $q->whereHas('permissionRows', fn (Builder $p) => $p->where('permission', $permission->value))
                 ->orWhereHas('roleRows', fn (Builder $r) => $r->where('role', Role::Admin->value));
         });
+    }
+
+    /**
+     * Profile picture URL: the uploaded avatar, else the linked scout's photo.
+     */
+    public function avatarUrl(): ?string
+    {
+        return photo_url($this->avatar_path) ?? photo_url($this->student?->photo_path);
+    }
+
+    public function initials(): string
+    {
+        return collect(preg_split('/\s+/', trim($this->name)) ?: [])
+            ->filter()
+            ->take(2)
+            ->map(fn (string $part) => mb_strtoupper(mb_substr($part, 0, 1)))
+            ->implode('');
     }
 
     public function routeNotificationForTelegram(): ?string

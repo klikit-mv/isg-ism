@@ -58,9 +58,10 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/signature', [ProfileController::class, 'signature'])->name('profile.signature');
+    Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::post('/profile/telegram/confirm', [TelegramConnectController::class, 'confirm'])->middleware('throttle:60,1')->name('profile.telegram.confirm');
     Route::middleware('throttle:integration-tests')->group(function () {
         Route::post('/profile/telegram/connect', [TelegramConnectController::class, 'connect'])->name('profile.telegram.connect');
-        Route::post('/profile/telegram/confirm', [TelegramConnectController::class, 'confirm'])->name('profile.telegram.confirm');
         Route::post('/profile/telegram/disconnect', [TelegramConnectController::class, 'disconnect'])->name('profile.telegram.disconnect');
         Route::post('/profile/telegram/test', [TelegramConnectController::class, 'test'])->name('profile.telegram.test');
     });
@@ -207,6 +208,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
         Route::get('/settings/google/callback', [GoogleConnectController::class, 'callback'])->name('settings.google.callback');
         Route::post('/settings/google/disconnect', [GoogleConnectController::class, 'disconnect'])->name('settings.google.disconnect');
         Route::post('/settings/test/drive', [SettingsController::class, 'testDrive'])->middleware('throttle:integration-tests')->name('settings.test.drive');
+        Route::post('/settings/telegram/test-message', [SettingsController::class, 'sendTelegramTest'])->middleware('throttle:integration-tests')->name('settings.telegram.test-message');
         Route::post('/settings/test/telegram', [SettingsController::class, 'testTelegram'])->middleware('throttle:integration-tests')->name('settings.test.telegram');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/import', [ImportController::class, 'index'])->name('import.index');

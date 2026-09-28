@@ -15,7 +15,7 @@ class MediaController extends Controller
     /**
      * Folders on the public disk that may be served to signed-in users.
      */
-    private const DIRECTORIES = ['students', 'shop-items', 'badges'];
+    private const DIRECTORIES = ['students', 'shop-items', 'badges', 'avatars'];
 
     /**
      * The website logo (public: it appears on the sign-in page).

@@ -2,7 +2,7 @@
     <x-page-header title="Settings" description="Fees, payments, shop, storage and notifications.">
         <x-slot:actions>
             <form method="POST" action="{{ route('settings.test.drive') }}">@csrf<button class="btn-secondary">Test Google Drive</button></form>
-            <form method="POST" action="{{ route('settings.test.telegram') }}">@csrf<button class="btn-secondary">Test Telegram</button></form>
+            <form method="POST" action="{{ route('settings.test.telegram') }}">@csrf<button class="btn-secondary">Check Telegram bot</button></form>
         </x-slot:actions>
     </x-page-header>
 
@@ -124,4 +124,20 @@
     </form>
 
     <form id="google-disconnect" method="POST" action="{{ route('settings.google.disconnect') }}" class="hidden">@csrf</form>
+
+    @if ($telegramConfigured)
+        <section class="card mt-6 max-w-2xl" data-testid="telegram-test-message">
+            <h2 class="mb-1 font-semibold">Send a Telegram test message</h2>
+            <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Sends a real message through the bot. People appear in the list once they connect Telegram in their profile.</p>
+            <form method="POST" action="{{ route('settings.telegram.test-message') }}" class="space-y-4">
+                @csrf
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <x-form.select name="recipient" label="Send to" :options="$telegramRecipients" :placeholder="$telegramRecipients ? 'Choose a person' : 'Nobody has connected yet'"/>
+                    <x-form.input name="chat_id" label="…or a chat ID" placeholder="123456789" help="Only needed for someone not in the list."/>
+                </div>
+                <x-form.textarea name="message" label="Message" :value="'Hello! This is a test message from '.config('scout.short_name').'.'" rows="2"/>
+                <button type="submit" class="btn-primary">Send test message</button>
+            </form>
+        </section>
+    @endif
 </x-app-layout>

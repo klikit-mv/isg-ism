@@ -1,8 +1,9 @@
 @php
     $user = auth()->user();
-    $moduleKey = session('current_module');
-    $module = $moduleKey ? \App\Support\ScoutModules::find($moduleKey) : null;
-    $nav = $user ? \App\Support\Navigation::for($user, $moduleKey) : [];
+    $personal = \App\Support\Navigation::isPersonal(\Illuminate\Support\Facades\Route::currentRouteName());
+    $moduleKey = $personal ? null : session('current_module');
+    $module = $personal ? ['title' => 'My account'] : ($moduleKey ? \App\Support\ScoutModules::find($moduleKey) : null);
+    $nav = ! $user ? [] : ($personal ? \App\Support\Navigation::personal() : \App\Support\Navigation::for($user, $moduleKey));
     $unread = $user ? $user->unreadNotifications()->latest()->limit(8)->get() : collect();
     $unreadCount = $user ? $user->unreadNotifications()->count() : 0;
 @endphp
@@ -62,7 +63,7 @@
                 {{-- User menu --}}
                 <div x-data="{ open: false }" class="relative">
                     <button type="button" x-on:click="open = !open" class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-navy-700">
-                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-gold-500 text-xs font-bold">{{ \Illuminate\Support\Str::of($user->name)->explode(' ')->take(2)->map(fn ($p) => \Illuminate\Support\Str::substr($p, 0, 1))->implode('') }}</span>
+                        <x-avatar :user="$user" class="h-7 w-7 text-xs"/>
                         <span class="hidden max-w-[10rem] truncate md:inline">{{ $user->name }}</span>
                     </button>
                     <div x-show="open" x-cloak x-on:click.outside="open = false" class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl bg-white py-1 text-sm text-gray-800 shadow-xl ring-1 ring-black/5 dark:bg-gray-800 dark:text-gray-100">

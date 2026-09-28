@@ -50,7 +50,7 @@ class ScoutAlert extends Notification
 
     public function toTelegram(User $notifiable): string
     {
-        return trim("*{$this->title}*\n{$this->body}".($this->url ? "\n{$this->url}" : ''));
+        return trim('<b>'.e($this->title).'</b>'."\n".e($this->body).($this->url ? "\n".e($this->url) : ''));
     }
 
     /**

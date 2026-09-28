@@ -151,18 +151,39 @@ class TelegramService
 
     public function sendMessage(string $chatId, string $text): bool
     {
+        return $this->send($chatId, $text)['ok'];
+    }
+
+    /**
+     * Send an HTML-formatted message and explain any failure in plain words.
+     *
+     * @return array{ok: bool, message: string}
+     */
+    public function send(string $chatId, string $html): array
+    {
         if (! $this->configured()) {
-            return false;
+            return ['ok' => false, 'message' => 'No Telegram bot token is saved yet.'];
         }
 
         $result = $this->call((string) $this->token(), 'sendMessage', [
             'chat_id' => $chatId,
-            'text' => $text,
-            'parse_mode' => 'Markdown',
+            'text' => $html,
+            'parse_mode' => 'HTML',
             'disable_web_page_preview' => true,
         ]);
 
-        return (bool) ($result['ok'] ?? false);
+        if ($result['ok'] ?? false) {
+            return ['ok' => true, 'message' => 'Message sent.'];
+        }
+
+        $description = (string) ($result['description'] ?? '');
+
+        return ['ok' => false, 'message' => match (true) {
+            str_contains($description, 'chat not found') => 'Telegram does not know that chat. The person must open the bot and press Start first.',
+            str_contains($description, 'blocked by the user') => 'That person has blocked the bot.',
+            $description !== '' => 'Telegram refused the message: '.$description,
+            default => 'Telegram could not be reached.',
+        }];
     }
 
     public function disconnect(User $user): void

@@ -29,6 +29,8 @@ class SettingsController extends Controller
         return view('settings.index', [
             'settings' => $this->settings,
             'telegramConfigured' => $telegram->configured(),
+            'telegramRecipients' => User::query()->whereNotNull('telegram_chat_id')->orderBy('name')->get(['uuid', 'name', 'national_id'])
+                ->mapWithKeys(fn (User $u) => [$u->uuid => "{$u->name} ({$u->national_id})"])->all(),
             'googleEmail' => $google->clientEmail(),
             'googleSource' => $google->source(),
             'googleOauthClientId' => $google->oauthClientId(),
@@ -109,6 +111,38 @@ class SettingsController extends Controller
         $result = $tests->googleDrive();
 
         return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
+    /**
+     * Send a real test message to a connected user or a chat ID.
+     */
+    public function sendTelegramTest(Request $request, TelegramService $telegram): RedirectResponse
+    {
+        $data = $request->validate([
+            'recipient' => ['nullable', 'uuid', 'required_without:chat_id'],
+            'chat_id' => ['nullable', 'string', 'max:64', 'regex:/^(-?\d+|@[A-Za-z0-9_]{5,})$/'],
+            'message' => ['required', 'string', 'max:1000'],
+        ], [
+            'recipient.required_without' => 'Choose a person, or enter a chat ID.',
+            'chat_id.regex' => 'A chat ID is a number (e.g. 123456789) or a public @channelname.',
+        ]);
+
+        if (! $telegram->configured()) {
+            return back()->with('error', 'Save a Telegram bot token first.');
+        }
+
+        $recipient = filled($data['recipient'] ?? null) ? User::query()->where('uuid', $data['recipient'])->whereNotNull('telegram_chat_id')->first() : null;
+        $chatId = $recipient?->telegram_chat_id ?? ($data['chat_id'] ?? null);
+
+        if (! $chatId) {
+            return back()->withInput()->with('error', 'That person has not connected Telegram yet.');
+        }
+
+        $result = $telegram->send((string) $chatId, '🔔 <b>Test message</b> from '.e(config('scout.short_name'))."\n".e($data['message']));
+        $to = $recipient?->name ?? $chatId;
+        $this->audit->record('telegram.test_message_sent', $recipient, ['to' => $recipient ? $recipient->national_id : $chatId, 'ok' => $result['ok']]);
+
+        return back()->withInput()->with($result['ok'] ? 'success' : 'error', $result['ok'] ? "Test message sent to {$to}." : "Could not send to {$to}: {$result['message']}");
     }
 
     public function testTelegram(ConnectionTestService $tests): RedirectResponse

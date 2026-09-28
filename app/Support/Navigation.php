@@ -8,6 +8,31 @@ use Illuminate\Support\Facades\Route;
 final class Navigation
 {
     /**
+     * Routes that belong to the signed-in person rather than to a module.
+     */
+    public const PERSONAL_ROUTES = ['profile.*', 'notifications.*'];
+
+    public static function isPersonal(?string $routeName): bool
+    {
+        return $routeName !== null && ScoutModules::routeMatches($routeName, self::PERSONAL_ROUTES);
+    }
+
+    /**
+     * Sidebar for the personal area: only the user's own pages.
+     *
+     * @return list<array{label: string, url: string, active: bool}>
+     */
+    public static function personal(): array
+    {
+        $current = Route::currentRouteName() ?? '';
+
+        return [
+            ['label' => 'My profile', 'url' => route('profile.edit'), 'active' => str_starts_with($current, 'profile.')],
+            ['label' => 'Notifications', 'url' => route('notifications.index'), 'active' => str_starts_with($current, 'notifications.')],
+        ];
+    }
+
+    /**
      * Sidebar items for the current module, filtered by role and permission.
      *
      * @return list<array{label: string, url: string, active: bool}>
