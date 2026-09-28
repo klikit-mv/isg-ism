@@ -20,7 +20,7 @@ class ClassFeeController extends Controller
     {
         $query = $this->query($request);
 
-        $stats = (clone $query)->toBase()->selectRaw('COUNT(*) as records, SUM(CASE WHEN class_fees.status = ? THEN 1 ELSE 0 END) as paid, COALESCE(SUM(class_fees.amount), 0) as billed, COALESCE(SUM(class_fees.outstanding_amount), 0) as outstanding', [FeeStatus::Paid->value])->first();
+        $stats = (clone $query)->toBase()->reorder()->select([])->selectRaw('COUNT(*) as records, SUM(CASE WHEN class_fees.status = ? THEN 1 ELSE 0 END) as paid, COALESCE(SUM(class_fees.amount), 0) as billed, COALESCE(SUM(class_fees.outstanding_amount), 0) as outstanding', [FeeStatus::Paid->value])->first();
 
         return view('finance.class-fees', [
             'fees' => $query->with('student', 'activity')->orderByDesc('class_fees.created_at')->paginate(Pagination::MAX)->withQueryString(),

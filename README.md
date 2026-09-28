@@ -53,6 +53,10 @@ Run the tests with `php artisan test`.
 4. Cron: `* * * * * php artisan schedule:run` (runs `scout:cleanup` daily). Worker: `php artisan queue:work redis`.
 5. **First admin:** `php artisan scout:create-admin A1234567 "Full Name" --email=you@example.org`. It prints a one-time PIN; sign in and change it under Profile. The demo seeder never runs in production.
 
+### Website logo
+
+Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 MB). It replaces the built-in logo in the header, on the sign-in page, as the browser icon and on certificates. It is stored on the public disk, so `php artisan storage:link` must have been run.
+
 ### Optional integrations
 
 - **Google Drive / Slides:** create a service account, put its JSON key on the server and set `GOOGLE_SERVICE_ACCOUNT_JSON` to the file path. Share the photos folder, the certificates folder and every Slides template with the service account's email as an editor, then paste the folder links under Administration → Settings and press **Test Google Drive**. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.

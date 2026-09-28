@@ -43,7 +43,7 @@ class AnnualFeeController extends Controller
                 ->orWhere(fn ($x) => $x->whereNull('annual_fees.section')->where('students.section', $section))))
             ->when($request->query('status'), fn ($q, $status) => $q->where('annual_fees.status', $status));
 
-        $stats = (clone $query)->toBase()->selectRaw('COUNT(*) as records, SUM(CASE WHEN annual_fees.status = ? THEN 1 ELSE 0 END) as paid, COALESCE(SUM(annual_fees.amount), 0) as billed', [FeeStatus::Paid->value])->first();
+        $stats = (clone $query)->toBase()->reorder()->select([])->selectRaw('COUNT(*) as records, SUM(CASE WHEN annual_fees.status = ? THEN 1 ELSE 0 END) as paid, COALESCE(SUM(annual_fees.amount), 0) as billed', [FeeStatus::Paid->value])->first();
 
         return view('finance.annual-fees', [
             'fees' => $query->with('student', 'user', 'feeYear')->orderByDesc('annual_fees.created_at')->paginate(Pagination::MAX)->withQueryString(),

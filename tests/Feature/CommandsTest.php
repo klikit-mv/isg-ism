@@ -28,7 +28,7 @@ class CommandsTest extends TestCase
     {
         Storage::fake('certificates');
         $this->seed(DemoSeeder::class);
-        DB::table('user_roles')->insert(['user_id' => 1, 'role' => 'superhero']);
+        DB::table('user_roles')->insert(['user_id' => User::query()->value('id'), 'role' => 'superhero']);
 
         $this->artisan('scout:verify-integrity')->assertFailed();
     }

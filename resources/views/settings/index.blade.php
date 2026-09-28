@@ -6,7 +6,7 @@
         </x-slot:actions>
     </x-page-header>
 
-    <form method="POST" action="{{ route('settings.update') }}" class="grid gap-6 lg:grid-cols-2">
+    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" class="grid gap-6 lg:grid-cols-2">
         @csrf
         <section class="card space-y-4">
             <h2 class="font-semibold">Fees and payments</h2>
@@ -19,6 +19,23 @@
         </section>
 
         <section class="space-y-6">
+            <div class="card space-y-4">
+                <h2 class="font-semibold">Website logo</h2>
+                <div class="flex items-center gap-4">
+                    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-navy-800 p-1">
+                        <x-logo class="h-14 w-14"/>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        {{ $settings->logoPath() ? 'Your uploaded logo is in use.' : 'The built-in logo is in use.' }}
+                        Shown in the header, on the sign-in page, as the browser icon and on certificates.
+                    </p>
+                </div>
+                <x-form.file-drop name="logo" label="Upload a new logo" accept="image/png,image/jpeg" help="PNG or JPEG, up to 2 MB. A square image with a transparent background works best."/>
+                @if ($settings->logoPath())
+                    <x-form.checkbox name="remove_logo" label="Remove the uploaded logo and use the built-in one"/>
+                @endif
+            </div>
+
             <div class="card space-y-4">
                 <h2 class="font-semibold">Shop and portal</h2>
                 <input type="hidden" name="shop_enabled" value="0">

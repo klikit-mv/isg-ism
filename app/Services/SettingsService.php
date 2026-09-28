@@ -8,6 +8,7 @@ use App\Support\Money;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Key/value settings, cached for 60 seconds.
@@ -114,6 +115,39 @@ class SettingsService
     public function paymentInstructions(): ?string
     {
         return $this->get('payment_instructions');
+    }
+
+    /**
+     * Public-disk path of the uploaded website logo, if any.
+     */
+    public function logoPath(): ?string
+    {
+        $path = $this->get('site_logo_path');
+
+        return $path && Storage::disk('public')->exists($path) ? $path : null;
+    }
+
+    public function logoUrl(): ?string
+    {
+        $path = $this->logoPath();
+
+        return $path ? Storage::disk('public')->url($path).'?v='.substr(md5($path), 0, 8) : null;
+    }
+
+    /**
+     * The uploaded logo as a data URI (used on certificates), or null.
+     */
+    public function logoDataUri(): ?string
+    {
+        $path = $this->logoPath();
+
+        if ($path === null) {
+            return null;
+        }
+
+        $mime = Storage::disk('public')->mimeType($path) ?: 'image/png';
+
+        return 'data:'.$mime.';base64,'.base64_encode((string) Storage::disk('public')->get($path));
     }
 
     public function footerText(): string

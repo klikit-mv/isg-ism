@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\ConnectionTestService;
 use App\Services\GoogleDriveCertificateService;
@@ -12,6 +13,8 @@ use App\Support\GoogleDriveFolder;
 use App\Support\Money;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -41,6 +44,8 @@ class SettingsController extends Controller
             'google_drive_folder' => ['nullable', 'string', 'max:500'],
             'google_drive_certificates_folder' => ['nullable', 'string', 'max:500'],
             'telegram_bot_token' => ['nullable', 'string', 'max:200'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048', 'dimensions:max_width=2000,max_height=2000'],
+            'remove_logo' => ['sometimes', 'boolean'],
         ]);
 
         $actor = $request->user();
@@ -53,6 +58,8 @@ class SettingsController extends Controller
         $this->settings->set('default_class_fee', Money::normalize($data['default_class_fee']), $actor);
         $this->settings->set('shop_enabled', $request->boolean('shop_enabled') ? '1' : '0', $actor);
         $this->settings->set('proof_max_kb', (string) $data['proof_max_kb'], $actor);
+
+        $messages[] = $this->saveLogo($request, $actor);
 
         $messages[] = $this->saveFolder('google_drive_folder', $data['google_drive_folder'] ?? null, $actor, function (string $id) use ($photos): string {
             return $photos->ensureAreaFolders($id)['message'];
@@ -77,7 +84,7 @@ class SettingsController extends Controller
         }
 
         $this->settings->flush();
-        $this->audit->record('settings.updated', null, ['keys' => array_keys(array_diff_key($data, ['telegram_bot_token' => true]))], $actor);
+        $this->audit->record('settings.updated', null, ['keys' => array_keys(array_diff_key($data, ['telegram_bot_token' => true, 'logo' => true]))], $actor);
 
         return redirect()->route('settings.index')->with('success', trim('Settings saved. '.implode(' ', array_filter($messages))));
     }
@@ -97,9 +104,44 @@ class SettingsController extends Controller
     }
 
     /**
+     * Store an uploaded website logo on the public disk, or remove the current one.
+     */
+    private function saveLogo(Request $request, User $actor): ?string
+    {
+        $old = $this->settings->get('site_logo_path');
+
+        if ($request->hasFile('logo')) {
+            $file = $request->file('logo');
+            $path = $file->storeAs('branding', 'logo-'.Str::random(12).'.'.strtolower($file->extension() ?: 'png'), 'public');
+            $this->settings->set('site_logo_path', $path, $actor);
+            $this->deleteLogo($old);
+            $this->audit->record('settings.logo_updated', null, [], $actor);
+
+            return 'The website logo was updated.';
+        }
+
+        if ($request->boolean('remove_logo') && $old) {
+            $this->settings->set('site_logo_path', null, $actor);
+            $this->deleteLogo($old);
+            $this->audit->record('settings.logo_removed', null, [], $actor);
+
+            return 'The website logo was removed.';
+        }
+
+        return null;
+    }
+
+    private function deleteLogo(?string $path): void
+    {
+        if ($path && str_starts_with($path, 'branding/')) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    /**
      * @param  callable(string): string  $onSaved
      */
-    private function saveFolder(string $key, ?string $input, $actor, callable $onSaved): ?string
+    private function saveFolder(string $key, ?string $input, User $actor, callable $onSaved): ?string
     {
         if (blank($input)) {
             $this->settings->set($key, null, $actor);

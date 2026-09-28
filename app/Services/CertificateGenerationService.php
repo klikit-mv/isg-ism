@@ -35,6 +35,7 @@ class CertificateGenerationService
         private GoogleDriveCertificateService $storage,
         private SignatureService $signatures,
         private AuditLogService $audit,
+        private SettingsService $settings,
     ) {}
 
     public function activeTemplate(CertificateType $type): ?CertificateTemplate
@@ -199,7 +200,7 @@ class CertificateGenerationService
             'troop_or_group' => (string) $record?->troop_or_group,
             'start_date' => $record ? scout_long_date($record->start_date) : '',
             'organisation' => (string) config('scout.organisation'),
-            'logo' => CertificateTemplateDefaults::logoDataUri(),
+            'logo' => $this->settings->logoDataUri() ?? CertificateTemplateDefaults::logoDataUri(),
             'signature' => $verifier ? ($this->signatures->dataUri($verifier) ?? $this->signatures->fromName($verifier->name)) : $this->signatures->blank(),
             'verifier' => (string) $verifier?->name,
             'verified_at' => $verified && $certificate->verified_at ? scout_long_date($certificate->verified_at->copy()->setTimezone(config('scout.timezone'))) : '',
