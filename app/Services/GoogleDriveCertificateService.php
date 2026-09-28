@@ -132,6 +132,6 @@ class GoogleDriveCertificateService
 
         return $this->drive->folderAccessible($folderId)
             ? ['ok' => true, 'message' => 'The certificates folder is ready.']
-            : ['ok' => false, 'message' => 'The certificates folder could not be opened. Share it with the service account as an editor.'];
+            : ['ok' => false, 'message' => 'The certificates folder could not be opened. '.app(Google\GoogleApiClient::class)->shareHint()];
     }
 }

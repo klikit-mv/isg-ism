@@ -78,7 +78,7 @@ class GoogleSlideExporter
         $info = $this->drive->fileInfo($presentationId);
 
         if ($info === null) {
-            return ['ok' => false, 'message' => 'The file could not be opened. Share it with the service account as an editor.'];
+            return ['ok' => false, 'message' => 'The file could not be opened. '.app(GoogleApiClient::class)->shareHint()];
         }
 
         if (($info['mimeType'] ?? '') !== 'application/vnd.google-apps.presentation') {

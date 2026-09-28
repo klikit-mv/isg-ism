@@ -31,6 +31,9 @@ class SettingsController extends Controller
             'telegramConfigured' => $telegram->configured(),
             'googleEmail' => $google->clientEmail(),
             'googleSource' => $google->source(),
+            'googleOauthClientId' => $google->oauthClientId(),
+            'googleOauthReady' => $google->oauthReady(),
+            'googleRedirectUri' => GoogleConnectController::redirectUriFor(),
         ]);
     }
 
@@ -52,7 +55,10 @@ class SettingsController extends Controller
             'remove_logo' => ['sometimes', 'boolean'],
             'google_service_account' => ['nullable', 'bail', 'file', 'max:20'],
             'remove_google_service_account' => ['sometimes', 'boolean'],
+            'google_oauth_client_id' => ['nullable', 'string', 'max:255', 'regex:/^[0-9A-Za-z._-]+\.apps\.googleusercontent\.com$/'],
+            'google_oauth_client_secret' => ['nullable', 'string', 'max:255'],
         ], [
+            'google_oauth_client_id.regex' => 'The Client ID ends with .apps.googleusercontent.com — copy it from Google Cloud → Credentials.',
             'google_service_account.max' => 'The service account key must be the small JSON file from Google Cloud (under 20 KB).',
         ]);
 
@@ -60,6 +66,7 @@ class SettingsController extends Controller
         $messages = [];
         $messages[] = $this->saveLogo($request, $actor);
         $messages[] = $this->saveGoogleKey($request, $actor, $google);
+        $messages[] = $this->saveOauthClient($data, $actor, $google);
 
         foreach (['bank_name', 'account_name', 'account_number', 'payment_instructions', 'footer_text'] as $key) {
             $this->settings->set($key, $data[$key] ?? null, $actor);
@@ -92,7 +99,7 @@ class SettingsController extends Controller
         }
 
         $this->settings->flush();
-        $this->audit->record('settings.updated', null, ['keys' => array_keys(array_diff_key($data, ['telegram_bot_token' => true, 'logo' => true, 'google_service_account' => true]))], $actor);
+        $this->audit->record('settings.updated', null, ['keys' => array_keys(array_diff_key($data, ['telegram_bot_token' => true, 'logo' => true, 'google_service_account' => true, 'google_oauth_client_secret' => true]))], $actor);
 
         return redirect()->route('settings.index')->with('success', trim('Settings saved. '.implode(' ', array_filter($messages))));
     }
@@ -109,6 +116,45 @@ class SettingsController extends Controller
         $result = $tests->telegram();
 
         return back()->with($result['ok'] ? 'success' : 'error', $result['message']);
+    }
+
+    /**
+     * Save the OAuth client used by "Connect Google account". A blank secret keeps the saved one.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function saveOauthClient(array $data, User $actor, GoogleApiClient $google): ?string
+    {
+        $clientId = trim((string) ($data['google_oauth_client_id'] ?? ''));
+        $secret = trim((string) ($data['google_oauth_client_secret'] ?? ''));
+        $oldId = (string) $google->oauthClientId();
+
+        if ($clientId === $oldId && $secret === '') {
+            return null;
+        }
+
+        if ($clientId !== $oldId && $google->oauthConnected()) {
+            $google->disconnectOauth();
+        }
+
+        $this->settings->set(GoogleApiClient::OAUTH_CLIENT_ID, $clientId !== '' ? $clientId : null, $actor);
+
+        if ($clientId === '') {
+            $this->settings->set(GoogleApiClient::OAUTH_CLIENT_SECRET, null, $actor);
+
+            return 'The Google sign-in client was removed.';
+        }
+
+        if ($secret !== '') {
+            $this->settings->set(GoogleApiClient::OAUTH_CLIENT_SECRET, $secret, $actor);
+        }
+
+        $google->forget();
+        $this->audit->record('settings.google_oauth_client_saved', null, ['client_id' => $clientId], $actor);
+
+        return $google->oauthReady()
+            ? 'Google sign-in details saved. Now press Connect Google account.'
+            : 'Client ID saved. Add the Client secret too.';
     }
 
     /**

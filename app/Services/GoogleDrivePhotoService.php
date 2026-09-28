@@ -35,7 +35,7 @@ class GoogleDrivePhotoService
         }
 
         if (! $rootId || ! $this->drive->folderAccessible($rootId)) {
-            return ['ok' => false, 'message' => 'The Drive folder could not be opened. Share it with '.app(Google\GoogleApiClient::class)->clientEmail().' as an editor.'];
+            return ['ok' => false, 'message' => 'The Drive folder could not be opened. '.app(Google\GoogleApiClient::class)->shareHint()];
         }
 
         foreach (self::AREAS as $key => $name) {

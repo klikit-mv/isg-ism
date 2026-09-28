@@ -59,7 +59,11 @@ Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 M
 
 ### Optional integrations
 
-- **Google Drive / Slides:** in Google Cloud Console enable the Drive and Slides APIs, create a service account and download a JSON key (Keys → Add key → JSON). Upload that file under Administration → Settings → Google Drive (it is stored encrypted; alternatively set `GOOGLE_SERVICE_ACCOUNT_JSON` on the server, which takes priority). Share the photos folder, the certificates folder and every Slides template with the service account's email as an editor, paste the folder links in Settings and press **Test Google Drive**. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
+- **Google Drive / Slides:** in Google Cloud Console enable the Drive and Slides APIs. Then either:
+  - **Connect a Google account (recommended):** configure the OAuth consent screen (External, then *Publish app* so the connection does not expire after 7 days), create an *OAuth client ID* of type *Web application* with the redirect URI shown under Administration → Settings → Google Drive (`https://your-domain/settings/google/callback`; Google only accepts https on a public domain, or `http://localhost`), paste the Client ID and secret in Settings, save, and press **Connect Google account**. Files are stored in that account's Drive, so no sharing is needed.
+  - **Or use a service account key:** upload the JSON key in Settings (or set `GOOGLE_SERVICE_ACCOUNT_JSON` on the server, which takes priority). Service accounts have no storage of their own, so use folders in a shared drive and share them with the service account's email as an editor.
+
+  Then paste the photos and certificates folder links in Settings and press **Test Google Drive**. API keys cannot be used: they only reach public data. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
 - **Telegram:** create a bot with @BotFather and paste the token in Settings (it is stored encrypted and never shown again). Linking uses `getUpdates`, so the bot must **not** have a webhook set. Users connect from Profile.
 
 ## Commands

@@ -47,32 +47,65 @@
                 <h2 class="font-semibold">Google Drive</h2>
                 @if ($googleEmail)
                     <div class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200" data-testid="google-connected">
-                        Connected as <span class="break-all font-mono">{{ $googleEmail }}</span>{{ $googleSource === 'server' ? ' (set on the server)' : '' }}.
-                        Share both folders and every Slides template with this address as an <strong>Editor</strong>.
+                        @if ($googleSource === 'oauth')
+                            Connected with the Google account <span class="break-all font-mono">{{ $googleEmail }}</span>. Use folders this account can edit.
+                        @else
+                            Connected with the service account <span class="break-all font-mono">{{ $googleEmail }}</span>{{ $googleSource === 'server' ? ' (set on the server)' : '' }}.
+                            Share both folders and every Slides template with this address as an <strong>Editor</strong>.
+                        @endif
                     </div>
                 @else
                     <div class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
-                        Not connected. Photos and certificates are stored on the server until you upload a service account key.
+                        Not connected. Photos and certificates are stored on the server until you connect Google.
                     </div>
                 @endif
 
-                <details class="text-sm text-gray-600 dark:text-gray-300" @unless ($googleEmail) open @endunless>
-                    <summary class="cursor-pointer font-medium text-navy-700 dark:text-navy-300">How to connect Google Drive</summary>
-                    <ol class="mt-2 list-decimal space-y-1 pl-5">
-                        <li>Open <a class="link" href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> and create (or pick) a project.</li>
-                        <li>Under <em>APIs &amp; Services → Library</em>, enable the <strong>Google Drive API</strong> and the <strong>Google Slides API</strong>.</li>
-                        <li>Under <em>IAM &amp; Admin → Service Accounts</em>, create a service account (no roles needed).</li>
-                        <li>Open it, go to <em>Keys → Add key → Create new key → JSON</em> and download the file.</li>
-                        <li>Upload that file below and press <strong>Save settings</strong>.</li>
-                        <li>In Google Drive, share your photos folder and certificates folder (and each Slides template) with the service account's email as <strong>Editor</strong>, then paste the folder links below and save.</li>
-                        <li>Press <strong>Test Google Drive</strong> at the top of this page.</li>
-                    </ol>
+                <div class="space-y-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
+                    <h3 class="text-sm font-semibold">Connect a Google account <span class="font-normal text-gray-500">(recommended, no key file)</span></h3>
+                    <details class="text-sm text-gray-600 dark:text-gray-300" @unless ($googleOauthReady) open @endunless>
+                        <summary class="cursor-pointer font-medium text-navy-700 dark:text-navy-300">How to get the Client ID and secret</summary>
+                        <ol class="mt-2 list-decimal space-y-1 pl-5">
+                            <li>In <a class="link" href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a>, pick or create a project.</li>
+                            <li>Enable the <a class="link" href="https://console.cloud.google.com/apis/library/drive.googleapis.com" target="_blank" rel="noopener">Google Drive API</a> and the <a class="link" href="https://console.cloud.google.com/apis/library/slides.googleapis.com" target="_blank" rel="noopener">Google Slides API</a>.</li>
+                            <li>Open <a class="link" href="https://console.cloud.google.com/auth/branding" target="_blank" rel="noopener">Google Auth Platform</a> (OAuth consent screen): choose <em>External</em>, fill in the app name and emails, then under <em>Audience</em> press <strong>Publish app</strong> so the connection does not expire after 7 days.</li>
+                            <li>Open <a class="link" href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Credentials</a> → <strong>Create credentials → OAuth client ID</strong> → type <em>Web application</em>.</li>
+                            <li>Under <em>Authorised redirect URIs</em> add exactly the address below, then press <strong>Create</strong>.</li>
+                            <li>Copy the <strong>Client ID</strong> and <strong>Client secret</strong> here, press <strong>Save settings</strong>, then <strong>Connect Google account</strong> and allow access. Google may warn that the app is unverified: choose <em>Advanced → Go to …</em> to continue.</li>
+                        </ol>
+                    </details>
+                    <div>
+                        <span class="label">Authorised redirect URI</span>
+                        <div class="flex items-center gap-2">
+                            <code class="block flex-1 break-all rounded bg-gray-100 px-2 py-1.5 text-xs dark:bg-gray-900" data-testid="google-redirect-uri">{{ $googleRedirectUri }}</code>
+                            <button type="button" class="btn-secondary btn-sm" onclick="window.copyText(@js($googleRedirectUri), this)">Copy</button>
+                        </div>
+                        @unless (str_starts_with($googleRedirectUri, 'https://') || preg_match('#^http://(localhost|127\.0\.0\.1)(:\d+)?/#', $googleRedirectUri))
+                            <p class="mt-1 text-xs text-amber-700 dark:text-amber-300">Google only accepts https addresses on a public domain, or http://localhost. Open the portal on such an address before connecting.</p>
+                        @endunless
+                    </div>
+                    <x-form.input name="google_oauth_client_id" label="Client ID" :value="$googleOauthClientId" placeholder="1234-abc.apps.googleusercontent.com"/>
+                    <x-form.input name="google_oauth_client_secret" label="{{ $googleOauthReady ? 'Client secret (leave blank to keep the saved one)' : 'Client secret' }}" type="password" autocomplete="off"/>
+                    <div class="flex flex-wrap gap-2">
+                        @if ($googleOauthReady)
+                            <a href="{{ route('settings.google.connect') }}" class="btn-accent btn-sm">{{ $googleSource === 'oauth' ? 'Reconnect Google account' : 'Connect Google account' }}</a>
+                        @endif
+                        @if ($googleSource === 'oauth')
+                            <button type="submit" form="google-disconnect" class="btn-secondary btn-sm">Disconnect</button>
+                        @endif
+                    </div>
+                </div>
+
+                <details class="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700" @if ($googleSource === 'settings') open @endif>
+                    <summary class="cursor-pointer font-semibold">Or use a service account key (JSON file)</summary>
+                    <div class="mt-3 space-y-3">
+                        <p class="text-gray-600 dark:text-gray-300">In Google Cloud: <em>IAM &amp; Admin → Service Accounts</em> → create one → <em>Keys → Add key → JSON</em>. Service accounts cannot store files in a personal My Drive, so use a <strong>shared drive</strong> with this option.</p>
+                        <x-form.file-drop name="google_service_account" label="Service account key (JSON)" accept=".json,application/json" help="Stored encrypted. It is never shown again."/>
+                        @if ($googleSource === 'settings')
+                            <x-form.checkbox name="remove_google_service_account" label="Remove the saved key and disconnect Google"/>
+                        @endif
+                    </div>
                 </details>
 
-                <x-form.file-drop name="google_service_account" label="Service account key (JSON)" accept=".json,application/json" help="Stored encrypted. It is never shown again."/>
-                @if ($googleSource === 'settings')
-                    <x-form.checkbox name="remove_google_service_account" label="Remove the saved key and disconnect Google"/>
-                @endif
                 <x-form.input name="google_drive_folder" label="Photos folder (link or ID)" :value="$settings->get('google_drive_folder')" help="Students, Shop, Badges and Signatures sub-folders are created inside it."/>
                 <x-form.input name="google_drive_certificates_folder" label="Certificates folder (link or ID)" :value="$settings->get('google_drive_certificates_folder')" help="Each scout gets a sub-folder for their PDFs."/>
             </div>
@@ -89,4 +122,6 @@
 
         <div class="lg:col-span-2"><button class="btn-primary">Save settings</button></div>
     </form>
+
+    <form id="google-disconnect" method="POST" action="{{ route('settings.google.disconnect') }}" class="hidden">@csrf</form>
 </x-app-layout>

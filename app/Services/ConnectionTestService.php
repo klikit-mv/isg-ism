@@ -25,11 +25,11 @@ class ConnectionTestService
     public function googleDrive(): array
     {
         if (! $this->google->configured()) {
-            return ['ok' => false, 'message' => 'Google is not set up yet: upload the service account key under Settings → Google Drive. Until then photos and certificates are stored on the server.'];
+            return ['ok' => false, 'message' => 'Google is not set up yet: connect a Google account (or upload a service account key) under Settings → Google Drive. Until then photos and certificates are stored on the server.'];
         }
 
         if ($this->google->accessToken() === null) {
-            return ['ok' => false, 'message' => 'Google rejected the service account credentials.'];
+            return ['ok' => false, 'message' => ($this->google->usesOauth() ? 'Google rejected the connected account. Disconnect and connect it again.' : 'Google rejected the service account credentials.')];
         }
 
         $messages = [];
@@ -46,7 +46,7 @@ class ConnectionTestService
                 $messages[] = "{$label} folder: ready.";
             } else {
                 $ok = false;
-                $messages[] = "{$label} folder: not shared with {$this->google->clientEmail()}.";
+                $messages[] = "{$label} folder: cannot be opened. ".$this->google->shareHint();
             }
         }
 

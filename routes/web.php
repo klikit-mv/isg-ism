@@ -11,6 +11,7 @@ use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ClassFeeController;
 use App\Http\Controllers\FamilyController;
+use App\Http\Controllers\GoogleConnectController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\LeadershipController;
@@ -202,6 +203,9 @@ Route::middleware(['auth', 'module.access'])->group(function () {
         Route::post('/parent-links/{parentLink}', [ParentLinkController::class, 'update'])->name('parent-links.update');
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::get('/settings/google/connect', [GoogleConnectController::class, 'connect'])->name('settings.google.connect');
+        Route::get('/settings/google/callback', [GoogleConnectController::class, 'callback'])->name('settings.google.callback');
+        Route::post('/settings/google/disconnect', [GoogleConnectController::class, 'disconnect'])->name('settings.google.disconnect');
         Route::post('/settings/test/drive', [SettingsController::class, 'testDrive'])->middleware('throttle:integration-tests')->name('settings.test.drive');
         Route::post('/settings/test/telegram', [SettingsController::class, 'testTelegram'])->middleware('throttle:integration-tests')->name('settings.test.telegram');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
