@@ -61,6 +61,12 @@ class ModuleAccessTest extends TestCase
     public function test_guests_are_sent_to_sign_in(): void
     {
         $this->get('/dashboard')->assertRedirect(route('login'));
-        $this->get('/')->assertRedirect(route('login'));
+        $this->get('/events')->assertRedirect(route('login'));
+    }
+
+    public function test_home_page_is_public_and_signed_in_users_go_to_the_dashboard(): void
+    {
+        $this->get('/')->assertOk()->assertSee('Upcoming events')->assertSee('Sign in');
+        $this->actingAs($this->admin())->get('/')->assertRedirect(route('dashboard'));
     }
 }

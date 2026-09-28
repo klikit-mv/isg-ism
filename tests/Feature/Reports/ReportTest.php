@@ -2,11 +2,15 @@
 
 namespace Tests\Feature\Reports;
 
+use App\Enums\ScoutSection;
 use App\Models\Activity;
 use App\Models\Group;
 use App\Models\Student;
 use App\Services\AttendanceService;
+use App\Services\XlsxExportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
@@ -77,6 +81,27 @@ class ReportTest extends TestCase
         $last = end($sheet);
         $this->assertSame('Total (3 rows)', $last[0]);
         $this->assertEquals(30.0, (float) $last[2]);
+    }
+
+    public function test_xlsx_exports_carry_dropdowns_of_valid_values(): void
+    {
+        $this->seedFees(1);
+
+        $report = $this->actingAs($this->admin())->get('/reports/class-fees/export?format=xlsx');
+        $sheet = IOFactory::load($report->getFile()->getPathname())->getActiveSheet();
+        $validation = $sheet->getCell('F6')->getDataValidation();
+        $this->assertSame(DataValidation::TYPE_LIST, $validation->getType());
+        $this->assertFalse($sheet->getCell('A6')->hasDataValidation());
+
+        $path = app(XlsxExportService::class)->export('students');
+        $book = IOFactory::load($path);
+        $headings = $book->getSheet(0)->toArray()[0];
+        $section = Coordinate::stringFromColumnIndex(array_search('section', $headings, true) + 1);
+        $validation = $book->getSheet(0)->getCell($section.'2')->getDataValidation();
+        $this->assertSame(DataValidation::TYPE_LIST, $validation->getType());
+        $range = str_replace(['Lists!', '$'], '', $validation->getFormula1());
+        $this->assertSame(ScoutSection::values(), array_column($book->getSheetByName('Lists')->rangeToArray($range), 0));
+        @unlink($path);
     }
 
     public function test_csv_export_and_print_view(): void

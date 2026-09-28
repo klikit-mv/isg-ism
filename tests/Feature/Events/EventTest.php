@@ -149,7 +149,7 @@ class EventTest extends TestCase
 
         $cub = Student::factory()->section(ScoutSection::CubScout)->create();
         $roverOnly = $this->openEvent(['name' => 'Rover Moot', 'sections' => ['Rover']]);
-        $this->register($this->parentOf($cub), $roverOnly, $cub)->assertSessionHas('error', 'Rover Moot is only for Rover.');
+        $this->register($this->parentOf($cub), $roverOnly, $cub)->assertSessionHas('error', 'Rover Moot is only for Leaders and Rovers.');
 
         $closed = $this->openEvent(['name' => 'Past', 'registration_closes_at' => now()->subDay()]);
         $this->register($parent, $closed, $student)->assertSessionHas('error', 'Registration for this event is not open.');
@@ -243,5 +243,80 @@ class EventTest extends TestCase
         $this->actingAs($parent)->get('/events/registrations')->assertOk()->assertSee('Summer Camp');
         $this->actingAs($this->admin())->get('/events/create')->assertOk();
         $this->actingAs($this->admin())->get("/events/{$event->uuid}/edit")->assertOk();
+    }
+
+    public function test_guests_see_open_events_but_must_sign_in_to_register(): void
+    {
+        $event = $this->openEvent(['description' => 'Three nights under canvas']);
+        $this->shirt($event, ['size_chart' => ['M' => 'Chest 38 in, Length 28 in'], 'size_guide' => 'Measured flat.']);
+        $draft = $this->openEvent(['name' => 'Secret Planning', 'status' => EventStatus::Draft]);
+
+        $this->get('/')->assertOk()->assertSee('Summer Camp')->assertDontSee('Secret Planning');
+        $this->get("/upcoming-events/{$event->uuid}")->assertOk()
+            ->assertSee('Three nights under canvas')
+            ->assertSee('Chest 38 in, Length 28 in')
+            ->assertSee('Sign in to register');
+        $this->get("/upcoming-events/{$draft->uuid}")->assertNotFound();
+
+        $this->get("/events/{$event->uuid}")->assertRedirect(route('login'));
+        $this->post("/events/{$event->uuid}/register", [])->assertRedirect(route('login'));
+    }
+
+    public function test_sizes_can_carry_measurements(): void
+    {
+        $admin = $this->admin();
+        $event = $this->openEvent();
+
+        $this->actingAs($admin)->post("/events/{$event->uuid}/items", [
+            'name' => 'Camp T-shirt', 'price' => '80', 'max_per_registration' => 2, 'active' => 1,
+            'sizes' => "S: Chest 36 in, Length 26 in\nM: Chest 38 in, Length 27 in\nL",
+            'size_guide' => 'Measured flat across the chest.',
+        ])->assertSessionHas('success');
+
+        $item = $event->items()->firstOrFail();
+        $this->assertSame(['S', 'M', 'L'], $item->sizeList());
+        $this->assertSame(['S' => 'Chest 36 in, Length 26 in', 'M' => 'Chest 38 in, Length 27 in'], $item->measurements());
+        $this->assertSame('M (Chest 38 in, Length 27 in)', $item->sizeLabel('M'));
+
+        $student = Student::factory()->create();
+        $this->actingAs($this->parentOf($student))->get("/events/{$event->uuid}")->assertSee('M (Chest 38 in, Length 27 in)')->assertSee('Measured flat across the chest.');
+    }
+
+    public function test_rovers_can_join_any_event_and_leaders_register_themselves(): void
+    {
+        $event = $this->openEvent(['sections' => ['Cub Scout']]);
+        $rover = Student::factory()->rover()->create();
+        $this->register($this->parentOf($rover), $event, $rover)->assertSessionHas('success');
+
+        $leader = $this->leader();
+        $this->actingAs($leader)->get("/events/{$event->uuid}")->assertSee('Myself');
+        $this->actingAs($leader)->post("/events/{$event->uuid}/register", ['student' => 'me', 'payment_option' => 'cash'])
+            ->assertSessionHas('success');
+
+        $registration = EventRegistration::query()->where('user_id', $leader->id)->firstOrFail();
+        $this->assertNull($registration->student_id);
+        $this->assertSame($leader->name, $registration->participantName());
+        $this->assertSame(2, $event->registeredCount());
+
+        $this->actingAs($leader)->post("/events/{$event->uuid}/register", ['student' => 'me', 'payment_option' => 'cash'])
+            ->assertSessionHas('error', "{$leader->name} is already registered for Summer Camp.");
+
+        $this->actingAs($leader)->post('/payments', [
+            'payable_type' => 'event_registration', 'payable_id' => $registration->uuid, 'amount' => '100.00', 'method' => 'online',
+            'proof' => UploadedFile::fake()->image('proof.png'),
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(FeeStatus::AwaitingVerification, $registration->fresh()->payment_status);
+
+        $this->actingAs($leader)->get('/events/registrations')->assertOk()->assertSee('Summer Camp');
+    }
+
+    public function test_parents_cannot_register_themselves(): void
+    {
+        $event = $this->openEvent();
+        $parent = $this->parentOf(Student::factory()->create());
+
+        $this->actingAs($parent)->post("/events/{$event->uuid}/register", ['student' => 'me', 'payment_option' => 'cash'])
+            ->assertSessionHas('error', 'Only leaders can register themselves.');
+        $this->assertSame(0, EventRegistration::query()->count());
     }
 }

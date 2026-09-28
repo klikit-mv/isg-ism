@@ -79,11 +79,15 @@ class EventService
      */
     public function saveItem(Event $event, array $data, User $actor, ?EventItem $item = null): EventItem
     {
+        [$sizes, $chart] = $this->sizes($data['sizes'] ?? null);
+
         $attributes = [
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'price' => Money::normalize($data['price'] ?? 0),
-            'sizes' => $this->sizes($data['sizes'] ?? null),
+            'sizes' => $sizes,
+            'size_chart' => $chart,
+            'size_guide' => filled($data['size_guide'] ?? null) ? trim((string) $data['size_guide']) : null,
             'stock' => filled($data['stock'] ?? null) ? (int) $data['stock'] : null,
             'max_per_registration' => max(1, (int) ($data['max_per_registration'] ?? 5)),
             'active' => (bool) ($data['active'] ?? true),
@@ -114,31 +118,38 @@ class EventService
     }
 
     /**
-     * Register a scout with optional pre-ordered items.
+     * Register a scout, or a leader themselves, with optional pre-ordered items.
+     * Rovers and leaders may join any event; other scouts only their sections.
      *
      * @param  list<array{item: string, quantity: int|string, size?: ?string}>  $lines
      */
-    public function register(Event $event, Student $student, array $lines, PaymentMethod $paymentOption, User $actor, ?string $notes = null): EventRegistration
+    public function register(Event $event, Student|User $participant, array $lines, PaymentMethod $paymentOption, User $actor, ?string $notes = null): EventRegistration
     {
-        if (! $this->scope->canAccessStudent($actor, $student)) {
+        if ($participant instanceof Student && ! $this->scope->canAccessStudent($actor, $participant)) {
             throw new StudentNotAccessible('You cannot register this scout.');
         }
 
-        return DB::transaction(function () use ($event, $student, $lines, $paymentOption, $actor, $notes): EventRegistration {
+        if ($participant instanceof User && ! ($participant->isLeader() && ($participant->id === $actor->id || $actor->isAdmin()))) {
+            throw new ScoutException('Only leaders can register themselves.');
+        }
+
+        return DB::transaction(function () use ($event, $participant, $lines, $paymentOption, $actor, $notes): EventRegistration {
             $event = Event::query()->whereKey($event->id)->lockForUpdate()->firstOrFail();
 
             if (! $event->acceptsRegistrations()) {
                 throw new ScoutException('Registration for this event is not open.');
             }
 
-            if ($student->section === null || ! $event->isOpenForSection($student->section)) {
-                throw new ScoutException("{$event->name} is only for {$event->sectionsLabel()}.");
+            if ($participant instanceof Student && ($participant->section === null || ! $event->isOpenForSection($participant->section))) {
+                throw new ScoutException("{$event->name} is only for {$event->audienceLabel()}.");
             }
 
-            $existing = EventRegistration::query()->where('event_id', $event->id)->where('student_id', $student->id)->lockForUpdate()->first();
+            $column = $participant instanceof Student ? 'student_id' : 'user_id';
+
+            $existing = EventRegistration::query()->where('event_id', $event->id)->where($column, $participant->id)->lockForUpdate()->first();
 
             if ($existing?->isActive()) {
-                throw new ScoutException("{$student->name} is already registered for {$event->name}.");
+                throw new ScoutException("{$participant->name} is already registered for {$event->name}.");
             }
 
             if ($event->capacity !== null && $event->registeredCount() >= $event->capacity) {
@@ -167,7 +178,7 @@ class EventService
                 $existing->update($attributes);
                 $registration = $existing;
             } else {
-                $registration = EventRegistration::query()->create($attributes + ['event_id' => $event->id, 'student_id' => $student->id]);
+                $registration = EventRegistration::query()->create($attributes + ['event_id' => $event->id, $column => $participant->id]);
             }
 
             foreach ($orderLines as $line) {
@@ -177,7 +188,7 @@ class EventService
             $this->balances->calculateEventRegistrationBalance($registration);
             $this->audit->record('event.registered', $registration, [
                 'event' => $event->name,
-                'student' => $student->national_id,
+                'participant' => $participant->national_id,
                 'total' => $total,
             ], $actor);
 
@@ -322,13 +333,34 @@ class EventService
     }
 
     /**
-     * @return list<string>|null
+     * Parse sizes with optional measurements. Accepts "S, M, L" or one size
+     * per line such as "M: Chest 38 in, Length 28 in".
+     *
+     * @return array{0: list<string>|null, 1: array<string, string>|null}
      */
-    private function sizes(mixed $value): ?array
+    private function sizes(mixed $value): array
     {
-        $list = is_array($value) ? $value : preg_split('/[,;\n]+/', (string) $value);
-        $list = array_values(array_unique(array_filter(array_map('trim', $list ?: []))));
+        $text = is_array($value) ? implode("\n", $value) : str_replace("\r", '', (string) $value);
+        $multiLine = str_contains($text, "\n") || str_contains($text, ':');
+        $entries = preg_split($multiLine ? '/[\n;]+/' : '/[,;]+/', $text) ?: [];
 
-        return $list === [] ? null : $list;
+        $sizes = [];
+        $chart = [];
+
+        foreach ($entries as $entry) {
+            [$size, $measurement] = array_pad(array_map('trim', explode(':', $entry, 2)), 2, '');
+
+            if ($size === '' || in_array($size, $sizes, true)) {
+                continue;
+            }
+
+            $sizes[] = $size;
+
+            if ($measurement !== '') {
+                $chart[$size] = $measurement;
+            }
+        }
+
+        return [$sizes === [] ? null : $sizes, $chart === [] ? null : $chart];
     }
 }

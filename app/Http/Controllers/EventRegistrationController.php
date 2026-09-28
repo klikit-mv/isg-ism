@@ -17,6 +17,11 @@ use Illuminate\View\View;
 
 class EventRegistrationController extends Controller
 {
+    /**
+     * The "student" value a leader sends to register themselves.
+     */
+    public const MYSELF = 'me';
+
     public function __construct(private EventService $events, private LeaderScopeService $scope) {}
 
     /**
@@ -29,7 +34,8 @@ class EventRegistrationController extends Controller
 
         $registrations = EventRegistration::query()
             ->with('event', 'student', 'items')
-            ->when($ids !== null, fn ($q) => $q->where(fn ($w) => $w->whereIn('student_id', $ids === [] ? [0] : $ids)->orWhere('registered_by', $user->id)))
+            ->with('user')
+            ->when($ids !== null, fn ($q) => $q->where(fn ($w) => $w->whereIn('student_id', $ids === [] ? [0] : $ids)->orWhere('user_id', $user->id)->orWhere('registered_by', $user->id)))
             ->latest()
             ->paginate(Pagination::MAX);
 
@@ -39,7 +45,7 @@ class EventRegistrationController extends Controller
     public function store(Request $request, Event $event): RedirectResponse
     {
         $data = $request->validate([
-            'student' => ['required', 'uuid'],
+            'student' => ['required', 'string', 'max:64'],
             'payment_option' => ['required', Rule::enum(PaymentMethod::class)],
             'items' => ['array'],
             'items.*.item' => ['required', 'uuid'],
@@ -48,10 +54,13 @@ class EventRegistrationController extends Controller
             'notes' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $student = Student::query()->where('uuid', $data['student'])->firstOrFail();
-        $registration = $this->events->register($event, $student, array_values($data['items'] ?? []), PaymentMethod::from($data['payment_option']), $request->user(), $data['notes'] ?? null);
+        $participant = $data['student'] === self::MYSELF
+            ? $request->user()
+            : Student::query()->where('uuid', $data['student'])->firstOrFail();
+        $registration = $this->events->register($event, $participant, array_values($data['items'] ?? []), PaymentMethod::from($data['payment_option']), $request->user(), $data['notes'] ?? null);
 
-        $message = "{$student->name} is registered for {$event->name}. Total: ".scout_money($registration->total_amount).'.';
+        $who = $participant instanceof Student ? "{$participant->name} is" : 'You are';
+        $message = "{$who} registered for {$event->name}. Total: ".scout_money($registration->total_amount).'.';
         $redirect = redirect()->route('events.show', $event);
 
         if ($registration->payment_status === FeeStatus::Paid) {
@@ -68,7 +77,12 @@ class EventRegistrationController extends Controller
     public function cancel(Request $request, EventRegistration $registration): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($this->events->canManage($user, $registration->event) || $this->scope->canAccessStudent($user, $registration->student), 403);
+        abort_unless(
+            $this->events->canManage($user, $registration->event)
+            || ($registration->user_id !== null && $registration->user_id === $user->id)
+            || ($registration->student && $this->scope->canAccessStudent($user, $registration->student)),
+            403,
+        );
 
         $this->events->cancel($registration, $user);
 

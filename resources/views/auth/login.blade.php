@@ -34,6 +34,7 @@
             <p>New scout? <a href="{{ route('register') }}" class="link">Register as a scout</a></p>
             <p>Parent? <a href="{{ route('register.parent') }}" class="link">Register as a parent</a></p>
         @endif
+        <p><a href="{{ route('home') }}" class="link">See upcoming events</a></p>
         @if (Route::has('certificates.verify'))
             <p><a href="{{ route('certificates.verify') }}" class="link">Verify a certificate</a></p>
         @endif

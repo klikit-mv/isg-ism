@@ -3,15 +3,12 @@
 namespace App\Support\Import;
 
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
-use PhpOffice\PhpSpreadsheet\Cell\DataType;
-use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * Builds sample import workbooks: bold headers, example rows and Excel
- * dropdown lists (backed by a hidden "Lists" sheet) for fixed-choice columns.
+ * dropdown lists for fixed-choice columns.
  */
 final class TemplateBuilder
 {
@@ -19,20 +16,13 @@ final class TemplateBuilder
 
     private Spreadsheet $spreadsheet;
 
-    private Worksheet $lists;
-
-    private int $nextListColumn = 1;
-
-    /** @var array<string, string> list key => range formula */
-    private array $ranges = [];
+    private SpreadsheetDropdowns $dropdowns;
 
     public function __construct()
     {
         $this->spreadsheet = new Spreadsheet;
         $this->spreadsheet->removeSheetByIndex(0);
-        $this->lists = $this->spreadsheet->createSheet();
-        $this->lists->setTitle('Lists');
-        $this->lists->setSheetState(Worksheet::SHEETSTATE_HIDDEN);
+        $this->dropdowns = new SpreadsheetDropdowns($this->spreadsheet);
     }
 
     /**
@@ -58,7 +48,7 @@ final class TemplateBuilder
             $sheet->getColumnDimension($column)->setAutoSize(true);
 
             if (isset($dropdowns[$header])) {
-                $this->dropdown($sheet, $column, $header, $dropdowns[$header]);
+                $this->dropdowns->apply($sheet, $column, 2, self::ROWS, $header, $dropdowns[$header]);
             }
         }
 
@@ -73,49 +63,5 @@ final class TemplateBuilder
         $this->spreadsheet->disconnectWorksheets();
 
         return $path;
-    }
-
-    /**
-     * @param  list<string>  $values
-     */
-    private function dropdown(Worksheet $sheet, string $column, string $header, array $values): void
-    {
-        $validation = new DataValidation;
-        $validation->setType(DataValidation::TYPE_LIST)
-            ->setErrorStyle(DataValidation::STYLE_STOP)
-            ->setAllowBlank(true)
-            ->setShowDropDown(true)
-            ->setShowErrorMessage(true)
-            ->setShowInputMessage(true)
-            ->setErrorTitle('Choose from the list')
-            ->setError('Please pick one of the values in the dropdown.')
-            ->setPromptTitle($header)
-            ->setPrompt('Pick a value from the list.')
-            ->setFormula1($this->rangeFor($header, $values));
-
-        $sheet->setDataValidation("{$column}2:{$column}".self::ROWS, $validation);
-    }
-
-    /**
-     * @param  list<string>  $values
-     */
-    private function rangeFor(string $key, array $values): string
-    {
-        $signature = $key.'|'.implode('|', $values);
-
-        if (isset($this->ranges[$signature])) {
-            return $this->ranges[$signature];
-        }
-
-        $column = Coordinate::stringFromColumnIndex($this->nextListColumn++);
-        $this->lists->setCellValue("{$column}1", $key);
-
-        foreach (array_values($values) as $row => $value) {
-            $this->lists->setCellValueExplicit($column.($row + 2), $value, DataType::TYPE_STRING);
-        }
-
-        $last = count($values) + 1;
-
-        return $this->ranges[$signature] = "Lists!\${$column}\$2:\${$column}\${$last}";
     }
 }

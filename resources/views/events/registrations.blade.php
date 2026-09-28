@@ -8,14 +8,14 @@
     @if ($registrations->isEmpty())
         <x-empty message="No event registrations yet."/>
     @else
-        <x-table :headers="['Event', 'Scout', 'Items', 'Total', 'Paid', 'Payment', 'Status', '']">
+        <x-table :headers="['Event', 'Participant', 'Items', 'Total', 'Paid', 'Payment', 'Status', '']">
             @foreach ($registrations as $registration)
                 <tr>
                     <td data-label="Event">
                         <a href="{{ route('events.show', $registration->event) }}" class="font-medium text-navy-700 hover:underline dark:text-navy-300">{{ $registration->event?->name }}</a>
                         <div class="text-xs text-gray-500">{{ scout_date($registration->event?->starts_at) }}</div>
                     </td>
-                    <td data-label="Scout">{{ $registration->student?->name }}</td>
+                    <td data-label="Participant">{{ $registration->participantName() }}<div class="text-xs text-gray-500">{{ $registration->participantRole() }}</div></td>
                     <td data-label="Items">
                         @forelse ($registration->items as $line)
                             <div>{{ $line->quantity }} × {{ $line->item_name }}{{ $line->size ? ' ('.$line->size.')' : '' }}</div>

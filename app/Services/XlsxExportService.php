@@ -2,11 +2,28 @@
 
 namespace App\Services;
 
+use App\Enums\AttendanceStatus;
+use App\Enums\FeeStatus;
+use App\Enums\Gender;
+use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
+use App\Enums\PersonType;
+use App\Enums\PurchaseStatus;
+use App\Enums\RecordStatus;
+use App\Enums\RoverAttendanceStatus;
+use App\Enums\ScoutSection;
+use App\Enums\ShopItemStatus;
+use App\Enums\StudentStatus;
+use App\Enums\UserStatus;
 use App\Models\User;
+use App\Support\Import\SpreadsheetDropdowns;
+use App\Support\Import\TemplateBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Writer\Csv;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
@@ -44,7 +61,7 @@ class XlsxExportService
 
         $rows[] = $this->reports->totalsRow($type, $this->reports->totals($type, $filters, $user));
 
-        return $this->write($rows, $format, $type);
+        return $this->write($rows, $format, $type, null, 5, $this->reportDropdowns($type));
     }
 
     /**
@@ -59,7 +76,62 @@ class XlsxExportService
             $rows[] = array_map(fn ($value) => is_scalar($value) || $value === null ? $value : json_encode($value), array_values((array) $row));
         }
 
-        return $this->write($rows, $format, $type, $path);
+        return $this->write($rows, $format, $type, $path, 1, $this->ledgerDropdowns($type));
+    }
+
+    /**
+     * Valid values for fixed-choice report columns, as the report prints them.
+     *
+     * @return array<string, list<string>> heading => values
+     */
+    public function reportDropdowns(string $type): array
+    {
+        $feeStatuses = array_values(FeeStatus::options());
+
+        return match ($type) {
+            'attendance' => ['Section' => ScoutSection::values(), 'Status' => AttendanceStatus::values()],
+            'rover-attendance' => ['Status' => RoverAttendanceStatus::values(), 'Required/Optional' => ['Required', 'Optional']],
+            'annual-fees' => ['Section' => ScoutSection::values(), 'Status' => $feeStatuses],
+            'class-fees' => ['Status' => $feeStatuses],
+            'payments' => [
+                'Type' => array_map(fn (string $key) => str_replace('_', ' ', ucfirst($key)), array_keys(PaymentService::TYPES)),
+                'Method' => array_values(PaymentMethod::options()),
+                'Status' => array_values(PaymentStatus::options()),
+            ],
+            'shop' => ['Payment status' => $feeStatuses, 'Purchase status' => array_values(PurchaseStatus::options())],
+            default => [],
+        };
+    }
+
+    /**
+     * Valid stored values for fixed-choice ledger columns.
+     *
+     * @return array<string, list<string>> column => values
+     */
+    public function ledgerDropdowns(string $type): array
+    {
+        $status = match ($type) {
+            'students' => StudentStatus::values(),
+            'users' => UserStatus::values(),
+            'groups' => RecordStatus::values(),
+            'attendance' => AttendanceStatus::values(),
+            'rover-attendance' => RoverAttendanceStatus::values(),
+            'class-fees', 'annual-fees' => FeeStatus::values(),
+            'payments' => PaymentStatus::values(),
+            'shop-items' => ShopItemStatus::values(),
+            default => null,
+        };
+
+        return array_filter([
+            'status' => $status,
+            'gender' => Gender::values(),
+            'section' => ScoutSection::values(),
+            'method' => PaymentMethod::values(),
+            'person_type' => PersonType::values(),
+            'payment_status' => FeeStatus::values(),
+            'purchase_status' => PurchaseStatus::values(),
+            'payable_type' => array_keys(PaymentService::TYPES),
+        ]);
     }
 
     /**
@@ -70,7 +142,7 @@ class XlsxExportService
         $columns = match ($type) {
             'students' => ['students', ['uuid', 'index_number', 'name', 'national_id', 'email', 'gender', 'date_of_birth', 'section', 'class_name', 'patrol', 'status', 'parent_name', 'primary_mobile', 'secondary_mobile', 'permanent_address', 'present_address', 'created_at']],
             'users' => ['users', ['uuid', 'name', 'national_id', 'email', 'status', 'last_login_at', 'created_at']],
-            'groups' => ['groups', ['uuid', 'name', 'type', 'status', 'created_at']],
+            'groups' => ['groups', ['uuid', 'name', 'type', 'section', 'status', 'created_at']],
             'activities' => ['activities', ['uuid', 'name', 'date', 'all_students', 'charge_fee', 'fee_amount', 'created_at']],
             'attendance' => ['attendance_records', ['uuid', 'activity_id', 'student_id', 'status', 'remarks', 'marked_by', 'marked_at']],
             'rover-attendance' => ['rover_attendance_records', ['uuid', 'activity_id', 'student_id', 'status', 'is_required', 'marked_by', 'marked_at']],
@@ -96,13 +168,18 @@ class XlsxExportService
 
     /**
      * @param  list<array<int, mixed>>  $rows
+     * @param  array<string, list<string>>  $dropdowns  heading => allowed values
      */
-    private function write(array $rows, string $format, string $name, ?string $path = null): string
+    private function write(array $rows, string $format, string $name, ?string $path = null, int $headingRow = 1, array $dropdowns = []): string
     {
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle(Str::limit(Str::studly($name), 28, ''));
         $sheet->fromArray($rows, null, 'A1', true);
+
+        if ($format !== 'csv' && $dropdowns !== []) {
+            $this->addDropdowns($spreadsheet, $sheet, $rows[$headingRow - 1] ?? [], $headingRow, count($rows), $dropdowns);
+        }
 
         $path ??= storage_path('app/private/exports/'.$name.'-'.now()->format('Ymd-His').'-'.Str::random(8).'.'.$format);
 
@@ -115,5 +192,25 @@ class XlsxExportService
         $spreadsheet->disconnectWorksheets();
 
         return $path;
+    }
+
+    /**
+     * Dropdowns on every data row below the headings, plus room to add rows.
+     *
+     * @param  array<int, mixed>  $headings
+     * @param  array<string, list<string>>  $dropdowns
+     */
+    private function addDropdowns(Spreadsheet $spreadsheet, Worksheet $sheet, array $headings, int $headingRow, int $lastRow, array $dropdowns): void
+    {
+        $lists = new SpreadsheetDropdowns($spreadsheet);
+        $toRow = max($lastRow, $headingRow + TemplateBuilder::ROWS);
+
+        foreach (array_values($headings) as $index => $heading) {
+            if (isset($dropdowns[(string) $heading])) {
+                $lists->apply($sheet, Coordinate::stringFromColumnIndex($index + 1), $headingRow + 1, $toRow, (string) $heading, $dropdowns[(string) $heading]);
+            }
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
     }
 }

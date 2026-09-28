@@ -12,13 +12,14 @@ class EventItem extends Model
 {
     use HasUuid;
 
-    protected $fillable = ['event_id', 'name', 'description', 'price', 'sizes', 'stock', 'max_per_registration', 'active'];
+    protected $fillable = ['event_id', 'name', 'description', 'price', 'sizes', 'size_chart', 'size_guide', 'stock', 'max_per_registration', 'active'];
 
     protected function casts(): array
     {
         return [
             'price' => 'decimal:2',
             'sizes' => 'array',
+            'size_chart' => 'array',
             'stock' => 'integer',
             'max_per_registration' => 'integer',
             'active' => 'boolean',
@@ -47,6 +48,39 @@ class EventItem extends Model
     public function sizeList(): array
     {
         return array_values(array_filter(array_map('trim', $this->sizes ?? [])));
+    }
+
+    /**
+     * Measurements per size, e.g. ['M' => 'Chest 38 in, Length 28 in'].
+     *
+     * @return array<string, string>
+     */
+    public function measurements(): array
+    {
+        $chart = $this->size_chart ?? [];
+
+        return array_filter(array_combine($this->sizeList(), array_map(fn (string $size) => trim((string) ($chart[$size] ?? '')), $this->sizeList())) ?: []);
+    }
+
+    public function sizeLabel(string $size): string
+    {
+        $measurement = $this->measurements()[$size] ?? null;
+
+        return $measurement ? "{$size} ({$measurement})" : $size;
+    }
+
+    /**
+     * The sizes as typed in the item form: one per line, "size: measurements".
+     */
+    public function sizesText(): string
+    {
+        $chart = $this->measurements();
+
+        if ($chart === []) {
+            return implode(', ', $this->sizeList());
+        }
+
+        return implode("\n", array_map(fn (string $size) => isset($chart[$size]) ? "{$size}: {$chart[$size]}" : $size, $this->sizeList()));
     }
 
     /**

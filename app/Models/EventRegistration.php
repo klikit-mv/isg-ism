@@ -17,7 +17,7 @@ class EventRegistration extends Model implements Payable
     use HasUuid;
 
     protected $fillable = [
-        'event_id', 'student_id', 'registered_by', 'status', 'payment_option', 'fee_amount', 'items_amount',
+        'event_id', 'student_id', 'user_id', 'registered_by', 'status', 'payment_option', 'fee_amount', 'items_amount',
         'total_amount', 'paid_amount', 'outstanding_amount', 'payment_status', 'notes',
     ];
 
@@ -52,6 +52,16 @@ class EventRegistration extends Model implements Payable
     }
 
     /**
+     * The leader registered as a participant (no scout record).
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function registrar(): BelongsTo
@@ -73,6 +83,27 @@ class EventRegistration extends Model implements Payable
     public function payments(): MorphMany
     {
         return $this->morphMany(Payment::class, 'payable');
+    }
+
+    public function isLeaderRegistration(): bool
+    {
+        return $this->student_id === null && $this->user_id !== null;
+    }
+
+    /**
+     * Who takes part: the scout, or the leader.
+     */
+    public function participantName(): string
+    {
+        return (string) ($this->student?->name ?? $this->user?->name ?? '');
+    }
+
+    /**
+     * Section of the scout, or "Leader".
+     */
+    public function participantRole(): string
+    {
+        return $this->isLeaderRegistration() ? 'Leader' : (string) $this->student?->section?->value;
     }
 
     public function isActive(): bool
@@ -97,6 +128,6 @@ class EventRegistration extends Model implements Payable
 
     public function payableDescription(): string
     {
-        return 'Event — '.($this->event?->name ?? 'registration').' ('.($this->student?->name ?? '').')';
+        return 'Event — '.($this->event?->name ?? 'registration').' ('.$this->participantName().')';
     }
 }

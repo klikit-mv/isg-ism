@@ -29,7 +29,7 @@
                         <dt class="text-gray-500 dark:text-gray-400">Fee</dt>
                         <dd>{{ \App\Support\Money::isPositive($event->fee) ? scout_money($event->fee) : 'Free' }}</dd>
                         <dt class="text-gray-500 dark:text-gray-400">For</dt>
-                        <dd>{{ $event->sectionsLabel() }}</dd>
+                        <dd>{{ $event->audienceLabel() }}</dd>
                         <dt class="text-gray-500 dark:text-gray-400">Registered</dt>
                         <dd>{{ $event->registered_count }}{{ $event->capacity ? ' / '.$event->capacity : '' }}</dd>
                     </dl>

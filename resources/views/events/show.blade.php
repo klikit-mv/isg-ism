@@ -6,6 +6,9 @@
     <x-page-header :title="$event->name" :description="scout_datetime($event->starts_at).($event->location ? ' · '.$event->location : '')">
         <x-slot:actions>
             <x-badge :value="$event->status"/>
+            @if (in_array($event->status, [\App\Enums\EventStatus::Open, \App\Enums\EventStatus::Closed], true))
+                <a href="{{ route('public.events.show', $event) }}" class="btn-secondary" target="_blank" rel="noopener" title="Anyone can open this page without signing in">Public page</a>
+            @endif
             @if ($manage)
                 <a href="{{ route('events.edit', $event) }}" class="btn-secondary">Edit event</a>
                 @foreach (\App\Enums\EventStatus::cases() as $status)
@@ -41,7 +44,7 @@
                         <div><dt class="text-gray-500 dark:text-gray-400">Ends</dt><dd>{{ scout_datetime($event->ends_at) }}</dd></div>
                     @endif
                     <div><dt class="text-gray-500 dark:text-gray-400">Registration fee</dt><dd>{{ \App\Support\Money::isPositive($event->fee) ? scout_money($event->fee) : 'Free' }}</dd></div>
-                    <div><dt class="text-gray-500 dark:text-gray-400">Open to</dt><dd>{{ $event->sectionsLabel() }}</dd></div>
+                    <div><dt class="text-gray-500 dark:text-gray-400">Open to</dt><dd>{{ $event->audienceLabel() }}</dd></div>
                     <div><dt class="text-gray-500 dark:text-gray-400">Registered</dt><dd>{{ $registeredCount }}{{ $event->capacity ? ' of '.$event->capacity.' places' : '' }}</dd></div>
                     @if ($event->registration_closes_at)
                         <div><dt class="text-gray-500 dark:text-gray-400">Registration closes</dt><dd>{{ scout_datetime($event->registration_closes_at) }}</dd></div>
@@ -70,10 +73,11 @@
                                     </div>
                                     @if ($item->description)<p class="text-sm text-gray-500 dark:text-gray-400">{{ $item->description }}</p>@endif
                                     <p class="text-xs text-gray-500">
-                                        @if ($item->sizeList())Sizes: {{ implode(', ', $item->sizeList()) }} · @endif
+                                        @if ($item->sizeList() && ! $item->measurements())Sizes: {{ implode(', ', $item->sizeList()) }} · @endif
                                         Up to {{ $item->max_per_registration }} each
                                         @if ($item->stock !== null) · {{ $item->remaining() }} left @endif
                                     </p>
+                                    @include('events.partials.size-chart', ['item' => $item])
                                 </div>
                                 @if ($manage)
                                     <div class="flex gap-2">
@@ -109,8 +113,8 @@
                             @foreach ($registrations as $registration)
                                 <tr>
                                     <td data-label="Scout">
-                                        <div class="font-medium">{{ $registration->student?->name }}</div>
-                                        <div class="text-xs text-gray-500">{{ $registration->student?->section?->value }} · by {{ $registration->registrar?->name }}</div>
+                                        <div class="font-medium">{{ $registration->participantName() }}</div>
+                                        <div class="text-xs text-gray-500">{{ $registration->participantRole() }} · by {{ $registration->registrar?->name }}</div>
                                     </td>
                                     <td data-label="Items">
                                         @forelse ($registration->items as $line)
@@ -128,7 +132,7 @@
                                         <div class="flex flex-wrap justify-end gap-1">
                                             <x-pay-button :payable="$registration"/>
                                             @if ($registration->isActive() && ! \App\Support\Money::isPositive($registration->paid_amount))
-                                                <x-confirm :action="route('event-registrations.cancel', $registration)" label="Cancel" variant="secondary" message="Cancel {{ $registration->student?->name }}'s registration?" confirm="Cancel registration"/>
+                                                <x-confirm :action="route('event-registrations.cancel', $registration)" label="Cancel" variant="secondary" message="Cancel {{ $registration->participantName() }}'s registration?" confirm="Cancel registration"/>
                                             @endif
                                         </div>
                                     </td>
@@ -150,9 +154,9 @@
                     </p>
                 @elseif ($isFull)
                     <p class="text-sm text-amber-700 dark:text-amber-300">This event is full.</p>
-                @elseif ($eligible->isEmpty())
+                @elseif ($eligible->isEmpty() && ! $canRegisterSelf)
                     <p class="text-sm text-gray-500 dark:text-gray-400">
-                        {{ $myRegistrations->where('status', \App\Enums\EventRegistrationStatus::Registered)->isNotEmpty() ? 'All your eligible scouts are registered.' : 'You have no scouts who can join this event ('.$event->sectionsLabel().').' }}
+                        {{ $myRegistrations->where('status', \App\Enums\EventRegistrationStatus::Registered)->isNotEmpty() ? 'Everyone you can register is already registered.' : 'You have no scouts who can join this event ('.$event->audienceLabel().').' }}
                     </p>
                 @else
                     <form method="POST" action="{{ route('events.register', $event) }}" class="space-y-4"
@@ -163,7 +167,11 @@
                             get total() { return this.fee + Object.keys(this.prices).reduce((sum, key) => sum + this.prices[key] * (parseInt(this.qty[key]) || 0), 0); },
                         }">
                         @csrf
-                        <x-form.select name="student" label="Scout" :options="$eligible->mapWithKeys(fn ($s) => [$s->uuid => $s->name.' ('.$s->section?->value.')'])->all()" :value="$eligible->count() === 1 ? $eligible->first()->uuid : null" placeholder="Choose a scout" required/>
+                        @php
+                            $participants = ($canRegisterSelf ? [\App\Http\Controllers\EventRegistrationController::MYSELF => 'Myself ('.auth()->user()->name.', leader)'] : [])
+                                + $eligible->mapWithKeys(fn ($s) => [$s->uuid => $s->name.' ('.$s->section?->value.')'])->all();
+                        @endphp
+                        <x-form.select name="student" label="Who is taking part?" :options="$participants" :value="count($participants) === 1 ? array_key_first($participants) : null" placeholder="Choose" required/>
 
                         @foreach ($activeItems as $index => $item)
                             @php $left = $item->remaining(); @endphp
@@ -188,7 +196,7 @@
                                                 <select id="size-{{ $item->uuid }}" name="items[{{ $index }}][size]" class="input">
                                                     <option value="">—</option>
                                                     @foreach ($item->sizeList() as $size)
-                                                        <option value="{{ $size }}" @selected(old('items.'.$index.'.size') === $size)>{{ $size }}</option>
+                                                        <option value="{{ $size }}" @selected(old('items.'.$index.'.size') === $size)>{{ $item->sizeLabel($size) }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -230,7 +238,7 @@
                         @foreach ($myRegistrations as $registration)
                             <li class="rounded-lg border border-gray-200 p-3 text-sm dark:border-gray-700">
                                 <div class="flex items-center justify-between gap-2">
-                                    <span class="font-medium">{{ $registration->student?->name }}</span>
+                                    <span class="font-medium">{{ $registration->isLeaderRegistration() ? 'You (leader)' : $registration->participantName() }}</span>
                                     <x-badge :value="$registration->isActive() ? $registration->payment_status : $registration->status"/>
                                 </div>
                                 @foreach ($registration->items as $line)

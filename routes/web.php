@@ -28,6 +28,7 @@ use App\Http\Controllers\PaymentVerificationController;
 use App\Http\Controllers\PhotoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
+use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SelfController;
@@ -39,7 +40,9 @@ use App\Http\Controllers\TelegramConnectController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : redirect()->route('login'));
+// Home page and event details are public; registering needs an account.
+Route::get('/', [PublicEventController::class, 'home'])->name('home');
+Route::get('/upcoming-events/{event}', [PublicEventController::class, 'show'])->name('public.events.show');
 
 require __DIR__.'/auth.php';
 

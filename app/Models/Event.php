@@ -6,6 +6,7 @@ use App\Enums\EventRegistrationStatus;
 use App\Enums\EventStatus;
 use App\Enums\ScoutSection;
 use App\Models\Concerns\HasUuid;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -65,11 +66,14 @@ class Event extends Model
         return array_values(array_filter(array_map(fn ($s) => ScoutSection::tryFrom((string) $s), $this->sections ?? [])));
     }
 
+    /**
+     * Rovers may join any event; other scouts only the sections it is open to.
+     */
     public function isOpenForSection(ScoutSection $section): bool
     {
         $sections = $this->eligibleSections();
 
-        return $sections === [] || in_array($section, $sections, true);
+        return $sections === [] || $section === ScoutSection::Rover || in_array($section, $sections, true);
     }
 
     public function sectionsLabel(): string
@@ -79,9 +83,34 @@ class Event extends Model
         return $sections === [] ? 'All sections' : implode(', ', array_map(fn (ScoutSection $s) => $s->value, $sections));
     }
 
+    /**
+     * Who may register, as shown to members.
+     */
+    public function audienceLabel(): string
+    {
+        $sections = $this->eligibleSections();
+
+        if ($sections === []) {
+            return 'All sections, leaders and rovers';
+        }
+
+        $names = array_map(fn (ScoutSection $s) => $s->value, array_filter($sections, fn (ScoutSection $s) => $s !== ScoutSection::Rover));
+
+        return implode(', ', [...$names, 'Leaders']).' and Rovers';
+    }
+
     public function registeredCount(): int
     {
         return $this->registrations()->where('status', EventRegistrationStatus::Registered->value)->count();
+    }
+
+    /**
+     * @param  Builder<Event>  $query
+     */
+    public function scopePubliclyVisible(Builder $query): void
+    {
+        $query->whereIn('status', [EventStatus::Open->value, EventStatus::Closed->value])
+            ->where('starts_at', '>=', now()->startOfDay());
     }
 
     /**

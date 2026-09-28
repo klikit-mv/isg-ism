@@ -67,6 +67,10 @@ class PaymentService
             return $user->isAdmin() || $payable->user_id === $user->id;
         }
 
+        if ($payable instanceof EventRegistration && $payable->isLeaderRegistration()) {
+            return $user->isAdmin() || $payable->user_id === $user->id || $this->canRecordCash($user);
+        }
+
         $studentId = $payable->payableStudentId();
 
         return $studentId !== null && $this->scope->canAccessStudent($user, Student::withTrashed()->findOrFail($studentId));

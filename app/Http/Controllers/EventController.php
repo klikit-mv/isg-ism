@@ -62,12 +62,12 @@ class EventController extends Controller
         $event->load('items', 'creator');
         $accessible = $this->scope->constrainStudents(Student::query()->active(), $user)->orderBy('name')->get()
             ->filter(fn (Student $s) => $this->scope->canAccessStudent($user, $s));
-        $registeredIds = $event->registrations()->where('status', EventRegistrationStatus::Registered->value)->pluck('student_id')->all();
+        $registeredIds = $event->registrations()->where('status', EventRegistrationStatus::Registered->value)->whereNotNull('student_id')->pluck('student_id')->all();
 
         $myRegistrations = EventRegistration::query()
             ->where('event_id', $event->id)
-            ->whereIn('student_id', $accessible->pluck('id')->all() ?: [0])
-            ->with('student', 'items')
+            ->where(fn ($q) => $q->whereIn('student_id', $accessible->pluck('id')->all() ?: [0])->orWhere('user_id', $user->id))
+            ->with('student', 'user', 'items')
             ->latest()
             ->get();
 
@@ -76,9 +76,10 @@ class EventController extends Controller
             'manage' => $manage,
             'eligible' => $accessible->filter(fn (Student $s) => $s->section && $event->isOpenForSection($s->section) && ! in_array($s->id, $registeredIds, true))->values(),
             'myRegistrations' => $myRegistrations,
-            'registrations' => $manage ? $event->registrations()->with('student', 'items', 'registrar')->orderByDesc('status')->latest()->get() : collect(),
+            'canRegisterSelf' => $user->isLeader() && ! $event->registrations()->where('user_id', $user->id)->where('status', EventRegistrationStatus::Registered->value)->exists(),
+            'registrations' => $manage ? $event->registrations()->with('student', 'user', 'items', 'registrar')->orderByDesc('status')->latest()->get() : collect(),
             'summary' => $manage ? $this->events->orderSummary($event) : collect(),
-            'registeredCount' => count($registeredIds),
+            'registeredCount' => $event->registeredCount(),
         ]);
     }
 
