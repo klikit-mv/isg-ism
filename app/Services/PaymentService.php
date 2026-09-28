@@ -15,6 +15,7 @@ use App\Exceptions\ScoutException;
 use App\Exceptions\StudentNotAccessible;
 use App\Models\AnnualFee;
 use App\Models\ClassFee;
+use App\Models\EventRegistration;
 use App\Models\Payment;
 use App\Models\PaymentProof;
 use App\Models\Purchase;
@@ -36,7 +37,7 @@ class PaymentService
 {
     public const PROOF_DISK = 'local';
 
-    public const TYPES = ['class_fee' => ClassFee::class, 'annual_fee' => AnnualFee::class, 'purchase' => Purchase::class];
+    public const TYPES = ['class_fee' => ClassFee::class, 'annual_fee' => AnnualFee::class, 'purchase' => Purchase::class, 'event_registration' => EventRegistration::class];
 
     public function __construct(
         private PaymentBalanceService $balances,
@@ -307,7 +308,11 @@ class PaymentService
             throw new ScoutException('This purchase was cancelled.');
         }
 
-        $status = $payable instanceof Purchase ? $payable->payment_status : $payable->status;
+        if ($payable instanceof EventRegistration && ! $payable->isActive()) {
+            throw new ScoutException('This event registration was cancelled.');
+        }
+
+        $status = $payable instanceof Purchase || $payable instanceof EventRegistration ? $payable->payment_status : $payable->status;
 
         if ($status === FeeStatus::Paid) {
             throw new ScoutException('This is already fully paid.');

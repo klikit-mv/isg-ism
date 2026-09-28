@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\AnnualFee;
 use App\Models\ClassFee;
+use App\Models\EventRegistration;
 use App\Models\Purchase;
 use App\Models\User;
 use App\Services\Certificates\CertificateDocumentRenderer;
@@ -30,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
             'class_fee' => ClassFee::class,
             'annual_fee' => AnnualFee::class,
             'purchase' => Purchase::class,
+            'event_registration' => EventRegistration::class,
             'user' => User::class,
         ]);
 

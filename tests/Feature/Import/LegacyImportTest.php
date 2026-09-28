@@ -20,6 +20,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -106,6 +109,21 @@ class LegacyImportTest extends TestCase
         $this->assertSame(0, Student::query()->count());
         $this->assertSame(0, User::query()->count());
         $this->assertDatabaseMissing('audit_logs', ['action' => 'import.legacy']);
+    }
+
+    public function test_sample_workbook_has_dropdowns_and_imports_cleanly(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/import/template');
+        $response->assertOk();
+        $path = $response->getFile()->getPathname();
+
+        $students = IOFactory::load($path)->getSheetByName('Students');
+        $section = array_search('Section', $students->toArray()[0], true);
+        $this->assertSame(DataValidation::TYPE_LIST, $students->getCell(Coordinate::stringFromColumnIndex($section + 1).'2')->getDataValidation()->getType());
+
+        $result = app(LegacyImportService::class)->import($path, true);
+        $this->assertSame([], $result['errors']);
+        $this->assertSame(0, Student::query()->count());
     }
 
     public function test_real_import_maps_legacy_ids_and_rules(): void

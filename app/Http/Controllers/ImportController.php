@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Services\LegacyImportService;
+use App\Support\Import\LegacyImportTemplate;
 use App\Support\Uploads;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
@@ -29,6 +31,11 @@ class ImportController extends Controller
             'result' => session('legacy_import_result'),
             'hasErrors' => filled(session(self::ERRORS_KEY)),
         ]);
+    }
+
+    public function template(): BinaryFileResponse
+    {
+        return response()->download(LegacyImportTemplate::build(), 'legacy-import-template.xlsx')->deleteFileAfterSend();
     }
 
     public function preview(Request $request): RedirectResponse

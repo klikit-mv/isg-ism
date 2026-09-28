@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\AnnualFee;
 use App\Models\ClassFee;
+use App\Models\EventRegistration;
 use App\Models\Purchase;
 use App\Services\AuditLogService;
 use App\Services\PaymentBalanceService;
@@ -20,7 +21,7 @@ class ScoutRecalculateBalances extends Command
     {
         $mismatches = 0;
 
-        foreach ([ClassFee::class, AnnualFee::class, Purchase::class] as $class) {
+        foreach ([ClassFee::class, AnnualFee::class, Purchase::class, EventRegistration::class] as $class) {
             $class::query()->chunkById(200, function ($payables) use (&$mismatches, $balances, $audit): void {
                 foreach ($payables as $payable) {
                     $expected = $balances->approvedTotal($payable);

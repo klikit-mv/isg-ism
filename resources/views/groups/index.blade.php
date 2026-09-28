@@ -14,11 +14,12 @@
     @if ($groups->isEmpty())
         <x-empty message="No groups yet."/>
     @else
-        <x-table :headers="['Group', 'Type', 'Members', 'Leaders', 'Rover assistants', 'Status', '']">
+        <x-table :headers="['Group', 'Type', 'Section', 'Members', 'Leaders', 'Rover assistants', 'Status', '']">
             @foreach ($groups as $group)
                 <tr>
                     <td data-label="Group" class="font-medium"><a href="{{ route('groups.show', $group) }}" class="hover:underline">{{ $group->name }}</a></td>
                     <td data-label="Type">{{ $group->type ?: '—' }}</td>
+                    <td data-label="Section">@if ($group->section)<x-badge :value="$group->section"/>@else<span class="text-xs text-gray-500">Mixed</span>@endif</td>
                     <td data-label="Members">{{ $group->members_count }}</td>
                     <td data-label="Leaders">{{ $group->leaders_count }}</td>
                     <td data-label="Rover assistants">{{ $group->assistant_leaders_count }}</td>
@@ -36,6 +37,8 @@
                 @csrf
                 <x-form.input name="name" label="Name" required/>
                 <x-form.input name="type" label="Type" placeholder="Patrol, Six, Crew…"/>
+                <x-form.select name="section" label="Section" :options="\App\Enums\ScoutSection::options()" placeholder="Mixed (any section)"/>
+                <p class="-mt-2 text-xs text-gray-500">Only scouts from this section can be added as members.</p>
                 <p class="text-xs text-gray-500">You become the owner and first leader.</p>
                 <div class="flex justify-end gap-2">
                     <button type="button" class="btn-secondary" x-on:click="$dispatch('close-modal', 'create-group')">Cancel</button>

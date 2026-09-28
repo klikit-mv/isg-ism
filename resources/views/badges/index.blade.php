@@ -26,7 +26,12 @@
                     </td>
                     <td data-label="Code" class="font-mono text-xs">{{ $badge->code }}</td>
                     <td data-label="Section">{{ $badge->section?->value ?? '—' }}</td>
-                    <td data-label="Category">{{ ucfirst($badge->category) }}</td>
+                    <td data-label="Category">
+                        {{ ucfirst($badge->category) }}
+                        @if ($badge->isSectionProficiency())
+                            <span class="block text-xs text-gray-500">Shared {{ $badge->section->value }} sequence</span>
+                        @endif
+                    </td>
                     <td data-label="Template">{{ $badge->certificateTemplate?->name ?? 'Default' }}</td>
                     <td data-label="Next number" class="font-mono text-xs">{{ $numbers->peekBadgeNumber($badge) }}</td>
                     <td class="whitespace-nowrap text-right">

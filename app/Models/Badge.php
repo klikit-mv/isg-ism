@@ -14,6 +14,16 @@ class Badge extends Model
 
     public const CATEGORY_PROFICIENCY = 'proficiency';
 
+    /**
+     * @var array<string, string>
+     */
+    public const CATEGORIES = [
+        'proficiency' => 'Proficiency (shared section sequence)',
+        'special' => 'Special award',
+        'event' => 'Event badge',
+        'other' => 'Other',
+    ];
+
     protected $fillable = [
         'badge_id', 'name', 'code', 'section', 'description', 'category',
         'image_path', 'certificate_template_id', 'number_prefix',

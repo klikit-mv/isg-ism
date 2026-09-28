@@ -15,27 +15,28 @@ class GroupService
 {
     public function __construct(private AuditLogService $audit) {}
 
-    public function create(string $name, ?string $type, User $actor): Group
+    public function create(string $name, ?string $type, User $actor, ?ScoutSection $section = null): Group
     {
-        return DB::transaction(function () use ($name, $type, $actor): Group {
+        return DB::transaction(function () use ($name, $type, $actor, $section): Group {
             $group = Group::query()->create([
                 'name' => $name,
                 'type' => $type,
+                'section' => $section,
                 'owner_id' => $actor->id,
                 'status' => RecordStatus::Active,
             ]);
             $group->leaders()->attach($actor->id);
 
-            $this->audit->record('group.created', $group, ['name' => $name, 'type' => $type], $actor);
+            $this->audit->record('group.created', $group, ['name' => $name, 'type' => $type, 'section' => $section], $actor);
 
             return $group;
         });
     }
 
-    public function rename(Group $group, string $name, ?string $type, User $actor): void
+    public function rename(Group $group, string $name, ?string $type, User $actor, ?ScoutSection $section = null): void
     {
         $from = $group->name;
-        $group->update(['name' => $name, 'type' => $type]);
+        $group->update(['name' => $name, 'type' => $type, 'section' => $section]);
         $this->audit->record('group.renamed', $group, ['from' => $from, 'to' => $name], $actor);
     }
 
@@ -70,8 +71,14 @@ class GroupService
             throw new ScoutException('Assistant leaders must be Rover scouts.');
         }
 
-        if (Student::query()->whereIn('id', $memberIds)->count() !== count($memberIds)) {
+        $members = Student::query()->whereIn('id', $memberIds)->get();
+
+        if ($members->count() !== count($memberIds)) {
             throw new ScoutException('One of the selected members no longer exists.');
+        }
+
+        if ($group->section !== null && ($outside = $members->first(fn (Student $s) => $s->section !== $group->section))) {
+            throw new ScoutException("{$outside->name} is not in the {$group->section->value} section, so cannot join this group.");
         }
 
         DB::transaction(function () use ($group, $memberIds, $leaderIds, $assistantIds, $actor): void {

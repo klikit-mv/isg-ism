@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\RecordStatus;
+use App\Enums\ScoutSection;
 use App\Models\Concerns\HasUuid;
 use Database\Factories\GroupFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,11 +17,11 @@ class Group extends Model
     /** @use HasFactory<GroupFactory> */
     use HasFactory, HasUuid, SoftDeletes;
 
-    protected $fillable = ['name', 'type', 'owner_id', 'status', 'legacy_id'];
+    protected $fillable = ['name', 'type', 'section', 'owner_id', 'status', 'legacy_id'];
 
     protected function casts(): array
     {
-        return ['status' => RecordStatus::class];
+        return ['status' => RecordStatus::class, 'section' => ScoutSection::class];
     }
 
     /**

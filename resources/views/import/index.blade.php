@@ -1,6 +1,7 @@
 <x-app-layout title="Import">
     <x-page-header title="Legacy workbook import" description="Upload the old Attendance or Finance workbook. It is checked with a dry run first; nothing is written until you confirm.">
         <x-slot:actions>
+            <a href="{{ route('import.template') }}" class="btn-secondary">Download sample workbook</a>
             @if ($hasErrors)<a href="{{ route('import.errors') }}" class="btn-secondary">Download messages (CSV)</a>@endif
         </x-slot:actions>
     </x-page-header>

@@ -12,6 +12,7 @@ use App\Services\LeaderScopeService;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class GroupController extends Controller
@@ -40,9 +41,10 @@ class GroupController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:100'],
+            'section' => ['nullable', Rule::enum(ScoutSection::class)],
         ]);
 
-        $group = $this->groups->create($data['name'], $data['type'] ?? null, $request->user());
+        $group = $this->groups->create($data['name'], $data['type'] ?? null, $request->user(), ScoutSection::tryFrom((string) ($data['section'] ?? '')));
 
         return redirect()->route('groups.show', $group)->with('success', 'The group was created.');
     }
@@ -53,13 +55,14 @@ class GroupController extends Controller
         $group->load('members', 'leaders', 'assistantLeaders');
 
         $studentOptions = Student::query()->orderBy('name')->get(['id', 'name', 'section', 'index_number']);
+        $memberPool = $group->section ? $studentOptions->where('section', $group->section)->values() : $studentOptions;
         $leaderOptions = User::query()->active()
             ->whereHas('roleRows', fn ($q) => $q->whereIn('role', [Role::Leader->value, Role::Admin->value]))
             ->orderBy('name')->get(['id', 'name', 'national_id']);
 
         return view('groups.show', [
             'group' => $group,
-            'memberOptions' => $studentOptions->map(fn ($s) => ['id' => $s->id, 'label' => $s->name, 'hint' => $s->section?->value])->all(),
+            'memberOptions' => $memberPool->map(fn ($s) => ['id' => $s->id, 'label' => $s->name, 'hint' => $s->section?->value])->all(),
             'leaderOptions' => $leaderOptions->map(fn ($u) => ['id' => $u->id, 'label' => $u->name, 'hint' => $u->national_id])->all(),
             'roverOptions' => $studentOptions->where('section', ScoutSection::Rover)->map(fn ($s) => ['id' => $s->id, 'label' => $s->name, 'hint' => $s->index_number])->values()->all(),
         ]);
@@ -71,9 +74,16 @@ class GroupController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['nullable', 'string', 'max:100'],
+            'section' => ['nullable', Rule::enum(ScoutSection::class)],
         ]);
 
-        $this->groups->rename($group, $data['name'], $data['type'] ?? null, $request->user());
+        $section = ScoutSection::tryFrom((string) ($data['section'] ?? ''));
+
+        if ($section !== null && $group->members()->where('section', '!=', $section->value)->exists()) {
+            return back()->with('error', "Some members are not in the {$section->value} section. Remove them first, then change the group's section.");
+        }
+
+        $this->groups->rename($group, $data['name'], $data['type'] ?? null, $request->user(), $section);
 
         return redirect()->route('groups.show', $group)->with('success', 'The group was saved.');
     }

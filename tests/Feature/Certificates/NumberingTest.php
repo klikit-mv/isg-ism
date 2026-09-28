@@ -83,4 +83,15 @@ class NumberingTest extends TestCase
         $badge = Badge::query()->where('code', 'HIKE')->firstOrFail();
         $this->assertSame('ROVER-2026-0015', $this->numbers()->peekBadgeNumber($badge));
     }
+
+    public function test_proficiency_badges_need_a_section_but_other_categories_do_not(): void
+    {
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post('/badges', ['name' => 'Knots', 'code' => 'knot', 'category' => 'proficiency'])
+            ->assertSessionHasErrors(['section' => 'Proficiency badges need a section: their certificate numbers continue in one sequence for that section all year.']);
+
+        $this->actingAs($admin)->post('/badges', ['name' => 'Jamboree', 'code' => 'jam', 'category' => 'event'])->assertSessionHas('success');
+        $this->assertNull(Badge::query()->where('code', 'JAM')->firstOrFail()->section);
+    }
 }

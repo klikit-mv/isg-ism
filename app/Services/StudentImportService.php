@@ -8,11 +8,10 @@ use App\Enums\StudentStatus;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\Import\SpreadsheetReader;
+use App\Support\Import\TemplateBuilder;
 use App\Support\StudentValidation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 /**
  * Excel enrolment: template → preview (dry run) → confirm.
@@ -30,18 +29,15 @@ class StudentImportService
 
     public function template(): string
     {
-        $spreadsheet = new Spreadsheet;
-        $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle('Students');
-        $sheet->fromArray([
-            self::HEADERS,
-            ['Aishath Example', 'A123456', 'aishath@example.com', 'Female', 'Cub Scout', 'IX1001', 'Henveiru, Male', 'Henveiru, Male', '15.03.2015', 'Ibrahim Example', '7771234', '', 'Grade 4', 'Eagle', 'active', ''],
-        ]);
-
-        $path = tempnam(sys_get_temp_dir(), 'tpl').'.xlsx';
-        (new Xlsx($spreadsheet))->save($path);
-
-        return $path;
+        return (new TemplateBuilder)
+            ->sheet('Students', self::HEADERS, [
+                ['Aishath Example', 'A123456', 'aishath@example.com', 'Female', 'Cub Scout', 'IX1001', 'Henveiru, Male', 'Henveiru, Male', '15.03.2015', 'Ibrahim Example', '7771234', '', 'Grade 4', 'Eagle', 'active', ''],
+            ], [
+                'gender' => Gender::values(),
+                'section' => ScoutSection::values(),
+                'status' => StudentStatus::values(),
+            ])
+            ->save();
     }
 
     /**

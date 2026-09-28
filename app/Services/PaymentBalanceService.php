@@ -8,6 +8,7 @@ use App\Enums\PaymentStatus;
 use App\Enums\PurchaseStatus;
 use App\Models\AnnualFee;
 use App\Models\ClassFee;
+use App\Models\EventRegistration;
 use App\Models\Payment;
 use App\Models\Purchase;
 use App\Support\Money;
@@ -46,6 +47,7 @@ class PaymentBalanceService
             $payable instanceof ClassFee => $this->calculateClassFeeBalance($payable),
             $payable instanceof AnnualFee => $this->calculateAnnualFeeBalance($payable),
             $payable instanceof Purchase => $this->calculatePurchaseBalance($payable),
+            $payable instanceof EventRegistration => $this->calculateEventRegistrationBalance($payable),
         };
     }
 
@@ -83,6 +85,23 @@ class PaymentBalanceService
         $purchase->save();
 
         return $purchase;
+    }
+
+    /**
+     * A free registration (nothing to pay) counts as paid.
+     */
+    public function calculateEventRegistrationBalance(EventRegistration $registration): EventRegistration
+    {
+        $paid = $this->approvedTotal($registration);
+        [$outstanding, $status] = $this->derive($registration->total_amount, $paid, $this->hasAwaiting($registration));
+
+        if (! Money::isPositive($registration->total_amount)) {
+            $status = FeeStatus::Paid;
+        }
+
+        $registration->forceFill(['paid_amount' => $paid, 'outstanding_amount' => $outstanding, 'payment_status' => $status])->save();
+
+        return $registration;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Support\Import;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Throwable;
 
 /**
@@ -31,6 +32,10 @@ final class SpreadsheetReader
         $sheets = [];
 
         foreach ($spreadsheet->getWorksheetIterator() as $worksheet) {
+            if ($worksheet->getSheetState() !== Worksheet::SHEETSTATE_VISIBLE) {
+                continue;
+            }
+
             $data = $worksheet->toArray(null, true, false, false);
             $headerRow = array_shift($data) ?? [];
             $headers = array_map([self::class, 'normalizeHeader'], $headerRow);

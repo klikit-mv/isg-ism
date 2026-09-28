@@ -62,13 +62,15 @@ class BadgeController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'code' => ['required', 'string', 'max:50', Rule::unique('badges', 'code')->ignore($badge?->id)],
-            'section' => ['nullable', Rule::enum(ScoutSection::class)],
+            'section' => [Rule::requiredIf(fn () => in_array(strtolower((string) $request->input('category', Badge::CATEGORY_PROFICIENCY)), ['', Badge::CATEGORY_PROFICIENCY], true)), 'nullable', Rule::enum(ScoutSection::class)],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category' => ['nullable', 'string', 'max:50'],
+            'category' => ['nullable', Rule::in(array_keys(Badge::CATEGORIES))],
             'certificate_template_id' => ['nullable', 'integer', Rule::exists('certificate_templates', 'id')->where('type', CertificateType::Badge->value)],
             'number_prefix' => ['nullable', 'string', 'max:20', 'alpha_dash'],
             'next_number' => ['nullable', 'integer', 'min:1', 'max:999999'],
             'image' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:5120'],
+        ], [
+            'section.required' => 'Proficiency badges need a section: their certificate numbers continue in one sequence for that section all year.',
         ]);
     }
 

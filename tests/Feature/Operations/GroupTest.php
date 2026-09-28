@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Operations;
 
+use App\Enums\ScoutSection;
 use App\Models\Group;
 use App\Models\Student;
 use App\Models\User;
@@ -69,5 +70,25 @@ class GroupTest extends TestCase
         $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['assistant_leaders' => [$rover->id]])
             ->assertSessionHas('success');
         $this->assertTrue($group->assistantLeaders()->whereKey($rover->id)->exists());
+    }
+
+    public function test_section_group_only_offers_and_accepts_scouts_of_that_section(): void
+    {
+        $admin = $this->admin();
+        $cub = Student::factory()->section(ScoutSection::CubScout)->create();
+        $scout = Student::factory()->create();
+
+        $this->actingAs($admin)->post('/groups', ['name' => 'Cub Pack', 'type' => 'Patrol', 'section' => 'Cub Scout'])->assertSessionHasNoErrors();
+        $group = Group::query()->where('name', 'Cub Pack')->firstOrFail();
+        $this->assertSame(ScoutSection::CubScout, $group->section);
+
+        $this->actingAs($admin)->get("/groups/{$group->uuid}")->assertOk()->assertSee($cub->name)->assertDontSee($scout->name);
+
+        $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['members' => [$scout->id]])
+            ->assertSessionHas('error', "{$scout->name} is not in the Cub Scout section, so cannot join this group.");
+        $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['members' => [$cub->id]])->assertSessionHas('success');
+
+        $this->actingAs($admin)->put("/groups/{$group->uuid}", ['name' => 'Cub Pack', 'section' => 'Scout'])
+            ->assertSessionHas('error', "Some members are not in the Scout section. Remove them first, then change the group's section.");
     }
 }

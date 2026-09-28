@@ -65,12 +65,12 @@ class ScoutVerifyIntegrity extends Command
     {
         $count = 0;
 
-        foreach (['class_fee' => 'class_fees', 'annual_fee' => 'annual_fees', 'purchase' => 'purchases'] as $type => $table) {
+        foreach (['class_fee' => 'class_fees', 'annual_fee' => 'annual_fees', 'purchase' => 'purchases', 'event_registration' => 'event_registrations'] as $type => $table) {
             $count += DB::table('payments')->where('payable_type', $type)
                 ->whereNotExists(fn ($q) => $q->selectRaw('1')->from($table)->whereColumn("{$table}.id", 'payments.payable_id'))
                 ->count();
         }
 
-        return $count + DB::table('payments')->whereNotIn('payable_type', ['class_fee', 'annual_fee', 'purchase'])->count();
+        return $count + DB::table('payments')->whereNotIn('payable_type', ['class_fee', 'annual_fee', 'purchase', 'event_registration'])->count();
     }
 }

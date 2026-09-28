@@ -116,6 +116,19 @@ final class ScoutModules
                     ['label' => 'Purchases', 'route' => 'purchases.index', 'patterns' => ['purchases.*']],
                 ],
             ],
+            'events' => [
+                'key' => 'events',
+                'title' => 'Events',
+                'description' => 'Camps and events: registration, pre-orders and payments.',
+                'icon' => 'calendar',
+                'home' => 'events.index',
+                'roles' => [Role::Admin, Role::Leader, Role::Parent, Role::Student],
+                'routes' => ['events.*', 'event-registrations.*'],
+                'nav' => [
+                    ['label' => 'Events', 'route' => 'events.index', 'patterns' => ['events.index', 'events.show', 'events.create', 'events.edit']],
+                    ['label' => 'Registrations', 'route' => 'event-registrations.index', 'patterns' => ['event-registrations.*']],
+                ],
+            ],
             'reports' => [
                 'key' => 'reports',
                 'title' => 'Reports',

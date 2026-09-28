@@ -79,6 +79,7 @@ class Payment extends Model
             'class_fee' => 'Class fee',
             'annual_fee' => 'Annual fee',
             'purchase' => 'Shop purchase',
+            'event_registration' => 'Event',
             default => (string) $this->payable_type,
         };
     }

@@ -6,6 +6,8 @@ use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -44,6 +46,24 @@ class StudentImportTest extends TestCase
         $rows = IOFactory::load($response->getFile()->getPathname())->getActiveSheet()->toArray();
         $this->assertSame(['name', 'national_id', 'email'], array_slice($rows[0], 0, 3));
         $this->assertCount(2, $rows);
+    }
+
+    public function test_template_has_dropdowns_for_gender_section_and_status(): void
+    {
+        $response = $this->actingAs($this->admin())->get('/students/import/template');
+
+        $sheet = IOFactory::load($response->getFile()->getPathname())->getActiveSheet();
+        $headers = $sheet->toArray()[0];
+        $lists = [];
+
+        foreach (['gender', 'section', 'status'] as $header) {
+            $column = Coordinate::stringFromColumnIndex(array_search($header, $headers, true) + 1);
+            $validation = $sheet->getCell($column.'2')->getDataValidation();
+            $this->assertSame(DataValidation::TYPE_LIST, $validation->getType(), $header);
+            $lists[$header] = $validation->getFormula1();
+        }
+
+        $this->assertCount(3, array_unique($lists));
     }
 
     public function test_preview_writes_nothing_and_confirm_imports_ready_rows(): void

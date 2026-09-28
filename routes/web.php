@@ -10,6 +10,9 @@ use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\CertificateVerificationController;
 use App\Http\Controllers\ClassFeeController;
+use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventItemController;
+use App\Http\Controllers\EventRegistrationController;
 use App\Http\Controllers\FamilyController;
 use App\Http\Controllers\GoogleConnectController;
 use App\Http\Controllers\GroupController;
@@ -174,6 +177,21 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::resource('leadership', LeadershipController::class);
     Route::post('/leadership/{leadership}/generate', [LeadershipController::class, 'generate'])->name('leadership.generate');
 
+    // Events: setup, pre-order items and registrations.
+    Route::get('/events/registrations', [EventRegistrationController::class, 'index'])->name('event-registrations.index');
+    Route::post('/events/registrations/{registration}/cancel', [EventRegistrationController::class, 'cancel'])->name('event-registrations.cancel');
+    Route::get('/events', [EventController::class, 'index'])->name('events.index');
+    Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
+    Route::post('/events', [EventController::class, 'store'])->name('events.store');
+    Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
+    Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
+    Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
+    Route::post('/events/{event}/status', [EventController::class, 'status'])->name('events.status');
+    Route::post('/events/{event}/items', [EventItemController::class, 'store'])->name('events.items.store');
+    Route::put('/events/{event}/items/{item}', [EventItemController::class, 'update'])->name('events.items.update');
+    Route::delete('/events/{event}/items/{item}', [EventItemController::class, 'destroy'])->name('events.items.destroy');
+    Route::post('/events/{event}/register', [EventRegistrationController::class, 'store'])->name('events.register');
+
     // Reports.
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}', [ReportController::class, 'show'])->name('reports.show');
@@ -212,6 +230,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
         Route::post('/settings/test/telegram', [SettingsController::class, 'testTelegram'])->middleware('throttle:integration-tests')->name('settings.test.telegram');
         Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
         Route::get('/import', [ImportController::class, 'index'])->name('import.index');
+        Route::get('/import/template', [ImportController::class, 'template'])->name('import.template');
         Route::post('/import/preview', [ImportController::class, 'preview'])->name('import.preview');
         Route::post('/import/confirm', [ImportController::class, 'confirm'])->name('import.confirm');
         Route::get('/import/errors', [ImportController::class, 'errors'])->name('import.errors');
