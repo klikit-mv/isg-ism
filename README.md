@@ -20,11 +20,21 @@ cp .env.example .env
 php artisan key:generate
 touch database/database.sqlite
 npm install && npm run build
-SCOUT_ADMIN_PIN=246810 php artisan scout:install   # migrate, storage:link, demo data (local/testing only)
+php artisan scout:install   # migrate, storage:link, demo data (local/testing only)
 php artisan serve
 ```
 
-Sign in as `A000001` with the PIN you chose (without `SCOUT_ADMIN_PIN` a random PIN is printed). Demo leaders `A100001` and `A100002` and parent `A100003` share the same PIN.
+The demo data includes sample sign-ins. In the local environment they are listed on the sign-in page, and **Use** fills in the form:
+
+| Role | National ID | PIN |
+| --- | --- | --- |
+| Admin | `A000001` | `123456` |
+| Leader | `A100001` | `123456` |
+| Leader (treasurer: verify payments, shop, delivery, annual fees) | `A100002` | `123456` |
+| Parent | `A100003` | `123456` |
+| Scout | `A200001` | `123456` |
+
+Set `SCOUT_ADMIN_PIN` (and `SCOUT_ADMIN_NATIONAL_ID`) in `.env` to use a different PIN or admin ID. Sample accounts are never created or shown outside local/testing.
 
 Run the tests with `php artisan test`.
 

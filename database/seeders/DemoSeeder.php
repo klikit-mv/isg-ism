@@ -28,19 +28,45 @@ use Illuminate\Database\Seeder;
  */
 class DemoSeeder extends Seeder
 {
+    /**
+     * PIN for every sample account unless SCOUT_ADMIN_PIN is set.
+     */
+    public const SAMPLE_PIN = '123456';
+
+    /**
+     * The sample sign-ins shown on the local sign-in page.
+     *
+     * @return list<array{role: string, national_id: string}>
+     */
+    public static function sampleAccounts(): array
+    {
+        return [
+            ['role' => 'Admin', 'national_id' => strtoupper((string) config('scout.admin.national_id'))],
+            ['role' => 'Leader', 'national_id' => 'A100001'],
+            ['role' => 'Leader (treasurer)', 'national_id' => 'A100002'],
+            ['role' => 'Parent', 'national_id' => 'A100003'],
+            ['role' => 'Scout', 'national_id' => 'A200001'],
+        ];
+    }
+
+    public static function samplePin(): string
+    {
+        return (string) (config('scout.admin.pin') ?: self::SAMPLE_PIN);
+    }
+
     public function run(): void
     {
         if (! app()->environment(['local', 'testing'])) {
             return;
         }
 
-        $pin = (string) (config('scout.admin.pin') ?: random_int(100000, 999999));
+        $pin = self::samplePin();
         $admin = User::query()->firstOrCreate(
             ['national_id' => strtoupper((string) config('scout.admin.national_id'))],
             ['name' => config('scout.admin.name'), 'email' => 'admin@example.com', 'password' => $pin, 'status' => 'active', 'verified_at' => now()],
         );
         $admin->assignRole(Role::Admin);
-        $this->command?->info("Admin: {$admin->national_id} / PIN {$pin}".(config('scout.admin.pin') ? '' : ' (random; set SCOUT_ADMIN_PIN to choose one)'));
+        $this->command?->info("Sample admin: {$admin->national_id} / PIN {$pin}");
 
         $leader = User::factory()->leader()->create(['name' => 'Hassan Leader', 'national_id' => 'A100001', 'password' => $pin]);
         $treasurer = User::factory()->leader()->withPermissions(Permission::VerifyPayments, Permission::ManageShop, Permission::ProcessDelivery, Permission::ManageFees)
@@ -51,7 +77,9 @@ class DemoSeeder extends Seeder
 
         foreach ($sections as $section) {
             foreach (range(1, 4) as $i) {
-                $student = Student::factory()->section($section)->create();
+                $student = $section === ScoutSection::Scout && $i === 1
+                    ? Student::factory()->section($section)->create(['name' => 'Ibrahim Scout', 'national_id' => 'A200001'])
+                    : Student::factory()->section($section)->create();
                 User::factory()->forStudent($student)->create(['password' => $pin]);
                 $students->push($student);
             }
