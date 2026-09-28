@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Student;
 use App\Services\StudentImportService;
+use App\Support\Uploads;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -37,7 +38,7 @@ class StudentImportController extends Controller
         $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:10240']]);
 
         $this->forgetUpload($request);
-        $path = $request->file('file')->storeAs('imports', 'students-'.Str::uuid().'.'.strtolower($request->file('file')->getClientOriginalExtension() ?: 'xlsx'), 'local');
+        $path = Uploads::store($request->file('file'), 'imports', 'students-'.Str::uuid().'.'.strtolower($request->file('file')->getClientOriginalExtension() ?: 'xlsx'), 'local');
         $request->session()->put(self::SESSION_KEY, $path);
 
         $report = $this->imports->preview(Storage::disk('local')->path($path));

@@ -2,6 +2,7 @@
 
 namespace App\Services\Google;
 
+use App\Services\SettingsService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -9,13 +10,64 @@ use Throwable;
 
 /**
  * Service-account authentication: a self-signed JWT exchanged for an OAuth token.
+ * The key comes from GOOGLE_SERVICE_ACCOUNT_JSON on the server, or else from
+ * the key file an admin uploads under Settings (stored encrypted).
  */
 class GoogleApiClient
 {
     private const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/presentations';
 
+    public const SETTING_KEY = 'google_service_account_json';
+
     /** @var array<string, mixed>|null|false */
     private array|null|false $credentials = false;
+
+    public function __construct(private SettingsService $settings) {}
+
+    /**
+     * Where the credentials come from: "server", "settings" or null.
+     */
+    public function source(): ?string
+    {
+        if (filled(config('services.google.service_account_json'))) {
+            return 'server';
+        }
+
+        return filled($this->settings->get(self::SETTING_KEY)) ? 'settings' : null;
+    }
+
+    public function forget(): void
+    {
+        $this->credentials = false;
+    }
+
+    /**
+     * Check an uploaded service-account key. Returns the decoded key or an error message.
+     *
+     * @return array<string, mixed>|string
+     */
+    public static function parseKey(string $json): array|string
+    {
+        $decoded = json_decode($json, true);
+
+        if (! is_array($decoded)) {
+            return 'That file is not valid JSON. Download the key again from Google Cloud (Keys → Add key → JSON).';
+        }
+
+        if (($decoded['type'] ?? null) !== 'service_account') {
+            return 'That JSON is not a service account key. It must contain "type": "service_account".';
+        }
+
+        if (! filter_var($decoded['client_email'] ?? null, FILTER_VALIDATE_EMAIL) || ! str_contains((string) ($decoded['private_key'] ?? ''), 'PRIVATE KEY')) {
+            return 'The key is missing its client_email or private_key.';
+        }
+
+        if (openssl_pkey_get_private((string) $decoded['private_key']) === false) {
+            return 'The private key in that file could not be read.';
+        }
+
+        return $decoded;
+    }
 
     public function configured(): bool
     {
@@ -38,7 +90,7 @@ class GoogleApiClient
             return $this->credentials;
         }
 
-        $raw = (string) config('services.google.service_account_json');
+        $raw = (string) (config('services.google.service_account_json') ?: $this->settings->get(self::SETTING_KEY));
 
         if ($raw === '') {
             return $this->credentials = null;

@@ -45,6 +45,34 @@
 
             <div class="card space-y-4">
                 <h2 class="font-semibold">Google Drive</h2>
+                @if ($googleEmail)
+                    <div class="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200" data-testid="google-connected">
+                        Connected as <span class="break-all font-mono">{{ $googleEmail }}</span>{{ $googleSource === 'server' ? ' (set on the server)' : '' }}.
+                        Share both folders and every Slides template with this address as an <strong>Editor</strong>.
+                    </div>
+                @else
+                    <div class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">
+                        Not connected. Photos and certificates are stored on the server until you upload a service account key.
+                    </div>
+                @endif
+
+                <details class="text-sm text-gray-600 dark:text-gray-300" @unless ($googleEmail) open @endunless>
+                    <summary class="cursor-pointer font-medium text-navy-700 dark:text-navy-300">How to connect Google Drive</summary>
+                    <ol class="mt-2 list-decimal space-y-1 pl-5">
+                        <li>Open <a class="link" href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> and create (or pick) a project.</li>
+                        <li>Under <em>APIs &amp; Services → Library</em>, enable the <strong>Google Drive API</strong> and the <strong>Google Slides API</strong>.</li>
+                        <li>Under <em>IAM &amp; Admin → Service Accounts</em>, create a service account (no roles needed).</li>
+                        <li>Open it, go to <em>Keys → Add key → Create new key → JSON</em> and download the file.</li>
+                        <li>Upload that file below and press <strong>Save settings</strong>.</li>
+                        <li>In Google Drive, share your photos folder and certificates folder (and each Slides template) with the service account's email as <strong>Editor</strong>, then paste the folder links below and save.</li>
+                        <li>Press <strong>Test Google Drive</strong> at the top of this page.</li>
+                    </ol>
+                </details>
+
+                <x-form.file-drop name="google_service_account" label="Service account key (JSON)" accept=".json,application/json" help="Stored encrypted. It is never shown again."/>
+                @if ($googleSource === 'settings')
+                    <x-form.checkbox name="remove_google_service_account" label="Remove the saved key and disconnect Google"/>
+                @endif
                 <x-form.input name="google_drive_folder" label="Photos folder (link or ID)" :value="$settings->get('google_drive_folder')" help="Students, Shop, Badges and Signatures sub-folders are created inside it."/>
                 <x-form.input name="google_drive_certificates_folder" label="Certificates folder (link or ID)" :value="$settings->get('google_drive_certificates_folder')" help="Each scout gets a sub-folder for their PDFs."/>
             </div>

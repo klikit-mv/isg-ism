@@ -21,6 +21,7 @@ use App\Models\Purchase;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\Money;
+use App\Support\Uploads;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -287,7 +288,7 @@ class PaymentService
             throw new InvalidPaymentProof('The proof file is too large (maximum '.round($this->settings->proofMaxKb() / 1024, 1).' MB).');
         }
 
-        $path = $file->storeAs('payment-proofs', $paymentUuid.'.'.$extension, self::PROOF_DISK);
+        $path = Uploads::store($file, 'payment-proofs', $paymentUuid.'.'.$extension, self::PROOF_DISK);
 
         if (! $path || ! Storage::disk(self::PROOF_DISK)->exists($path)) {
             throw new InvalidPaymentProof('The proof could not be saved. Please try again.');

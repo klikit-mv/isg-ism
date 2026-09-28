@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Student;
 use App\Services\Google\GoogleDriveClient;
 use App\Support\GoogleDriveFolder;
+use App\Support\Uploads;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -30,7 +31,7 @@ class GoogleDrivePhotoService
         $rootId ??= $this->settings->driveFolderId();
 
         if (! $this->drive->configured()) {
-            return ['ok' => false, 'message' => 'Google credentials are not configured on the server, so photos are stored locally.'];
+            return ['ok' => false, 'message' => 'The folder was saved, but Google is not connected yet: upload the service account key first. Until then photos are stored on the server.'];
         }
 
         if (! $rootId || ! $this->drive->folderAccessible($rootId)) {
@@ -72,7 +73,7 @@ class GoogleDrivePhotoService
             }
         }
 
-        return (string) $file->storeAs(self::LOCAL_DIRS[$area] ?? $area, $name, 'public');
+        return Uploads::store($file, self::LOCAL_DIRS[$area] ?? $area, $name, 'public');
     }
 
     public function assignStudentPhoto(Student $student, UploadedFile $file): void

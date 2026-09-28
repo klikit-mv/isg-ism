@@ -25,7 +25,7 @@ class ConnectionTestService
     public function googleDrive(): array
     {
         if (! $this->google->configured()) {
-            return ['ok' => false, 'message' => 'Google is not set up: GOOGLE_SERVICE_ACCOUNT_JSON is missing on the server. Photos and certificates are stored locally.'];
+            return ['ok' => false, 'message' => 'Google is not set up yet: upload the service account key under Settings → Google Drive. Until then photos and certificates are stored on the server.'];
         }
 
         if ($this->google->accessToken() === null) {

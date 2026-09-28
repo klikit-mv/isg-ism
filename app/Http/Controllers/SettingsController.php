@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\ConnectionTestService;
+use App\Services\Google\GoogleApiClient;
 use App\Services\GoogleDriveCertificateService;
 use App\Services\GoogleDrivePhotoService;
 use App\Services\SettingsService;
 use App\Services\TelegramService;
 use App\Support\GoogleDriveFolder;
 use App\Support\Money;
+use App\Support\Uploads;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -22,15 +24,17 @@ class SettingsController extends Controller
 {
     public function __construct(private SettingsService $settings, private AuditLogService $audit) {}
 
-    public function index(TelegramService $telegram): View
+    public function index(TelegramService $telegram, GoogleApiClient $google): View
     {
         return view('settings.index', [
             'settings' => $this->settings,
             'telegramConfigured' => $telegram->configured(),
+            'googleEmail' => $google->clientEmail(),
+            'googleSource' => $google->source(),
         ]);
     }
 
-    public function update(Request $request, GoogleDrivePhotoService $photos, GoogleDriveCertificateService $certificates, TelegramService $telegram): RedirectResponse
+    public function update(Request $request, GoogleDrivePhotoService $photos, GoogleDriveCertificateService $certificates, TelegramService $telegram, GoogleApiClient $google): RedirectResponse
     {
         $data = $request->validate([
             'default_class_fee' => ['required', 'numeric', 'min:0', 'max:9999999'],
@@ -44,12 +48,18 @@ class SettingsController extends Controller
             'google_drive_folder' => ['nullable', 'string', 'max:500'],
             'google_drive_certificates_folder' => ['nullable', 'string', 'max:500'],
             'telegram_bot_token' => ['nullable', 'string', 'max:200'],
-            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg', 'max:2048', 'dimensions:max_width=2000,max_height=2000'],
+            'logo' => ['nullable', 'bail', 'file', 'mimes:png,jpg,jpeg', 'max:2048'],
             'remove_logo' => ['sometimes', 'boolean'],
+            'google_service_account' => ['nullable', 'bail', 'file', 'max:20'],
+            'remove_google_service_account' => ['sometimes', 'boolean'],
+        ], [
+            'google_service_account.max' => 'The service account key must be the small JSON file from Google Cloud (under 20 KB).',
         ]);
 
         $actor = $request->user();
         $messages = [];
+        $messages[] = $this->saveLogo($request, $actor);
+        $messages[] = $this->saveGoogleKey($request, $actor, $google);
 
         foreach (['bank_name', 'account_name', 'account_number', 'payment_instructions', 'footer_text'] as $key) {
             $this->settings->set($key, $data[$key] ?? null, $actor);
@@ -58,8 +68,6 @@ class SettingsController extends Controller
         $this->settings->set('default_class_fee', Money::normalize($data['default_class_fee']), $actor);
         $this->settings->set('shop_enabled', $request->boolean('shop_enabled') ? '1' : '0', $actor);
         $this->settings->set('proof_max_kb', (string) $data['proof_max_kb'], $actor);
-
-        $messages[] = $this->saveLogo($request, $actor);
 
         $messages[] = $this->saveFolder('google_drive_folder', $data['google_drive_folder'] ?? null, $actor, function (string $id) use ($photos): string {
             return $photos->ensureAreaFolders($id)['message'];
@@ -84,7 +92,7 @@ class SettingsController extends Controller
         }
 
         $this->settings->flush();
-        $this->audit->record('settings.updated', null, ['keys' => array_keys(array_diff_key($data, ['telegram_bot_token' => true, 'logo' => true]))], $actor);
+        $this->audit->record('settings.updated', null, ['keys' => array_keys(array_diff_key($data, ['telegram_bot_token' => true, 'logo' => true, 'google_service_account' => true]))], $actor);
 
         return redirect()->route('settings.index')->with('success', trim('Settings saved. '.implode(' ', array_filter($messages))));
     }
@@ -104,6 +112,39 @@ class SettingsController extends Controller
     }
 
     /**
+     * Save an uploaded Google service-account key (encrypted), or remove the saved one.
+     */
+    private function saveGoogleKey(Request $request, User $actor, GoogleApiClient $google): ?string
+    {
+        if ($request->hasFile('google_service_account')) {
+            $file = $request->file('google_service_account');
+            $key = GoogleApiClient::parseKey((string) @file_get_contents($file->getRealPath() ?: $file->getPathname()));
+
+            if (is_string($key)) {
+                throw ValidationException::withMessages(['google_service_account' => $key]);
+            }
+
+            $this->settings->set(GoogleApiClient::SETTING_KEY, (string) json_encode($key), $actor);
+            $google->forget();
+            $this->audit->record('settings.google_key_saved', null, ['client_email' => $key['client_email']], $actor);
+
+            $note = $google->source() === 'server' ? ' The server setting GOOGLE_SERVICE_ACCOUNT_JSON still takes priority.' : '';
+
+            return "Google service account {$key['client_email']} saved. Share your Drive folders and Slides templates with it as an editor.".$note;
+        }
+
+        if ($request->boolean('remove_google_service_account') && filled($this->settings->get(GoogleApiClient::SETTING_KEY))) {
+            $this->settings->set(GoogleApiClient::SETTING_KEY, null, $actor);
+            $google->forget();
+            $this->audit->record('settings.google_key_removed', null, [], $actor);
+
+            return 'The Google service account key was removed.';
+        }
+
+        return null;
+    }
+
+    /**
      * Store an uploaded website logo on the public disk, or remove the current one.
      */
     private function saveLogo(Request $request, User $actor): ?string
@@ -112,7 +153,17 @@ class SettingsController extends Controller
 
         if ($request->hasFile('logo')) {
             $file = $request->file('logo');
-            $path = $file->storeAs('branding', 'logo-'.Str::random(12).'.'.strtolower($file->extension() ?: 'png'), 'public');
+            $size = Uploads::imageSize($file);
+
+            if ($size === null) {
+                throw ValidationException::withMessages(['logo' => 'The logo must be a PNG or JPEG image.']);
+            }
+
+            if ($size[0] > 2000 || $size[1] > 2000) {
+                throw ValidationException::withMessages(['logo' => 'The logo can be at most 2000 × 2000 pixels.']);
+            }
+
+            $path = Uploads::store($file, 'branding', 'logo-'.Str::random(12).'.'.strtolower($file->extension() ?: 'png'), 'public');
             $this->settings->set('site_logo_path', $path, $actor);
             $this->deleteLogo($old);
             $this->audit->record('settings.logo_updated', null, [], $actor);

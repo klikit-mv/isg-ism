@@ -17,7 +17,7 @@ class SettingsService
 {
     public const CACHE_KEY = 'scout.settings';
 
-    public const ENCRYPTED = ['telegram_bot_token'];
+    public const ENCRYPTED = ['telegram_bot_token', 'google_service_account_json'];
 
     /**
      * @return array<string, string|null>

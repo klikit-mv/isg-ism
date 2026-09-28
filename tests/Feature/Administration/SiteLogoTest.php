@@ -64,6 +64,39 @@ class SiteLogoTest extends TestCase
         $this->actingAs($admin)->get('/dashboard')->assertDontSee('data-testid="site-logo"', false);
     }
 
+    /**
+     * On some Windows setups (Laravel Herd) realpath() of the PHP upload temp
+     * file is empty, which crashed saving with "Path must not be empty".
+     */
+    public function test_logo_saves_when_the_upload_has_no_real_path(): void
+    {
+        $fake = UploadedFile::fake()->image('logo.png', 120, 120);
+        $file = new class($fake->getPathname(), 'logo.png', 'image/png', null, true) extends UploadedFile
+        {
+            public function getRealPath(): string|false
+            {
+                return false;
+            }
+        };
+
+        $this->actingAs($this->admin())->post('/settings', $this->payload(['logo' => $file]))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('success');
+
+        Storage::disk('public')->assertExists(app(SettingsService::class)->logoPath());
+    }
+
+    public function test_oversized_logo_is_refused_before_anything_is_saved(): void
+    {
+        $this->actingAs($this->admin())->post('/settings', $this->payload([
+            'footer_text' => 'Should not be saved',
+            'logo' => UploadedFile::fake()->image('huge.png', 2500, 100),
+        ]))->assertSessionHasErrors(['logo' => 'The logo can be at most 2000 × 2000 pixels.']);
+
+        $this->assertNull(app(SettingsService::class)->logoPath());
+        $this->assertNotSame('Should not be saved', app(SettingsService::class)->footerText());
+    }
+
     public function test_only_png_or_jpeg_images_are_accepted(): void
     {
         $admin = $this->admin();

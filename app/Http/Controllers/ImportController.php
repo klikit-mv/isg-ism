@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\LegacyImportService;
+use App\Support\Uploads;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +36,7 @@ class ImportController extends Controller
         $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:20480']]);
 
         $this->forgetUpload($request);
-        $path = $request->file('file')->storeAs('imports', 'legacy-'.Str::uuid().'.'.strtolower($request->file('file')->getClientOriginalExtension() ?: 'xlsx'), 'local');
+        $path = Uploads::store($request->file('file'), 'imports', 'legacy-'.Str::uuid().'.'.strtolower($request->file('file')->getClientOriginalExtension() ?: 'xlsx'), 'local');
         $request->session()->put(self::FILE_KEY, $path);
 
         $absolute = Storage::disk('local')->path($path);

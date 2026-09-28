@@ -72,7 +72,7 @@ class GoogleSlideExporter
     public function testPresentation(string $presentationId): array
     {
         if (! $this->drive->configured()) {
-            return ['ok' => false, 'message' => 'Google credentials are not configured on the server.'];
+            return ['ok' => false, 'message' => 'Google is not connected yet. Upload the service account key under Administration → Settings → Google Drive.'];
         }
 
         $info = $this->drive->fileInfo($presentationId);

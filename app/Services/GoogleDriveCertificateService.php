@@ -127,7 +127,7 @@ class GoogleDriveCertificateService
     public function verifyRootFolder(string $folderId): array
     {
         if (! $this->drive->configured()) {
-            return ['ok' => false, 'message' => 'Google credentials are not configured, so certificates are stored on the server.'];
+            return ['ok' => false, 'message' => 'The folder was saved, but Google is not connected yet: upload the service account key first. Until then certificates are stored on the server.'];
         }
 
         return $this->drive->folderAccessible($folderId)

@@ -59,7 +59,7 @@ Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 M
 
 ### Optional integrations
 
-- **Google Drive / Slides:** create a service account, put its JSON key on the server and set `GOOGLE_SERVICE_ACCOUNT_JSON` to the file path. Share the photos folder, the certificates folder and every Slides template with the service account's email as an editor, then paste the folder links under Administration → Settings and press **Test Google Drive**. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
+- **Google Drive / Slides:** in Google Cloud Console enable the Drive and Slides APIs, create a service account and download a JSON key (Keys → Add key → JSON). Upload that file under Administration → Settings → Google Drive (it is stored encrypted; alternatively set `GOOGLE_SERVICE_ACCOUNT_JSON` on the server, which takes priority). Share the photos folder, the certificates folder and every Slides template with the service account's email as an editor, paste the folder links in Settings and press **Test Google Drive**. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
 - **Telegram:** create a bot with @BotFather and paste the token in Settings (it is stored encrypted and never shown again). Linking uses `getUpdates`, so the bot must **not** have a webhook set. Users connect from Profile.
 
 ## Commands

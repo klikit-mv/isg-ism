@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Support\Uploads;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,7 +18,7 @@ class SignatureService
     public function storeUpload(User $user, UploadedFile $file): string
     {
         $old = $user->signature_path;
-        $path = $file->storeAs('', $user->uuid.'-'.Str::random(6).'.'.strtolower($file->extension() ?: 'png'), self::DISK);
+        $path = Uploads::store($file, '', $user->uuid.'-'.Str::random(6).'.'.strtolower($file->extension() ?: 'png'), self::DISK);
 
         $user->forceFill(['signature_path' => $path])->save();
 
