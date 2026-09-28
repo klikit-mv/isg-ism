@@ -14,15 +14,19 @@ PHP 8.3+, Laravel 13, Livewire 4 (attendance registers, parent child lookup), Al
 
 ## Local setup
 
+The repository includes every dependency: the PHP packages in `vendor/` and the compiled CSS/JS in `public/build/`. You only need PHP 8.3+ (no Composer or Node.js) to install and run it:
+
 ```bash
-composer install
 cp .env.example .env
 php artisan key:generate
 touch database/database.sqlite
-npm install && npm run build
 php artisan scout:install   # migrate, storage:link, demo data (local/testing only)
 php artisan serve
 ```
+
+On Windows use `copy .env.example .env` and `type nul > database\database.sqlite`.
+
+Only developers changing dependencies or front-end code need Composer and Node.js: after `composer require …` or `composer update`, commit `vendor/`; after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`.
 
 The demo data includes sample sign-ins. In the local environment they are listed on the sign-in page, and **Use** fills in the form:
 
@@ -42,10 +46,8 @@ Run the tests with `php artisan test`.
 
 1. Server: PHP 8.3 with `intl`, `mbstring`, `pdo_mysql`, `redis`, `gd`, `zip`; MySQL 8; Redis; Nginx or Apache serving `public/`.
 2. `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `DB_*`, `CACHE_STORE=redis`, `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`, `SESSION_LIFETIME=480`, `SESSION_SECURE_COOKIE=true`, `MAIL_*`, the `SCOUT_*` values and optionally `GOOGLE_SERVICE_ACCOUNT_JSON`.
-3. Install:
+3. Install (dependencies and built assets are already in the repository):
    ```bash
-   composer install --no-dev -o
-   npm ci && npm run build
    php artisan migrate --force
    php artisan storage:link
    php artisan config:cache && php artisan route:cache && php artisan view:cache
