@@ -24,7 +24,7 @@
     "exceljs": "^4.4.0",
     "mysql2": "^3.24.5",
     "next": "^15.5.26",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^10.0.10",
     "pdfkit": "^0.15.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
