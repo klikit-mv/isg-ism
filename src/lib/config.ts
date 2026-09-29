@@ -11,6 +11,8 @@ export const config = {
   shopImageMaxKb: Number(process.env.SCOUT_SHOP_IMAGE_MAX_KB ?? 5120),
   sessionDays: Number(process.env.SESSION_DAYS ?? 30),
   sessionCookie: 'scout_session',
+  /** Sign-in cookies are https-only in production; set SESSION_SECURE_COOKIE=false only to try the site over plain http. */
+  secureCookies: process.env.NODE_ENV === 'production' && process.env.SESSION_SECURE_COOKIE !== 'false',
   isProduction: process.env.NODE_ENV === 'production',
   /** Sample sign-ins are only ever shown outside production. */
   showDemoLogins: process.env.NODE_ENV !== 'production' && process.env.SCOUT_DEMO_LOGINS !== 'false',

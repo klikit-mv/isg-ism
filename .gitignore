@@ -3,7 +3,6 @@
 .env
 .env.*
 !.env.example
-.phpunit.result.cache
 /.idea
 /.vscode
 Thumbs.db
@@ -16,12 +15,3 @@ Thumbs.db
 *.tsbuildinfo
 next-env.d.ts
 /storage-data
-
-# Laravel reference app
-/laravel/.env
-/laravel/.phpunit.cache
-/laravel/public/hot
-/laravel/public/storage
-/laravel/storage/*.key
-/laravel/storage/pail
-/laravel/database/database.sqlite

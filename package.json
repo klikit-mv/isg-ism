@@ -9,10 +9,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/migrate.mjs && next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "tsx scripts/migrate.mts",
+    "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "tsx scripts/seed.mts",
     "scout:create-admin": "tsx scripts/create-admin.mts",
     "scout:export": "tsx scripts/export.mts",
@@ -24,6 +24,7 @@
     "exceljs": "^4.4.0",
     "mysql2": "^3.24.5",
     "next": "^15.5.26",
+    "nodemailer": "^6.10.1",
     "pdfkit": "^0.15.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -32,6 +33,7 @@
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.11",
     "@types/node": "^20.19.43",
+    "@types/nodemailer": "^8.0.2",
     "@types/pdfkit": "^0.17.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

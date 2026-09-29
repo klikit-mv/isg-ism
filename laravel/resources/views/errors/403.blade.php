@@ -1,1 +1,0 @@
-@include('errors.layout', ['code' => '403', 'title' => "You can't open this page", 'message' => "Your account does not have access to this page. If you think this is a mistake, please ask a leader or administrator."])

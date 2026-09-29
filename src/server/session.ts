@@ -54,7 +54,7 @@ export async function startSession(userId: number): Promise<void> {
   const h = await headers();
   const { token, expiresAt } = await createSession(userId, await clientIp(), h.get('user-agent'));
   (await cookies()).set(config.sessionCookie, token, {
-    httpOnly: true, sameSite: 'lax', secure: config.isProduction, path: '/', expires: expiresAt,
+    httpOnly: true, sameSite: 'lax', secure: config.secureCookies, path: '/', expires: expiresAt,
   });
 }
 
