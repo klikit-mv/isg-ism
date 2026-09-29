@@ -7,7 +7,7 @@ import { config } from '@/lib/config';
  * "public" (logo, photos, badge images) and "local" (payment proofs, certificates, imports).
  * Files are only ever served through the app, which checks who is asking.
  */
-export type Disk = 'public' | 'local';
+export type Disk = 'public' | 'local' | 'signatures';
 
 const root = () => path.resolve(config.storageDir);
 
@@ -67,4 +67,19 @@ export function sniffImage(buf: Buffer): 'png' | 'jpg' | 'webp' | 'gif' | null {
 
 export function sniffPdf(buf: Buffer): boolean {
   return buf.length > 4 && buf.subarray(0, 4).toString() === '%PDF';
+}
+
+/** Pixel size of a PNG or JPEG, read from the file header. */
+export function imageSize(buf: Buffer): { width: number; height: number } | null {
+  if (sniffImage(buf) === 'png' && buf.length >= 24) return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  if (sniffImage(buf) === 'jpg') {
+    let i = 2;
+    while (i + 9 < buf.length) {
+      if (buf[i] !== 0xff) { i++; continue; }
+      const marker = buf[i + 1];
+      if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+      i += 2 + buf.readUInt16BE(i + 2);
+    }
+  }
+  return null;
 }

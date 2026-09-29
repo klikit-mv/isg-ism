@@ -2,6 +2,7 @@
 
 import { createContext, useActionState, useContext } from 'react';
 import { useFormStatus } from 'react-dom';
+import { closeModal } from '../Modal';
 import type { ActionState } from '@/server/action';
 
 export type FormAction = (prev: ActionState | null, formData: FormData) => Promise<ActionState | null>;
@@ -10,8 +11,15 @@ const FormContext = createContext<ActionState | null>(null);
 export const useFormState = () => useContext(FormContext);
 
 /** A form bound to a server action; shows field errors and keeps what was typed. */
-export function ActionForm({ action, children, className = 'space-y-4', encType, id }: { action: FormAction; children: React.ReactNode; className?: string; encType?: string; id?: string }) {
-  const [state, formAction] = useActionState(action, null);
+export function ActionForm({ action, children, className = 'space-y-4', encType, id, closeModalOnSuccess }: { action: FormAction; children: React.ReactNode; className?: string; encType?: string; id?: string; closeModalOnSuccess?: string }) {
+  const wrapped: FormAction = closeModalOnSuccess
+    ? async (prev, formData) => {
+        const result = await action(prev, formData);
+        if (!result) closeModal(closeModalOnSuccess);
+        return result;
+      }
+    : action;
+  const [state, formAction] = useActionState(wrapped, null);
   const summary = state?.fields ? Object.values(state.fields) : state?.error ? [state.error] : [];
   return (
     <FormContext.Provider value={state}>

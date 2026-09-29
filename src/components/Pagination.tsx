@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export const PAGE_SIZE = 25;
+export const PAGE_SIZE = 20;
 
 export interface Page<T> {
   rows: T[];
