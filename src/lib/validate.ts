@@ -46,7 +46,7 @@ export function parseForm(formData: FormData): Record<string, unknown> {
       if (last) {
         node[key] = value;
       } else {
-        node[key] ??= next === '' ? [] : {};
+        node[key] ??= next === '' || /^\d+$/.test(next) ? [] : {};
         node = node[key];
       }
     });

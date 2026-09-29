@@ -11,7 +11,7 @@ const FormContext = createContext<ActionState | null>(null);
 export const useFormState = () => useContext(FormContext);
 
 /** A form bound to a server action; shows field errors and keeps what was typed. */
-export function ActionForm({ action, children, className = 'space-y-4', encType, id, closeModalOnSuccess }: { action: FormAction; children: React.ReactNode; className?: string; encType?: string; id?: string; closeModalOnSuccess?: string }) {
+export function ActionForm({ action, children, className = 'space-y-4', encType: _encType, id, closeModalOnSuccess }: { action: FormAction; children: React.ReactNode; className?: string; encType?: string; id?: string; closeModalOnSuccess?: string }) {
   const wrapped: FormAction = closeModalOnSuccess
     ? async (prev, formData) => {
         const result = await action(prev, formData);
@@ -23,7 +23,7 @@ export function ActionForm({ action, children, className = 'space-y-4', encType,
   const summary = state?.fields ? Object.values(state.fields) : state?.error ? [state.error] : [];
   return (
     <FormContext.Provider value={state}>
-      <form id={id} action={formAction} className={className} encType={encType}>
+      <form id={id} action={formAction} className={className}>
         {summary.length > 0 && (
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200" role="alert">
             {state?.fields ? <p className="font-medium">Please check the form.</p> : null}

@@ -1,8 +1,10 @@
 import { beforeEach } from 'vitest';
 import { getPool } from '@/db';
+import { flushSettings } from '@/server/settings';
 
-/** Empty every table before each test. */
+/** Empty every table (and the settings cache) before each test. */
 beforeEach(async () => {
+  flushSettings();
   const pool = getPool();
   const [rows] = await pool.query<any[]>("SELECT table_name AS t FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name NOT LIKE '\\_\\_%'");
   const conn = await pool.getConnection();
