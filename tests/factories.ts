@@ -85,3 +85,17 @@ export async function makeGroup(o: { name?: string; section?: string | null; lea
   const [group] = await db.select().from(schema.groups).where(eq(schema.groups.id, row.id));
   return group;
 }
+
+export async function makeActivity(o: {
+  name?: string; date?: string; all?: boolean; sections?: string[]; groups?: { id: number }[]; charge?: boolean; fee?: string | null;
+} = {}) {
+  const now = new Date();
+  const [row] = await db.insert(schema.activities).values({
+    name: o.name ?? `Activity ${next()}`, date: o.date ?? '2026-03-01', allStudents: o.all ?? false, chargeFee: o.charge ?? false,
+    feeAmount: o.charge ? (o.fee === undefined ? '20.00' : o.fee) : null, createdAt: now, updatedAt: now,
+  }).$returningId();
+  for (const s of o.sections ?? []) await db.insert(schema.activitySections).values({ activityId: row.id, section: s });
+  for (const g of o.groups ?? []) await db.insert(schema.activityGroups).values({ activityId: row.id, groupId: g.id });
+  const [activity] = await db.select().from(schema.activities).where(eq(schema.activities.id, row.id));
+  return activity;
+}

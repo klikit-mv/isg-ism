@@ -37,3 +37,6 @@ export const formatMoney = (value: string | number | null | undefined, currency 
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return `${currency} ${grouped}.${fraction}`;
 };
+
+export const max = (a: string | number | null | undefined, b: string | number | null | undefined): string => (compare(a, b) >= 0 ? normalize(a) : normalize(b));
+export const min = (a: string | number | null | undefined, b: string | number | null | undefined): string => (compare(a, b) <= 0 ? normalize(a) : normalize(b));
