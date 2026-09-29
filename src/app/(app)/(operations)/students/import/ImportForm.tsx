@@ -1,14 +1,12 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useActionState, useTransition } from 'react';
 import { importStudentsAction, type ImportState } from '@/app/actions/student-import';
 import { Badge } from '@/components/Badge';
 
 const tones = { ready: 'blue', created: 'green', exists: 'amber', error: 'red' } as const;
 
-function Buttons() {
-  const { pending } = useFormStatus();
+function Buttons({ pending }: { pending: boolean }) {
   return (
     <div className="flex flex-wrap gap-2">
       <button type="submit" name="mode" value="check" className="btn-secondary" disabled={pending}>{pending ? 'Working…' : 'Check file'}</button>
@@ -19,15 +17,22 @@ function Buttons() {
 
 export function ImportForm() {
   const [state, action] = useActionState<ImportState | null, FormData>(importStudentsAction, null);
+  const [pending, startTransition] = useTransition();
+  // Submitted by hand so the chosen file stays in the form for the next button.
+  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+    startTransition(() => action(data));
+  };
   const report = state?.report;
   return (
     <div className="space-y-4">
-      <form action={action} className="space-y-3">
+      <form onSubmit={submit} className="space-y-3">
         <div>
           <label className="label" htmlFor="file">Excel or CSV file</label>
           <input id="file" name="file" type="file" accept=".xlsx,.csv" className="input" required />
         </div>
-        <Buttons />
+        <Buttons pending={pending} />
       </form>
       {state?.error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-900/30 dark:text-rose-200">{state.error}</p>}
       {report && report.missing.length > 0 && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">The file is missing these columns: {report.missing.join(', ')}.</p>}
