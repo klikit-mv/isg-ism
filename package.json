@@ -14,7 +14,8 @@
     "test": "vitest run",
     "db:migrate": "tsx scripts/migrate.mts",
     "db:seed": "tsx scripts/seed.mts",
-    "scout:create-admin": "tsx scripts/create-admin.mts"
+    "scout:create-admin": "tsx scripts/create-admin.mts",
+    "scout:export": "tsx scripts/export.mts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -9,6 +9,7 @@ import { ActionButton } from '@/components/ConfirmButton';
 import { PhotoUpload } from '@/components/PhotoUpload';
 import { avatarAction, ownSignatureAction } from '@/app/actions/profile';
 import { PinForm, ProfileForm, AppearanceCard } from './forms';
+import { TelegramCard } from './TelegramCard';
 
 export const metadata = { title: 'My profile' };
 
@@ -46,6 +47,8 @@ export default async function ProfilePage() {
           </div>
           <ProfileForm user={{ name: user.name, email: user.email, emailNotifications: user.emailNotificationsEnabled, telegramConnected: !!user.telegramChatId, telegramNotifications: user.telegramNotificationsEnabled }} />
         </section>
+
+        <TelegramCard user={user} />
 
         <section className="card">
           <h2 className="mb-4 text-lg font-semibold">Change PIN</h2>

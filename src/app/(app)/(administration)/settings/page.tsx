@@ -1,6 +1,8 @@
 import { PageHeader } from '@/components/PageHeader';
 import { getSetting, logoPath, logoUrl, shopEnabled, proofMaxKb, proofMimes, defaultClassFee, footerText } from '@/server/settings';
+import { isConfigured, botUsername } from '@/server/telegram';
 import { SettingsForm } from './SettingsForm';
+import { TelegramSettings } from './TelegramSettings';
 
 export const metadata = { title: 'Settings' };
 
@@ -13,6 +15,7 @@ export default async function SettingsPage() {
     <>
       <PageHeader title="Settings" description="Fees, payments, shop, storage and notifications." />
       <SettingsForm values={{ fee, bank, accountName, accountNumber, instructions, maxKb, mimes: mimes.join(', ').toUpperCase(), shop, footer, hasLogo: !!hasLogo, logo }} />
+      <div className="mt-6"><TelegramSettings configured={await isConfigured()} username={await botUsername()} /></div>
     </>
   );
 }
