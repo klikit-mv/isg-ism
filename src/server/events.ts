@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, gte, inArray, isNull, lt, ne, or, sum } from 'drizzle-orm';
 import { db, schema } from '@/db';
-import { fromLocalInput } from '@/lib/dates';
+import { fromLocalInput, startOfToday } from '@/lib/dates';
 import { acceptsRegistrations, audienceLabel, isOpenForSection, parseSizes, sizeList } from '@/lib/events';
 import * as money from '@/lib/money';
 import { recordAudit } from './audit';
@@ -17,12 +17,6 @@ export type RegistrationRow = typeof schema.eventRegistrations.$inferSelect;
 const E = schema.events;
 const R = schema.eventRegistrations;
 const RI = schema.eventRegistrationItems;
-
-/** Start of today in the organisation timezone, as an instant. */
-export function startOfToday(now = new Date()): Date {
-  const local = new Intl.DateTimeFormat('en-CA', { timeZone: process.env.SCOUT_TIMEZONE ?? 'Indian/Maldives' }).format(now);
-  return fromLocalInput(`${local}T00:00`) ?? now;
-}
 
 export const findEventByUuid = async (uuid: string): Promise<EventRow | null> =>
   (await db.select().from(E).where(and(eq(E.uuid, uuid), isNull(E.deletedAt))).limit(1))[0] ?? null;

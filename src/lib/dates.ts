@@ -95,3 +95,8 @@ export function parseFlexibleDate(value: string | null | undefined): string | nu
   if (check.getUTCFullYear() !== y || check.getUTCMonth() !== m - 1 || check.getUTCDate() !== d) return null;
   return `${y}-${pad(m)}-${pad(d)}`;
 }
+
+/** Midnight at the start of today in the organisation timezone, as an instant. */
+export function startOfToday(now = new Date()): Date {
+  return fromLocalInput(`${todayLocal(now)}T00:00`) ?? now;
+}

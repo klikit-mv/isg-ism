@@ -3,6 +3,7 @@ import { randomInt } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db, getPool, schema } from '../src/db';
 import { recordAudit } from '../src/server/audit';
+import { ensureDefaultTemplates } from '../src/server/certificate-templates';
 import { assignRole, hashPin } from '../src/server/users';
 
 /** Create (or promote) the first administrator and print a one-time PIN. */
@@ -30,6 +31,7 @@ if (existing) {
 }
 await assignRole(id, 'admin');
 await recordAudit('user.admin_created', { type: 'user', id }, { national_id: nationalId }, null);
+await ensureDefaultTemplates();
 
 console.log(`Admin ${name} (${nationalId}) is ready.`);
 console.log(`One-time PIN: ${pin}  — sign in and change it from Profile right away.`);

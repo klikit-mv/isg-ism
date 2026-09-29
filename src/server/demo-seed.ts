@@ -2,6 +2,7 @@ import { db, schema } from '@/db';
 import { config } from '@/lib/config';
 import { hashPin, assignRole, syncPermissions } from './users';
 import { DEMO_ACCOUNTS, demoPin } from './demo-accounts';
+import { ensureDefaultTemplates } from './certificate-templates';
 import { and, eq } from 'drizzle-orm';
 
 /**
@@ -10,6 +11,8 @@ import { and, eq } from 'drizzle-orm';
  */
 export async function seedDemo(log: (m: string) => void = () => {}): Promise<void> {
   if (config.isProduction) throw new Error('The demo data is never created in production.');
+  await ensureDefaultTemplates();
+  await ensureDemoBadges();
   const pin = demoPin();
   const password = await hashPin(pin);
   const now = new Date();
@@ -78,4 +81,18 @@ export async function seedDemo(log: (m: string) => void = () => {}): Promise<voi
     if (!link) await db.insert(schema.parentStudentLinks).values({ parentUserId: parentId, studentId: s.id, status: 'approved', createdAt: now, updatedAt: now });
   }
   log('Demo data is ready.');
+}
+
+/** A few proficiency badges so requests can be tried out. */
+async function ensureDemoBadges(): Promise<void> {
+  const now = new Date();
+  const badges = [
+    { name: 'Camper', code: 'CAMPER', section: 'Scout' }, { name: 'Cook', code: 'COOK', section: 'Scout' },
+    { name: 'Explorer', code: 'EXPLORER', section: 'Cub Scout' }, { name: 'First Aider', code: 'FIRSTAID', section: 'Rover' },
+  ];
+  for (const b of badges) {
+    const [existing] = await db.select({ id: schema.badges.id }).from(schema.badges).where(eq(schema.badges.code, b.code)).limit(1);
+    if (existing) continue;
+    await db.insert(schema.badges).values({ ...b, badgeId: `B${b.code.slice(0, 4)}`, category: 'proficiency', createdAt: now, updatedAt: now });
+  }
 }
