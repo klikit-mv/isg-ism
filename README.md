@@ -10,7 +10,7 @@ See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for how each role uses the portal.
 
 ## Stack
 
-PHP 8.3+, Laravel 13, Livewire 4 (attendance registers, parent child lookup), Alpine.js, Tailwind CSS 3, Vite. MySQL 8 in production, SQLite locally and in tests. dompdf for certificate PDFs, PhpSpreadsheet for imports and exports. Google Drive/Slides and Telegram are optional and fail soft.
+PHP 8.3+, Laravel 13, Livewire 4 (attendance registers, parent child lookup), Alpine.js, Tailwind CSS 3, Vite 5 (Node.js 21 or lower). MySQL 8 in production, SQLite locally and in tests. dompdf for certificate PDFs, PhpSpreadsheet for imports and exports. Google Drive/Slides and Telegram are optional and fail soft.
 
 ## Local setup
 
@@ -26,7 +26,7 @@ php artisan serve
 
 On Windows use `copy .env.example .env` and `type nul > database\database.sqlite`.
 
-Only developers changing dependencies or front-end code need Composer and Node.js: after `composer require …` or `composer update`, commit `vendor/`; after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`.
+Only developers changing dependencies or front-end code need Composer and Node.js: after `composer require …` or `composer update`, commit `vendor/`; after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`. The front-end tools (Vite 5, Tailwind 3) are pinned to work on Node.js 18 to 21; `.nvmrc` selects Node 21.
 
 The demo data includes sample sign-ins. In the local environment they are listed on the sign-in page, and **Use** fills in the form:
 
