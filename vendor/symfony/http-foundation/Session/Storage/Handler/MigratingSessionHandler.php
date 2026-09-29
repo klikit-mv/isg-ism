@@ -38,7 +38,10 @@ class MigratingSessionHandler implements \SessionHandlerInterface, \SessionUpdat
         $this->writeOnlyHandler = $writeOnlyHandler;
     }
 
-    public function create_sid(): string
+    /**
+     * @return string
+     */
+    public function create_sid()
     {
         return session_create_id() ?: throw new \RuntimeException('Unable to create a session ID.');
     }
