@@ -34,7 +34,7 @@ It is one Node.js app plus a MySQL database, which is exactly what Hostinger's *
    | `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME` | optional, for email alerts. `MAIL_ENCRYPTION=ssl` for port 465. |
    | `SCOUT_TIMEZONE`, `SCOUT_CURRENCY`, `SCOUT_NAME`, … | optional, see `.env.example` |
 
-5. **Deploy.** Every start first applies the database migrations, creates the first administrator when the database has none, and adds one default certificate template per type. Nothing else needs running: there is no cron job and no terminal step.
+5. **Deploy.** Every time the app starts it applies the database migrations, creates the first administrator when the database has none, and adds one default certificate template per type. Nothing else needs running: there is no cron job and no terminal step.
 6. **First sign-in.** Sign in with the National ID and PIN you set, change the PIN under *Profile*, then **delete `SCOUT_ADMIN_PIN`** from the environment. Add the logo, bank details and Telegram bot under *Administration → Settings*, and create the other users.
 7. **Domain and SSL.** Point the domain at the app in hPanel and switch on the free SSL. Sign-in cookies are https-only in production; while testing on a plain `http` address set `SESSION_SECURE_COOKIE=false` and remove it afterwards.
 
@@ -70,7 +70,7 @@ Run the tests with `npm test` (they use a separate MySQL database, `scout_next_t
 
 | Command | Purpose |
 | --- | --- |
-| `npm run db:migrate` | Apply migrations (also runs on every `npm start`) |
+| `npm run db:migrate` | Apply migrations by hand (the app also does this every time it starts) |
 | `npm run db:seed` | Demo data (not in production) |
 | `npm run scout:create-admin -- A1234567 "Full Name" --email=you@example.org` | Create or promote an admin with a one-time PIN (needs a terminal) |
 | `npm run scout:import-legacy -- --file=workbook.xlsx [--sheet=Name] [--force]` | Inspect and import a legacy workbook; a dry run unless `--force` |

@@ -9,10 +9,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node scripts/migrate.mjs && next start",
+    "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "node scripts/migrate.mjs",
+    "db:migrate": "tsx scripts/migrate.mts",
     "db:seed": "tsx scripts/seed.mts",
     "scout:create-admin": "tsx scripts/create-admin.mts",
     "scout:export": "tsx scripts/export.mts",
