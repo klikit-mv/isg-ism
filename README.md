@@ -1,6 +1,6 @@
 # Scout Management System
 
-The Ifthithaah Scout Group portal: one Laravel 11.4 application and one database for scouts, groups, activities, attendance, fees, payments, the scout shop and certificates. It replaces the old Google Sheets + Apps Script workbooks.
+The Ifthithaah Scout Group portal: one Laravel 11.41 application and one database for scouts, groups, activities, attendance, fees, payments, the scout shop and certificates. It replaces the old Google Sheets + Apps Script workbooks.
 
 - **Sign-in:** National ID + PIN. Anyone can register as a scout or parent; a leader or admin verifies them first.
 - **Roles:** admin, leader, parent, student (a person may hold several). Extra permissions: Verify payments, Manage shop, Process delivery, Manage annual fees.
@@ -10,7 +10,7 @@ See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for how each role uses the portal.
 
 ## Stack
 
-PHP 8.3+, Laravel 11.4 (pinned to exactly 11.4.0; do not run `composer update laravel/framework`), Livewire 3 (attendance registers, parent child lookup), Alpine.js, Tailwind CSS 3, Vite 5 (Node.js 21 or lower). MySQL 8 in production, SQLite locally and in tests. dompdf for certificate PDFs, PhpSpreadsheet for imports and exports. Google Drive/Slides and Telegram are optional and fail soft.
+PHP 8.3+, Laravel 11.41.3 (pinned exactly; do not run `composer update laravel/framework`), Livewire 3 (attendance registers, parent child lookup), Alpine.js, Tailwind CSS 3, Vite 5 (Node.js 21 or lower). MySQL 8 in production, SQLite locally and in tests. dompdf for certificate PDFs, PhpSpreadsheet for imports and exports. Google Drive/Slides and Telegram are optional and fail soft.
 
 ## Local setup
 
