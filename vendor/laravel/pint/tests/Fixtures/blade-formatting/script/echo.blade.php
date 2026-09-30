@@ -1,8 +1,0 @@
-<!DOCTYPE html>
-<html lang="en">
-        <body>
-<script>
-const count = {{ $count }};
-</script>
-    </body>
-</html>

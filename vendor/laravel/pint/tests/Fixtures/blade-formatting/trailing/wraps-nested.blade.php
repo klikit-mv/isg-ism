@@ -1,9 +1,0 @@
-@props([
-        'config' => [
-   'theme'    =>    'dark',
-            'options' => [
-        'a',
-                'b'
-            ]
-    ]
-])

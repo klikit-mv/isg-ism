@@ -14,9 +14,10 @@ PHP 8.3+, Laravel 11.4 (pinned to exactly 11.4.0; do not run `composer update la
 
 ## Local setup
 
-The repository includes every dependency: the PHP packages in `vendor/` and the compiled CSS/JS in `public/build/`. You only need PHP 8.3+ (no Composer or Node.js) to install and run it:
+The repository includes the compiled CSS/JS in `public/build/` (no Node.js needed). PHP packages are **not** committed: run `composer install` (PHP 8.3+) once, and on Plesk the Laravel Toolkit does that for you.
 
 ```bash
+composer install
 cp .env.example .env
 php artisan key:generate
 touch database/database.sqlite
@@ -26,7 +27,7 @@ php artisan serve
 
 On Windows use `copy .env.example .env` and `type nul > database\database.sqlite`.
 
-Only developers changing dependencies or front-end code need Composer and Node.js: after `composer require …` or `composer update`, commit `vendor/`; after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`. The front-end tools (Vite 5, Tailwind 3) are pinned to work on Node.js 18 to 21; `.nvmrc` selects Node 21.
+Only developers changing front-end code need Node.js: after `composer require …` commit `composer.json` and `composer.lock` (never `composer update laravel/framework`); after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`. The front-end tools (Vite 5, Tailwind 3) are pinned to work on Node.js 18 to 21; `.nvmrc` selects Node 21.
 
 The demo data includes sample sign-ins. In the local environment they are listed on the sign-in page, and **Use** fills in the form:
 
@@ -44,16 +45,24 @@ Run the tests with `php artisan test`.
 
 ## Production deployment
 
-1. Server: PHP 8.3 with `intl`, `mbstring`, `pdo_mysql`, `redis`, `gd`, `zip`; MySQL 8; Redis; Nginx or Apache serving `public/`.
-2. `.env`: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `DB_*`, `CACHE_STORE=redis`, `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis`, `SESSION_LIFETIME=480`, `SESSION_SECURE_COOKIE=true`, `MAIL_*`, the `SCOUT_*` values and optionally `GOOGLE_SERVICE_ACCOUNT_JSON`.
-3. Install (dependencies and built assets are already in the repository):
+### Plesk (Laravel Toolkit) or any shared PHP hosting
+
+1. Set the domain's PHP to **8.3** (Websites & Domains → PHP Settings). Extensions: `intl`, `mbstring`, `pdo_mysql`, `gd`, `zip`, `fileinfo`.
+2. Create a MySQL database and user. Import the repository with **Git** (or upload the files) and let the **Laravel Toolkit** run **Composer install**. There is no `vendor/` folder in the repository on purpose: it is built on the server with the domain's PHP. A `vendor/` folder built for another PHP makes the Toolkit fail with "Composer detected issues … running 7.2".
+3. Document root: the `public` folder.
+4. Copy `.env.production` (or `.env.example`) to `.env` and fill it in: `APP_ENV=production`, `APP_DEBUG=false`, `APP_URL`, `APP_KEY` (`php artisan key:generate --force`), `DB_*`, `MAIL_*`, `QUEUE_CONNECTION=sync`, `SESSION_DRIVER=database`, `CACHE_STORE=database`.
+5. Run (Toolkit → Artisan, or SSH):
    ```bash
    php artisan migrate --force
    php artisan storage:link
    php artisan config:cache && php artisan route:cache && php artisan view:cache
    ```
-4. Cron: `* * * * * php artisan schedule:run` (runs `scout:cleanup` daily). Worker: `php artisan queue:work redis`.
-5. **First admin:** `php artisan scout:create-admin A1234567 "Full Name" --email=you@example.org`. It prints a one-time PIN; sign in and change it under Profile. The demo seeder never runs in production.
+6. Scheduled task (Plesk → Scheduled Tasks): `php artisan schedule:run` every minute (runs `scout:cleanup` daily).
+7. **First admin:** `php artisan scout:create-admin A1234567 "Full Name" --email=you@example.org`. It prints a one-time PIN; sign in and change it under Profile. The demo seeder never runs in production.
+
+### VPS with Redis
+
+Use the same steps, with Nginx or Apache serving `public/`, `CACHE_STORE=redis`, `SESSION_DRIVER=redis`, `QUEUE_CONNECTION=redis` and a worker: `php artisan queue:work redis`.
 
 ### Website logo
 

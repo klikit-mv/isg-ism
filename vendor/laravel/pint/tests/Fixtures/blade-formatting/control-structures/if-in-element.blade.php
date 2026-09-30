@@ -1,5 +1,0 @@
-<header>
-@if($x)
-<div>ok</div>
-        @endif
-</header>

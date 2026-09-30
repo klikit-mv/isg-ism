@@ -1,3 +1,0 @@
-<?php
-
-bladeFixtureTest('not-operator');
