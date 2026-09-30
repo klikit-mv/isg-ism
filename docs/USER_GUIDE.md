@@ -13,8 +13,6 @@ After signing in you see the **module hub**. Open a module; the left menu then s
 - **Fees and payments:** press **Pay**, transfer the money (see **Show bank details**; the account number has a Copy button) and upload the receipt. A leader checks it and you are notified.
 - **Scout shop:** choose an item and child, place the order, then pay for it. It is confirmed once fully paid.
 - **Certificates → Badge requests:** ask for a badge for your child.
-- **Events:** the home page lists upcoming events without signing in. Sign in to register your child, pick T-shirt sizes (measurements are shown) and pay.
-- **Telegram:** connect your account under **Profile** to receive alerts in Telegram too.
 
 ## Scouts (My record)
 
@@ -29,8 +27,7 @@ Your details, attendance and fees, plus certificates, badge requests and the sho
 - **Mark attendance:** Present, Late, Absent or Excused. On charged activities choose what was paid now (0, 5, 10, 15 or Other); cash taken here is recorded automatically. Excused scouts are not charged. Rows left blank are not saved.
 - **Rover attendance:** required Rovers take Present/Absent/Excused; optional and extra Rovers can only be Present.
 - **Certificates:** issue general certificates (one or in bulk), approve badge requests and generate their certificates, keep leadership records, and **Verify and sign** certificates. Upload your signature in Profile first.
-- **Events:** create an event (draft first), add pre-order items such as T-shirts with sizes and measurements, open registration, and see who registered and what to order. Leaders can register themselves; Rovers and leaders can join any event.
-- **Reports:** attendance, Rover attendance, annual fees, class fees, payments and shop, with print and XLSX/CSV export. Excel files have dropdown lists for coded columns.
+- **Reports:** attendance, Rover attendance, annual fees, class fees, payments and shop, with print and XLSX/CSV export.
 
 Leaders with extra permissions also see: **Verification** (approve or reject online payments; rejecting needs a reason), shop item management, delivery (**Ready** / **Deliver**), and annual fee years (**Generate invoices**).
 
@@ -38,9 +35,9 @@ Leaders with extra permissions also see: **Verification** (approve or reject onl
 
 - **Users:** create accounts, set roles and permissions, reset PINs (signs the user out everywhere), upload leader signatures.
 - **Parent links:** a scout can have only one pending or approved parent.
-- **Settings:** default class fee, bank details, shop open/closed, proof size, footer, logo, and the Telegram bot (**Test connection** and **Send** check it). Photos, receipts and certificates are stored on the server.
+- **Settings:** default class fee, bank details, shop open/closed, proof size, footer, Google Drive folders, Telegram bot. Use the **Test** buttons to check connections.
 - **Audit logs:** every financial, membership, attendance, import and sign-in event.
-- **Import:** upload the legacy workbook; a dry run shows what would happen and lists any problem rows before **Import for real**.
+- **Import:** upload the legacy workbook; a dry run shows what would happen before **Import for real**. Download the messages as CSV.
 - **Section promotion** (Scout operations): move scouts one section forward.
 
 ## Checking a certificate

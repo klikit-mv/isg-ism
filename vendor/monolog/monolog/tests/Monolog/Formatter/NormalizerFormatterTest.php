@@ -1,0 +1,815 @@
+<?php declare(strict_types=1);
+
+/*
+ * This file is part of the Monolog package.
+ *
+ * (c) Jordi Boggiano <j.boggiano@seld.be>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
+
+namespace Monolog\Formatter;
+
+use Monolog\Level;
+
+/**
+ * @covers Monolog\Formatter\NormalizerFormatter
+ */
+class NormalizerFormatterTest extends \Monolog\Test\MonologTestCase
+{
+    public function testFormat()
+    {
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $formatted = $formatter->format($this->getRecord(
+            Level::Error,
+            'foo',
+            channel: 'meh',
+            extra: ['foo' => new TestFooNorm, 'bar' => new TestBarNorm, 'baz' => [], 'res' => fopen('php://memory', 'rb')],
+            context: [
+                'foo' => 'bar',
+                'baz' => 'qux',
+                'inf' => INF,
+                '-inf' => -INF,
+                'nan' => acos(4),
+            ],
+        ));
+
+        $this->assertEquals([
+            'level_name' => Level::Error->getName(),
+            'level' => Level::Error->value,
+            'channel' => 'meh',
+            'message' => 'foo',
+            'datetime' => date('Y-m-d'),
+            'extra' => [
+                'foo' => ['Monolog\\Formatter\\TestFooNorm' => ["foo" => "fooValue"]],
+                'bar' => ['Monolog\\Formatter\\TestBarNorm' => 'bar'],
+                'baz' => [],
+                'res' => '[resource(stream)]',
+            ],
+            'context' => [
+                'foo' => 'bar',
+                'baz' => 'qux',
+                'inf' => 'INF',
+                '-inf' => '-INF',
+                'nan' => 'NaN',
+            ],
+        ], $formatted);
+    }
+
+    public function testFormatExceptions()
+    {
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $e = new \LogicException('bar');
+        $e2 = new \RuntimeException('foo', 0, $e);
+        $formatted = $formatter->normalizeValue([
+            'exception' => $e2,
+        ]);
+
+        $this->assertGreaterThan(5, \count($formatted['exception']['trace']));
+        $this->assertTrue(isset($formatted['exception']['previous']));
+        unset($formatted['exception']['trace'], $formatted['exception']['previous']);
+
+        $this->assertEquals([
+            'exception' => [
+                'class'   => \get_class($e2),
+                'message' => $e2->getMessage(),
+                'code'    => $e2->getCode(),
+                'file'    => $e2->getFile().':'.$e2->getLine(),
+            ],
+        ], $formatted);
+    }
+
+    public function testFormatExceptionWithBasePath(): void
+    {
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $formatter->setBasePath(\dirname(\dirname(\dirname(__DIR__))));
+        $e = new \LogicException('bar');
+        $formatted = $formatter->normalizeValue([
+            'exception' => $e,
+        ]);
+
+        self::assertSame('tests/Monolog/Formatter/NormalizerFormatterTest.php:' . (__LINE__ - 5), $formatted['exception']['file']);
+        self::assertStringStartsWith('vendor/phpunit/phpunit/src/Framework/TestCase.php:', $formatted['exception']['trace'][0]);
+        self::assertStringStartsWith('vendor/phpunit/phpunit/src/Framework/TestCase.php:', $formatted['exception']['trace'][1]);
+    }
+
+    public function testFormatSoapFaultException()
+    {
+        if (!class_exists('SoapFault')) {
+            $this->markTestSkipped('Requires the soap extension');
+        }
+
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $e = new \SoapFault('foo', 'bar', 'hello', 'world');
+        $formatted = $formatter->normalizeValue([
+            'exception' => $e,
+        ]);
+
+        unset($formatted['exception']['trace']);
+
+        $this->assertEquals([
+            'exception' => [
+                'class' => 'SoapFault',
+                'message' => 'bar',
+                'code' => 0,
+                'file' => $e->getFile().':'.$e->getLine(),
+                'faultcode' => 'foo',
+                'faultactor' => 'hello',
+                'detail' => 'world',
+            ],
+        ], $formatted);
+
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $e = new \SoapFault('foo', 'bar', 'hello', (object) ['bar' => (object) ['biz' => 'baz'], 'foo' => 'world']);
+        $formatted = $formatter->normalizeValue([
+            'exception' => $e,
+        ]);
+
+        unset($formatted['exception']['trace']);
+
+        $this->assertEquals([
+            'exception' => [
+                'class' => 'SoapFault',
+                'message' => 'bar',
+                'code' => 0,
+                'file' => $e->getFile().':'.$e->getLine(),
+                'faultcode' => 'foo',
+                'faultactor' => 'hello',
+                'detail' => '{"bar":{"biz":"baz"},"foo":"world"}',
+            ],
+        ], $formatted);
+    }
+
+    public function testFormatToStringExceptionHandle()
+    {
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $formatted = $formatter->format($this->getRecord(context: [
+            'myObject' => new TestToStringError(),
+        ]));
+        $this->assertEquals(
+            [
+                'level_name' => Level::Warning->getName(),
+                'level' => Level::Warning->value,
+                'channel' => 'test',
+                'message' => 'test',
+                'context' => [
+                    'myObject' => [
+                        TestToStringError::class => [],
+                    ],
+                ],
+                'datetime' => date('Y-m-d'),
+                'extra' => [],
+            ],
+            $formatted
+        );
+    }
+
+    public function testBatchFormat()
+    {
+        $formatter = new NormalizerFormatter('Y-m-d');
+        $formatted = $formatter->formatBatch([
+            $this->getRecord(Level::Critical, 'bar', channel: 'test'),
+            $this->getRecord(Level::Warning, 'foo', channel: 'log'),
+        ]);
+        $this->assertEquals([
+            [
+                'level_name' => Level::Critical->getName(),
+                'level' => Level::Critical->value,
+                'channel' => 'test',
+                'message' => 'bar',
+                'context' => [],
+                'datetime' => date('Y-m-d'),
+                'extra' => [],
+            ],
+            [
+                'level_name' => Level::Warning->getName(),
+                'level' => Level::Warning->value,
+                'channel' => 'log',
+                'message' => 'foo',
+                'context' => [],
+                'datetime' => date('Y-m-d'),
+                'extra' => [],
+            ],
+        ], $formatted);
+    }
+
+    /**
+     * Test issue #137
+     */
+    public function testIgnoresRecursiveObjectReferences()
+    {
+        // set up the recursion
+        $foo = new \stdClass();
+        $bar = new \stdClass();
+
+        $foo->bar = $bar;
+        $bar->foo = $foo;
+
+        // set an error handler to assert that the error is not raised anymore
+        $that = $this;
+        set_error_handler(function ($level, $message, $file, $line, $context) use ($that) {
+            if (error_reporting() & $level) {
+                restore_error_handler();
+                $that->fail("$message should not be raised");
+            }
+
+            return true;
+        });
+
+        $formatter = new NormalizerFormatter();
+        $reflMethod = new \ReflectionMethod($formatter, 'toJson');
+        $res = $reflMethod->invoke($formatter, [$foo, $bar], true);
+
+        restore_error_handler();
+
+        $this->assertEquals('[{"bar":{"foo":null}},{"foo":{"bar":null}}]', $res);
+    }
+
+    public function testCanNormalizeReferences()
+    {
+        $formatter = new NormalizerFormatter();
+        $x = ['foo' => 'bar'];
+        $y = ['x' => &$x];
+        $x['y'] = &$y;
+        $formatter->normalizeValue($y);
+    }
+
+    public function testToJsonIgnoresInvalidTypes()
+    {
+        // set up the invalid data
+        $resource = fopen(__FILE__, 'r');
+
+        // set an error handler to assert that the error is not raised anymore
+        $that = $this;
+        set_error_handler(function ($level, $message, $file, $line, $context) use ($that) {
+            if (error_reporting() & $level) {
+                restore_error_handler();
+                $that->fail("$message should not be raised");
+            }
+
+            return true;
+        });
+
+        $formatter = new NormalizerFormatter();
+        $reflMethod = new \ReflectionMethod($formatter, 'toJson');
+        $res = $reflMethod->invoke($formatter, [$resource], true);
+
+        restore_error_handler();
+
+        $this->assertEquals('[null]', $res);
+    }
+
+    public function testNormalizeHandleLargeArraysWithExactly1000Items()
+    {
+        $formatter = new NormalizerFormatter();
+        $largeArray = range(1, 1000);
+
+        $res = $formatter->format($this->getRecord(
+            Level::Critical,
+            'bar',
+            channel: 'test',
+            context: [$largeArray],
+        ));
+
+        $this->assertCount(1000, $res['context'][0]);
+        $this->assertArrayNotHasKey('...', $res['context'][0]);
+    }
+
+    public function testNormalizeHandleLargeArrays()
+    {
+        $formatter = new NormalizerFormatter();
+        $largeArray = range(1, 2000);
+
+        $res = $formatter->format($this->getRecord(
+            Level::Critical,
+            'bar',
+            channel: 'test',
+            context: [$largeArray],
+        ));
+
+        $this->assertCount(1001, $res['context'][0]);
+        $this->assertEquals('Over 1000 items (2000 total), aborting normalization', $res['context'][0]['...']);
+    }
+
+    public function testIgnoresInvalidEncoding()
+    {
+        $formatter = new NormalizerFormatter();
+        $reflMethod = new \ReflectionMethod($formatter, 'toJson');
+
+        // send an invalid unicode sequence as a object that can't be cleaned
+        $record = new \stdClass;
+        $record->message = "\xB1\x31";
+
+        $this->assertsame('{"message":"�1"}', $reflMethod->invoke($formatter, $record));
+    }
+
+    public function testConvertsInvalidEncodingAsLatin9()
+    {
+        $formatter = new NormalizerFormatter();
+        $reflMethod = new \ReflectionMethod($formatter, 'toJson');
+
+        $res = $reflMethod->invoke($formatter, ['message' => "\xA4\xA6\xA8\xB4\xB8\xBC\xBD\xBE"]);
+
+        $this->assertSame('{"message":"��������"}', $res);
+    }
+
+    public function testMaxNormalizeDepth()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxNormalizeDepth(1);
+        $throwable = new \Error('Foo');
+
+        $message = $this->formatRecordWithExceptionInContext($formatter, $throwable);
+        $this->assertEquals(
+            'Over 1 levels deep, aborting normalization',
+            $message['context']['exception']
+        );
+    }
+
+    /**
+     * Scalars and null are leaves: they are returned verbatim even when they
+     * sit deeper than maxNormalizeDepth, while nested arrays/objects at the
+     * same depth still hit the depth guard.
+     */
+    public function testScalarsAndNullBypassMaxNormalizeDepth()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxNormalizeDepth(1);
+
+        // context is normalized at depth 1, its children at depth 2 (> max).
+        $formatted = $formatter->format($this->getRecord(context: [
+            'scalar' => 'value',
+            'int' => 42,
+            'null' => null,
+            'nested' => ['too' => 'deep'],
+        ]));
+
+        $this->assertSame('value', $formatted['context']['scalar']);
+        $this->assertSame(42, $formatted['context']['int']);
+        $this->assertNull($formatted['context']['null']);
+        $this->assertSame(
+            'Over 1 levels deep, aborting normalization',
+            $formatted['context']['nested']
+        );
+    }
+
+    public function testMaxNormalizeItemCountWith0ItemsMax()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxNormalizeDepth(9);
+        $formatter->setMaxNormalizeItemCount(0);
+        $throwable = new \Error('Foo');
+
+        $message = $this->formatRecordWithExceptionInContext($formatter, $throwable);
+        $this->assertEquals(
+            ["..." => "Over 0 items (7 total), aborting normalization"],
+            $message
+        );
+    }
+
+    public function testMaxNormalizeItemCountWith2ItemsMax()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxNormalizeDepth(9);
+        $formatter->setMaxNormalizeItemCount(2);
+        $throwable = new \Error('Foo');
+
+        $message = $this->formatRecordWithExceptionInContext($formatter, $throwable);
+
+        unset($message['context']['exception']['trace']);
+        unset($message['context']['exception']['file']);
+        $this->assertEquals(
+            [
+                "message" => "foobar",
+                "context" => ['exception' => [
+                    'class' => 'Error',
+                    'message' => 'Foo',
+                    'code' => 0,
+               ]],
+                "..." => "Over 2 items (7 total), aborting normalization",
+            ],
+            $message
+        );
+    }
+
+    public function testExceptionTraceWithArgs()
+    {
+        try {
+            // This will contain $resource and $wrappedResource as arguments in the trace item
+            $resource = fopen('php://memory', 'rw+');
+            fwrite($resource, 'test_resource');
+            $wrappedResource = new TestFooNorm;
+            $wrappedResource->foo = $resource;
+            // Just do something stupid with a resource/wrapped resource as argument
+            $arr = [$wrappedResource, $resource];
+            // modifying the array inside throws a "usort(): Array was modified by the user comparison function"
+            usort($arr, function ($a, $b) {
+                throw new \ErrorException('Foo');
+            });
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $record = $this->getRecord(context: ['exception' => $e]);
+        $result = $formatter->format($record);
+
+        // See https://github.com/php/php-src/issues/8810 fixed in PHP 8.2
+        $offset = PHP_VERSION_ID >= 80200 ? 13 : 11;
+        $this->assertSame(
+            __FILE__.':'.(__LINE__ - $offset),
+            $result['context']['exception']['trace'][1]
+        );
+        // the comparison closure is called by usort itself, so its frame has no file/line
+        $this->assertStringStartsWith(
+            PHP_VERSION_ID >= 80400 ? 'internal[{closure:' : 'internal['.self::class.'->{closure}',
+            $result['context']['exception']['trace'][0]
+        );
+    }
+
+    public function testExceptionTraceReportsFramesWithoutFileAndLine()
+    {
+        try {
+            $line = __LINE__ + 2;
+            // the callback is called by array_map itself, so its frame has no file/line
+            array_map([TestInternalFrame::class, 'boom'], [1]);
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        $this->assertSame('internal['.TestInternalFrame::class.'::boom]:0', $formatted['exception']['trace'][0]);
+        $this->assertSame(__FILE__.':'.$line, $formatted['exception']['trace'][1]);
+    }
+
+    public function testExceptionTraceIsNotEmptiedByFramesWithoutFileAndLine()
+    {
+        try {
+            array_map([TestInternalFrame::class, 'boom'], [1]);
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        // the only frame kept is the one without file/line, which used to leave no trace at all
+        $formatter->setMaxTraceLength(1);
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        $this->assertSame(['internal['.TestInternalFrame::class.'::boom]:0'], $formatted['exception']['trace']);
+    }
+
+    public function testExceptionTraceStripsTheBasePathFromFramesWithoutFileAndLine()
+    {
+        if (PHP_VERSION_ID < 80400) {
+            $this->markTestSkipped('Closures are only named after their declaration site since PHP 8.4');
+        }
+
+        $closure = require __DIR__.'/Fixtures/InternalFrameClosure.php';
+
+        try {
+            array_map($closure, [1]);
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatter->setBasePath(dirname(__DIR__, 3));
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        // NormalizerFormatter reports paths as the platform writes them, unlike LineFormatter
+        $this->assertStringContainsString(
+            '{closure:'.strtr('tests/Monolog/Formatter/Fixtures/InternalFrameClosure.php', '/', DIRECTORY_SEPARATOR).':',
+            $formatted['exception']['trace'][0]
+        );
+        $this->assertStringNotContainsString(dirname(__DIR__, 3), $formatted['exception']['trace'][0]);
+    }
+
+    public function testExceptionTraceReportsAClosureCalledByAnInternalFunctionWithItsClass()
+    {
+        try {
+            (new TestInternalFrame)->viaClosure();
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        // PHP 8.4 names the closure after the method it was declared in, older versions only
+        // report <namespace>\{closure}, where the class is prefixed to keep that context
+        if (PHP_VERSION_ID >= 80400) {
+            $this->assertStringStartsWith(
+                'internal[{closure:'.TestInternalFrame::class.'::viaClosure():',
+                $formatted['exception']['trace'][0]
+            );
+        } else {
+            $this->assertSame(
+                'internal['.TestInternalFrame::class.'->{closure}]:0',
+                $formatted['exception']['trace'][0]
+            );
+        }
+    }
+
+    public function testExceptionTraceReportsFramesWithoutFileAndLineOrClass()
+    {
+        try {
+            // a plain function gets a frame without file/line and without a class either
+            array_map(__NAMESPACE__.'\\throwFromAPlainFunction', [1]);
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        $this->assertSame(
+            'internal['.__NAMESPACE__.'\\throwFromAPlainFunction]:0',
+            $formatted['exception']['trace'][0]
+        );
+    }
+
+    public function testExceptionTraceOnlyStripsTheBasePathOnceFromFramesWithoutFileAndLine()
+    {
+        if (PHP_VERSION_ID < 80400) {
+            $this->markTestSkipped('Closures are only named after their declaration site since PHP 8.4');
+        }
+
+        $closure = require __DIR__.'/Fixtures/InternalFrameClosure.php';
+
+        try {
+            array_map($closure, [1]);
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatter->setBasePath(DIRECTORY_SEPARATOR);
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        // only the leading separator may go, every other occurrence has to survive
+        $this->assertStringContainsString(
+            strtr('Monolog/Formatter/Fixtures/InternalFrameClosure.php', '/', DIRECTORY_SEPARATOR),
+            $formatted['exception']['trace'][0]
+        );
+    }
+
+    public function testExceptionTraceStripsTheAnonymousClassDeclarationSite()
+    {
+        $thrower = new class {
+            public function boom(): void
+            {
+                throw new \RuntimeException('Thrown from an anonymous class');
+            }
+        };
+
+        try {
+            array_map([$thrower, 'boom'], [1]);
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        // PHP names the class class@anonymous\0<file>:<line>$<n>, and that NUL byte truncates
+        // syslog lines and is not valid JSON
+        $this->assertStringNotContainsString("\0", $formatted['exception']['trace'][0]);
+        $this->assertSame('internal[class@anonymous->boom]:0', $formatted['exception']['trace'][0]);
+    }
+
+    public function testExceptionTraceStripsTheAnonymousClassDeclarationSiteFromClosureNames()
+    {
+        if (PHP_VERSION_ID < 80400) {
+            $this->markTestSkipped('Closures are only named after their declaration site since PHP 8.4');
+        }
+
+        $thrower = new class {
+            public function boom(): void
+            {
+                array_map(static function (): void {
+                    throw new \RuntimeException('Thrown from a closure in an anonymous class');
+                }, [1]);
+            }
+        };
+
+        try {
+            $thrower->boom();
+        } catch (\Throwable $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $formatted = $formatter->normalizeValue(['exception' => $e]);
+
+        // the closure name embeds the anonymous class name, NUL byte included
+        $this->assertStringNotContainsString("\0", $formatted['exception']['trace'][0]);
+        $this->assertStringContainsString('{closure:class@anonymous::boom()', $formatted['exception']['trace'][0]);
+    }
+
+    private function formatRecordWithExceptionInContext(NormalizerFormatter $formatter, \Throwable $exception): array
+    {
+        $message = $formatter->format($this->getRecord(
+            Level::Critical,
+            'foobar',
+            channel: 'core',
+            context: ['exception' => $exception],
+        ));
+
+        return $message;
+    }
+
+    public function testExceptionTraceDoesNotLeakCallUserFuncArgs()
+    {
+        try {
+            $arg = new TestInfoLeak;
+            \call_user_func([$this, 'throwHelper'], $arg, $dt = new \DateTime());
+        } catch (\Exception $e) {
+        }
+
+        $formatter = new NormalizerFormatter();
+        $record = $this->getRecord(context: ['exception' => $e]);
+        $result = $formatter->format($record);
+
+        $this->assertSame(
+            __FILE__ .':'.(__LINE__-9),
+            $result['context']['exception']['trace'][0]
+        );
+    }
+
+    public function testCanNormalizeIncompleteObject(): void
+    {
+        $serialized = "O:17:\"Monolog\TestClass\":1:{s:23:\"\x00Monolog\TestClass\x00name\";s:4:\"test\";}";
+        $object = unserialize($serialized);
+
+        $formatter = new NormalizerFormatter();
+        $record = $this->getRecord(context: ['object' => $object]);
+        $result = $formatter->format($record);
+
+        $this->assertEquals([
+            '__PHP_Incomplete_Class' => 'Monolog\\TestClass',
+        ], $result['context']['object']);
+    }
+
+    public function testMaxTraceLengthDefault()
+    {
+        $formatter = new NormalizerFormatter();
+        $this->assertNull($formatter->getMaxTraceLength());
+    }
+
+    public function testMaxTraceLengthSetter()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxTraceLength(5);
+        $this->assertEquals(5, $formatter->getMaxTraceLength());
+
+        $formatter->setMaxTraceLength(null);
+        $this->assertNull($formatter->getMaxTraceLength());
+    }
+
+    public function testMaxTraceLengthLimitsTrace()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxTraceLength(2);
+
+        $exception = $this->createDeepTraceException();
+        $formatted = $formatter->normalizeValue(['exception' => $exception]);
+
+        $this->assertArrayHasKey('trace', $formatted['exception']);
+        $this->assertCount(2, $formatted['exception']['trace']);
+    }
+
+    public function testMaxTraceLengthZeroDoesNotIncludeTrace()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxTraceLength(0);
+
+        $exception = $this->createDeepTraceException();
+        $formatted = $formatter->normalizeValue(['exception' => $exception]);
+
+        $this->assertArrayNotHasKey('trace', $formatted['exception']);
+    }
+
+    public function testMaxTraceLengthNullAllowsUnlimited()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxTraceLength(null);
+
+        $exception = $this->createDeepTraceException();
+        $formatted = $formatter->normalizeValue(['exception' => $exception]);
+
+        $this->assertArrayHasKey('trace', $formatted['exception']);
+        $this->assertGreaterThan(2, count($formatted['exception']['trace']));
+    }
+
+    public function testMaxTraceLengthWithPreviousException()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxTraceLength(1);
+
+        $previous = new \RuntimeException('Previous exception');
+        $exception = new \LogicException('Main exception', 0, $previous);
+        $formatted = $formatter->normalizeValue(['exception' => $exception]);
+
+        $this->assertArrayHasKey('trace', $formatted['exception']);
+        $this->assertCount(1, $formatted['exception']['trace']);
+        $this->assertArrayHasKey('previous', $formatted['exception']);
+        $this->assertArrayHasKey('trace', $formatted['exception']['previous']);
+        $this->assertCount(1, $formatted['exception']['previous']['trace']);
+    }
+
+    public function testMaxTraceLengthWithBasePath()
+    {
+        $formatter = new NormalizerFormatter();
+        $formatter->setMaxTraceLength(3);
+        $formatter->setBasePath(dirname(__DIR__, 3));
+
+        $exception = $this->createDeepTraceException();
+        $formatted = $formatter->normalizeValue(['exception' => $exception]);
+
+        $this->assertArrayHasKey('trace', $formatted['exception']);
+        $this->assertCount(3, $formatted['exception']['trace']);
+
+        foreach ($formatted['exception']['trace'] as $traceItem) {
+            $this->assertStringNotContainsString(dirname(__DIR__, 3), $traceItem);
+        }
+    }
+
+    private function createDeepTraceException(): \Exception
+    {
+        $createException = function(int $depth) use (&$createException): \Exception {
+            if ($depth <= 0) {
+                return new \RuntimeException('Test exception with deep trace');
+            }
+            return $createException($depth - 1);
+        };
+
+        return $createException(3);
+    }
+
+    private function throwHelper($arg)
+    {
+        throw new \RuntimeException('Thrown');
+    }
+}
+
+class TestFooNorm
+{
+    public $foo = 'fooValue';
+}
+
+class TestBarNorm
+{
+    public function __toString()
+    {
+        return 'bar';
+    }
+}
+
+class TestStreamFoo
+{
+    public $foo;
+    public $resource;
+
+    public function __construct($resource)
+    {
+        $this->resource = $resource;
+        $this->foo = 'BAR';
+    }
+
+    public function __toString()
+    {
+        fseek($this->resource, 0);
+
+        return $this->foo . ' - ' . (string) stream_get_contents($this->resource);
+    }
+}
+
+class TestToStringError
+{
+    public function __toString()
+    {
+        throw new \RuntimeException('Could not convert to string');
+    }
+}
+
+class TestInfoLeak
+{
+    public function __toString()
+    {
+        return 'Sensitive information';
+    }
+}
+
+class TestInternalFrame
+{
+    public static function boom(): void
+    {
+        throw new \RuntimeException('Thrown');
+    }
+
+    public function viaClosure(): void
+    {
+        array_map(function (): void {
+            throw new \RuntimeException('Thrown from a closure');
+        }, [1]);
+    }
+}
+
+function throwFromAPlainFunction(): void
+{
+    throw new \RuntimeException('Thrown');
+}

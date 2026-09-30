@@ -1,0 +1,210 @@
+# Welcome to PhpSpreadsheet's documentation
+
+![Logo on White Background](./assets/logowithbackground.png)
+
+[PhpSpreadsheet](https://www.github.com/PhpOffice/PhpSpreadsheet) is a library written in pure PHP and offers a set of classes that
+allow you to read and write various spreadsheet file formats such as Excel and LibreOffice Calc.
+
+## File formats supported
+
+|Format                                      |Reading|Writing|
+|--------------------------------------------|:-----:|:-----:|
+|Open Document Format/OASIS (.ods)           |   ✓   |   ✓   |
+|Office Open XML (.xlsx) Excel 2007 and above|   ✓   |   ✓   |
+|BIFF 8 (.xls) Excel 97 and above            |   ✓   |   ✓   |
+|BIFF 5 (.xls) Excel 95                      |   ✓   |       |
+|SpreadsheetML (.xml) Excel 2003             |   ✓   |       |
+|Gnumeric                                    |   ✓   |       |
+|HTML                                        |   ✓   |   ✓   |
+|SYLK                                        |   ✓   |       |
+|CSV                                         |   ✓   |   ✓   |
+|PDF (using either the TCPDF, Dompdf or mPDF libraries, which need to be installed separately)|       |   ✓   |
+
+Note - reading or writing certain aspects of a spreadsheet may not be supported in all formats. For more details, please consult
+[Features Cross-reference](./references/features-cross-reference.md).
+
+## Software requirements
+
+PHP version 8.2 or newer to develop using PhpSpreadsheet. Other requirements, such as PHP extensions, are enforced by
+composer. See the `require` section of [the composer.json file](https://github.com/PHPOffice/PhpSpreadsheet/blob/master/composer.json)
+for details.
+
+### PHP version support
+
+LTS: Support for PHP versions will only be maintained for a period of six months beyond the
+[end of life of that PHP version](https://www.php.net/eol.php).
+
+Currently, the required PHP minimum version is __PHP 8.2__, and we [will support that version](https://www.php.net/eol.php) until June 2027.
+
+Support for PHP versions will only be maintained for a period of six months beyond the
+[end of life](https://www.php.net/supported-versions) of that PHP version.
+
+See the `composer.json` for other requirements.
+
+## Installation
+
+Use [composer](https://getcomposer.org) to install PhpSpreadsheet into your project:
+
+```sh
+composer require phpoffice/phpspreadsheet
+```
+
+Or also download the documentation and samples if you plan to use them (note that `git` must be in your path for this to work):
+
+```sh
+composer require phpoffice/phpspreadsheet --prefer-source
+```
+
+If you are building your installation on a development machine that is on a different PHP version to the server where it
+will be deployed, or if your PHP CLI version is different from your run-time such as `php-fpm` or Apache's `mod_php`,
+then you might want to configure composer for that.
+See [composer documentation](https://getcomposer.org/doc/06-config.md#platform)
+on how to edit your `composer.json` to ensure that the correct dependencies are retrieved to match your deployment
+environment.
+
+See [CLI vs Application run-time](https://php.watch/articles/composer-platform-check) for more details.
+
+### Additional Installation Options
+
+If you want to write to PDF, or to include Charts when you write to HTML or PDF, then you will need to install additional libraries:
+
+#### PDF
+
+For PDF Generation, you can install any of the following, and then configure PhpSpreadsheet to indicate which library you are going to use:
+- mpdf/mpdf
+- dompdf/dompdf
+- tecnickcom/tcpdf
+
+and configure PhpSpreadsheet using:
+
+```php
+// Dompdf, Mpdf or Tcpdf (as appropriate)
+$className = \PhpOffice\PhpSpreadsheet\Writer\Pdf\Dompdf::class;
+IOFactory::registerWriter('Pdf', $className);
+```
+or the appropriate PDF Writer wrapper for the library that you have chosen to install.
+
+#### Chart Export
+
+For Chart export, we support the following packages, which you will also need to install yourself using `composer require`:
+
+- [jpgraph/jpgraph](https://packagist.org/packages/jpgraph/jpgraph) (this package was abandoned in composer at version 4.0.
+  You can manually download the latest version that supports PHP 8 and above from [jpgraph.net](https://jpgraph.net/))
+- [mitoteam/jpgraph](https://packagist.org/packages/mitoteam/jpgraph) - up to date fork with modern PHP versions support and some bugs fixed.
+
+and then configure PhpSpreadsheet using:
+
+```php
+// to use jpgraph/jpgraph
+Settings::setChartRenderer(\PhpOffice\PhpSpreadsheet\Chart\Renderer\JpGraph::class);
+//or
+// to use mitoteam/jpgraph
+Settings::setChartRenderer(\PhpOffice\PhpSpreadsheet\Chart\Renderer\MtJpGraphRenderer::class);
+```
+
+One or the other of these libraries is necessary if you want to generate HTML or PDF files that include charts; or to render a Chart to an Image format from within your code.
+They are not necessary to define charts for writing to `Xlsx` files.
+Other file formats don't support writing Charts.
+
+## Hello World
+
+This would be the simplest way to write a spreadsheet:
+
+```php
+<?php
+
+require 'vendor/autoload.php';
+
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
+$spreadsheet = new Spreadsheet();
+$activeWorksheet = $spreadsheet->getActiveSheet();
+$activeWorksheet->setCellValue('A1', 'Hello World !');
+
+$writer = new Xlsx($spreadsheet);
+$writer->save('hello world.xlsx');
+```
+
+## Learn by example
+
+A good way to get started is to run some of the samples. Don't forget to download them via `--prefer-source` composer
+flag. And then serve them via PHP built-in webserver:
+
+```sh
+php -S localhost:8000 -t vendor/phpoffice/phpspreadsheet/samples
+```
+Then point your browser to <http://localhost:8000/>
+
+The samples may also be run directly from the command line, for example:
+
+```sh
+php vendor/phpoffice/phpspreadsheet/samples/Basic/01_Simple.php
+```
+
+## Learn by documentation
+
+For more documentation in depth, you may read about an [overview of the
+architecture](./topics/architecture.md),
+[creating a spreadsheet](./topics/creating-spreadsheet.md),
+[worksheets](./topics/worksheets.md),
+[accessing cells](./topics/accessing-cells.md) and
+[reading and writing to files](./topics/reading-and-writing-to-file.md).
+
+Or browse the [API documentation](https://phpoffice.github.io/PhpSpreadsheet).
+
+## Dark Mode
+
+<div class='wehavedarktoggle'>
+We are experimenting with different software and themes for our documentation.
+We try to honor your browser's dark/light mode settings, which
+may defer to your system's settings.
+A button is available at the top of each page to toggle the display without having to change your browser settings.
+</div>
+<div class='wedonthavedarktoggle'>
+We are experimenting with different software and themes for our documentation.
+We try to honor your browser's dark/light mode settings, which
+may defer to your system's settings.
+This particular theme does not come with a toggle to switch back and forth.
+If you want to switch and it is inconvenient for you to change the browser setting:
+<br><br>
+If your setting is dark mode, and your browser supports ES11, this
+<a href="javascript:(function()%7BArray.from(document.styleSheets).forEach((sheet)%20%3D%3E%20%7Bif%20(sheet.href%3F.includes('darkmode.css')%20%3F%3F%20false)%20%7Bsheet.disabled%20%3D%20!sheet.disabled%3B%7D%7D)%7D)()">Dark/Light Toggle</a>
+can be used as a bookmarklet. It executes:
+
+```javascript
+Array.from(document.styleSheets).forEach((sheet) => {
+    if (sheet.href?.includes('darkmode.css') ?? false) {
+        sheet.disabled = !sheet.disabled;
+    }
+});
+```
+
+If your setting is light mode, and your browser supports ES6, this
+<a href="javascript:(function()%7B(function()%7Bdocument.documentElement.style.filter%20%3D%20document.documentElement.style.filter%20%3F%20''%20%3A%20'invert(100%25)%20hue-rotate(180deg)'%3Bconst%20images%20%3D%20document.querySelectorAll('img')%3Bimages.forEach(img%20%3D%3E%20%7Bif%20(img.alt%20!%3D%20'Logo')%20%7Bimg.style.filter%20%3D%20img.style.filter%20%3F%20''%20%3A%20'invert(100%25)%20hue-rotate(180deg)'%3B%7D%7D)%3Bif%20(document.body.getAttribute('data-md-color-scheme')%20%3D%3D%20'slate')%20%7Bdocument.body.setAttribute('data-md-color-scheme'%2C%20'default')%3B%7D%20else%20%7Bdocument.body.setAttribute('data-md-color-scheme'%2C%20'slate')%3B%7D%7D)()%7D)()">Emulate Dark Mode</a>
+bookmarklet can be used to emulate dark mode, but just reload the page to restore light mode:
+
+```javascript
+(function(){
+    document.documentElement.style.filter = document.documentElement.style.filter ? '' : 'invert(100%) hue-rotate(180deg)';
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+        if (img.alt != 'Logo') {
+            img.style.filter = img.style.filter ? '' : 'invert(100%) hue-rotate(180deg)';
+            }
+        });
+    if (document.body.getAttribute('data-md-color-scheme') == 'slate') {
+        document.body.setAttribute('data-md-color-scheme', 'default');
+    } else {
+        document.body.setAttribute('data-md-color-scheme', 'slate');
+    }
+})();
+
+```
+</div>
+
+## Credits
+
+Please refer to the [contributor
+list](https://github.com/PHPOffice/PhpSpreadsheet/graphs/contributors)
+for up-to-date credits.

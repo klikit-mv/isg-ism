@@ -1,0 +1,19 @@
+config:
+  directory: ../..
+
+projects:
+  laravel/framework:
+    source:
+      type: git
+      url: https://github.com/laravel/framework.git
+      reference: 5f8cb4cd6488af1219a4360fd9c84fb1e404899d
+      success_only: true
+    install:
+      - composer require --no-update "orchestra/testbench-core:12.x-dev#7bcccbd" "carbonphp/carbon-doctrine-types:*" "psr/clock:^1.0" "symfony/clock:^7.0|^8.0" "symfony/polyfill-mbstring:^1.0" --prefer-dist --no-interaction --prefer-stable
+      - composer update --prefer-dist --no-interaction --prefer-stable
+    script:
+      # Disable trigger_deprecation() in console/Application.php until Laravel fix the deprecation
+      - sed -i 's/trigger_deprecation/#trigger_deprecation/g' vendor/symfony/console/Application.php
+      - sed -i 's/testRouteCanBeFilteredByAction/skipTestRouteCanBeFilteredByAction/g' tests/Testing/Console/RouteListCommandTest.php
+      # Run the test
+      - vendor/bin/phpunit --no-coverage --do-not-fail-on-warning --do-not-fail-on-phpunit-warning

@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Mockery (https://docs.mockery.io/en/stable/)
+ *
+ * @copyright https://github.com/mockery/mockery/blob/HEAD/COPYRIGHT.md
+ * @license   https://github.com/mockery/mockery/blob/HEAD/LICENSE BSD 3-Clause License
+ * @see       https://github.com/mockery/mockery for the canonical source repository
+ */
+
+namespace Tests\Unit\Mockery\Generator\StringManipulation\Pass;
+
+use Mockery\Adapter\Phpunit\MockeryTestCase;
+use Mockery\Generator\MockConfiguration;
+use Mockery\Generator\StringManipulation\Pass\ClassAttributesPass;
+use Mockery\Generator\UndefinedTargetClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Throwable;
+
+use function file_get_contents;
+use function mock;
+
+/**
+ * @coversDefaultClass \Mockery
+ */
+class ClassAttributesPassTest extends MockeryTestCase
+{
+    public const CODE = 'namespace Mockery; class Mock {}';
+
+    /**
+     * @see testCanApplyClassAttributes
+     */
+    public static function provideCanApplyClassAttributesCases(): iterable
+    {
+        yield 'has no attributes' => [
+            'attributes' => [],
+            'expected' => '',
+        ];
+
+        yield 'has one attribute' => [
+            'attributes' => ['Attribute1'],
+            'expected' => '#[Attribute1]',
+        ];
+
+        yield 'has attributes' => [
+            'attributes' => ['Attribute1', 'Attribute2', 'Attribute3()'],
+            'expected' => '#[Attribute1,Attribute2,Attribute3()]',
+        ];
+    }
+
+    /**
+     * @dataProvider provideCanApplyClassAttributesCases
+     *
+     * @throws Throwable
+     */
+    #[DataProvider('provideCanApplyClassAttributesCases')]
+    public function testCanApplyClassAttributes(array $attributes, string $expected): void
+    {
+        $undefinedTargetClass = mock(UndefinedTargetClass::class);
+        $undefinedTargetClass->expects('getAttributes')
+            ->once()
+            ->andReturn($attributes);
+
+        $config = mock(MockConfiguration::class);
+        $config->expects('getTargetClass')
+            ->once()
+            ->andReturn($undefinedTargetClass);
+
+        $pass = new ClassAttributesPass();
+
+        $code = $pass->apply(file_get_contents(__FILE__), $config);
+
+        self::assertStringContainsString($expected, $code);
+    }
+}

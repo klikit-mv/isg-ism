@@ -1,0 +1,76 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "[0-9]+.[0-9]+.x"
+  # Allow manually triggering the workflow.
+  workflow_dispatch:
+
+jobs:
+  phpunit:
+    name: PHPUnit on PHP ${{ matrix.php }} with ${{ matrix.dependencies }} Dependencies
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['7.3', '7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5', '8.6']
+        dependencies: ['lowest','highest','locked']
+        dev: ['8.6']
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          coverage: xdebug
+          extensions: mongodb, redis
+          ini-values: assert.exception=1, zend.assertions=1, error_reporting=-1, log_errors_max_len=0, display_errors=On
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+
+      - name: Setup problem matchers for PHP
+        run: echo "::add-matcher::${{ runner.tool_cache }}/php.json"
+
+      - name: Setup Problem Matchers
+        run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache dependencies
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php-${{ matrix.php }}-composer-${{ matrix.dependencies }}-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-php-${{ matrix.php }}-composer-${{ matrix.dependencies }}-
+
+      - name: Install ${{ matrix.dependencies }} dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          composerDependency="${{ matrix.dependencies }}"
+          composerCommand="update"
+          composerOptions=("--no-interaction" "--no-progress" "--ansi")
+          case ${composerDependency} in
+              highest) composerCommand="update" ;;
+              lowest) composerOptions+=("--prefer-lowest" "--prefer-stable") ;;
+              *) composerCommand="install" ;;
+          esac
+          # Use `update` if there is no composer.lock file
+          if [ ! -f "composer.lock" ]; then
+            composerCommand="update"
+          fi
+          fullCommand="composer ${composerCommand} ${composerOptions[*]}"
+          echo "Running: ${fullCommand}"
+          ${fullCommand}
+
+      - name: Execute PHPUnit
+        run: composer phpunit
+        continue-on-error: ${{ matrix.php == matrix.dev || matrix.dependencies == 'lowest' }}
