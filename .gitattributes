@@ -1,0 +1,15 @@
+* text=auto eol=lf
+
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
+
+/.github export-ignore
+CHANGELOG.md export-ignore
+.styleci.yml export-ignore
+
+# Committed dependencies and build output: store exactly as installed.
+/vendor/** -text -diff linguist-vendored
+/public/build/** -text -diff linguist-generated
