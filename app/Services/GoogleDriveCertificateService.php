@@ -41,6 +41,8 @@ class GoogleDriveCertificateService
 
             if ($id !== null) {
                 $path = 'drive:'.$id;
+            } else {
+                session()->flash('warning', 'The certificate was saved on the server, not in Google Drive. '.$this->drive->lastError());
             }
         }
 

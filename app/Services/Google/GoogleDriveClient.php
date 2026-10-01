@@ -3,6 +3,7 @@
 namespace App\Services\Google;
 
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -16,7 +17,36 @@ class GoogleDriveClient
 
     private const UPLOAD = 'https://www.googleapis.com/upload/drive/v3/files';
 
+    private ?string $lastError = null;
+
     public function __construct(private GoogleApiClient $google) {}
+
+    /**
+     * Why the last call failed, in plain words (null when it did not fail).
+     */
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
+
+    /**
+     * Log a refused Drive call and keep a readable reason.
+     */
+    private function failed(string $action, ?Response $response): void
+    {
+        $reason = (string) $response?->json('error.errors.0.reason');
+        $message = (string) ($response?->json('error.message') ?? '');
+
+        $this->lastError = match (true) {
+            $response === null => "{$action}: Google is not connected or could not be reached.",
+            $reason === 'storageQuotaExceeded' => "{$action}: Google says this account has no storage. A service account cannot keep files in a normal Drive folder: connect a Google account in Settings instead, or use a folder in a shared drive.",
+            in_array($response->status(), [401, 403], true) && str_contains($message, 'insufficient') => "{$action}: the connected Google account did not give permission to manage Drive files. Disconnect and connect it again, and tick every permission.",
+            in_array($response->status(), [403, 404], true) => "{$action}: Google refused (folder missing or not shared with the connected account). {$message}",
+            default => "{$action}: Google replied {$response->status()}. {$message}",
+        };
+
+        Log::warning('Drive call failed', ['action' => $action, 'status' => $response?->status(), 'reason' => $reason, 'message' => $message]);
+    }
 
     public function configured(): bool
     {
@@ -45,7 +75,13 @@ class GoogleDriveClient
             'parents' => [$parentId],
         ]);
 
-        return $created?->successful() ? $created->json('id') : null;
+        if (! $created?->successful()) {
+            $this->failed('Creating the Drive folder', $created);
+
+            return null;
+        }
+
+        return $created->json('id');
     }
 
     /**
@@ -79,9 +115,18 @@ class GoogleDriveClient
             $response = $this->request()?->withBody($body, 'multipart/related; boundary='.$boundary)
                 ->post(self::UPLOAD.'?uploadType=multipart&supportsAllDrives=true&fields=id');
 
-            return $response?->successful() ? $response->json('id') : null;
+            if (! $response?->successful()) {
+                $this->failed('Uploading to Drive', $response);
+
+                return null;
+            }
+
+            $this->lastError = null;
+
+            return $response->json('id');
         } catch (Throwable $e) {
             Log::warning('Drive upload failed', ['error' => $e->getMessage()]);
+            $this->lastError = 'Uploading to Drive: '.$e->getMessage();
 
             return null;
         }
@@ -112,6 +157,6 @@ class GoogleDriveClient
             return null;
         }
 
-        return Http::withToken($token)->timeout(40)->throw(fn () => false);
+        return Http::withToken($token)->timeout(40);
     }
 }

@@ -71,6 +71,9 @@ class GoogleDrivePhotoService
             if ($id !== null) {
                 return 'drive:'.$id;
             }
+
+            // Keep the picture on the server, but say why it did not reach Drive.
+            session()->flash('warning', 'The picture was saved on the server, not in Google Drive. '.$this->drive->lastError());
         }
 
         return Uploads::store($file, self::LOCAL_DIRS[$area] ?? $area, $name, 'public');

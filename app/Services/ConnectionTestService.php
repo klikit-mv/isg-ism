@@ -50,6 +50,19 @@ class ConnectionTestService
             }
         }
 
+        if ($ok) {
+            // Folders can be readable while uploads are still refused (no storage, read-only access).
+            $folderId = $this->settings->driveFolderId() ?: $this->settings->driveCertificatesFolderId();
+            $id = $folderId ? $this->drive->upload($folderId, 'scout-connection-test.txt', 'Upload test', 'text/plain') : null;
+
+            if ($id === null) {
+                return ['ok' => false, 'message' => 'Google Drive is reachable, but a test upload failed. '.($this->drive->lastError() ?? '')];
+            }
+
+            $this->drive->delete($id);
+            $messages[] = 'Test upload: worked.';
+        }
+
         return ['ok' => $ok, 'message' => 'Google Drive is reachable. '.implode(' ', $messages)];
     }
 
