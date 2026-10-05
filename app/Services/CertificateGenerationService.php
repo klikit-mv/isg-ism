@@ -279,6 +279,8 @@ class CertificateGenerationService
             if ($pdf !== null && str_starts_with($pdf, '%PDF')) {
                 return $pdf;
             }
+
+            session()->flash('warning', 'Google Slides could not make this certificate, so the built-in layout was used. '.$this->slides->lastError());
         }
 
         return $this->renderer->render($this->fillTemplate($this->htmlFor($template, $certificate->type), $values));

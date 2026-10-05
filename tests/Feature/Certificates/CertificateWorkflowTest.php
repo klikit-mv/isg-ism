@@ -287,6 +287,10 @@ class CertificateWorkflowTest extends TestCase
         config(['services.google.service_account_json' => json_encode(['client_email' => 'bot@example.iam.gserviceaccount.com', 'private_key' => $this->privateKey()])]);
         Http::fake([
             'oauth2.googleapis.com/*' => Http::response(['access_token' => 'token']),
+            'www.googleapis.com/drive/v3/files/1AbCdEfGhIjKlMnOp/copy*' => Http::response(['id' => 'COPYTEST']),
+            'slides.googleapis.com/*' => Http::response([]),
+            'www.googleapis.com/drive/v3/files/COPYTEST/export*' => Http::response('%PDF-1.4 test'),
+            'www.googleapis.com/drive/v3/files/COPYTEST*' => Http::response([], 204),
             'www.googleapis.com/drive/v3/files/1AbCdEfGhIjKlMnOp*' => Http::response(['id' => '1AbCdEfGhIjKlMnOp', 'name' => 'Badge layout', 'mimeType' => 'application/vnd.google-apps.presentation']),
         ]);
         $admin = $this->admin();

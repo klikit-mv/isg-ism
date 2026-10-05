@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CertificateType;
+use App\Enums\RecordStatus;
 use App\Enums\ScoutSection;
 use App\Models\Activity;
 use App\Models\CertificateTemplate;
@@ -51,7 +52,7 @@ class ActivityController extends Controller
     {
         $this->authorize('update', $activity);
 
-        return view('activities.edit', ['activity' => $activity->load('groups')] + $this->formOptions());
+        return view('activities.edit', ['activity' => $activity->load('groups')] + $this->formOptions($activity));
     }
 
     public function update(Request $request, Activity $activity): RedirectResponse
@@ -102,10 +103,14 @@ class ActivityController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function formOptions(): array
+    private function formOptions(?Activity $activity = null): array
     {
+        $keep = $activity?->groups()->pluck('groups.id')->all() ?? [];
+
         return [
-            'groupOptions' => Group::query()->orderBy('name')->get()->map(fn ($g) => ['id' => $g->id, 'label' => $g->name, 'hint' => $g->type])->all(),
+            // Only active groups, plus any inactive one this activity already targets.
+            'groupOptions' => Group::query()->where(fn ($q) => $q->where('status', RecordStatus::Active->value)->orWhereIn('id', $keep ?: [0]))->orderBy('name')->get()
+                ->map(fn ($g) => ['id' => $g->id, 'label' => $g->name.($g->status === RecordStatus::Active ? '' : ' (inactive)'), 'hint' => trim(($g->section?->value ?? 'Mixed').' · '.($g->type ?? ''), ' ·')])->all(),
             'templateOptions' => CertificateTemplate::query()->where('type', CertificateType::General->value)->where('active', true)->orderBy('name')->pluck('name', 'id')->all(),
         ];
     }
