@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('staff', fn (User $user) => $user->isActive() && $user->isLeader());
 
         RateLimiter::for('registration', fn (Request $request) => Limit::perMinute(8)->by($request->ip()));
+        RateLimiter::for('pin-reset', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
         RateLimiter::for('child-lookup', fn (Request $request) => Limit::perMinute(40)->by($request->ip()));
         RateLimiter::for('certificate-verify', fn (Request $request) => Limit::perMinute(20)->by($request->ip()));
         RateLimiter::for('integration-tests', fn (Request $request) => Limit::perMinute(8)->by($request->user()?->id ?: $request->ip()));

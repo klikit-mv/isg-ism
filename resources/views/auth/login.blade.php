@@ -8,6 +8,7 @@
         <x-form.input name="pin" label="PIN" type="password" required autocomplete="current-password" inputmode="numeric"/>
         <x-form.checkbox name="remember" label="Keep me signed in"/>
         <button type="submit" class="btn-primary w-full">Sign in</button>
+        <p class="text-center text-sm"><a href="{{ route('pin.forgot') }}" class="link">Forgot your PIN?</a></p>
     </form>
 
     <div class="mt-6 space-y-2 border-t border-gray-100 pt-4 text-center text-sm dark:border-gray-700">

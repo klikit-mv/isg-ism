@@ -4,7 +4,9 @@
         <p class="mt-2 max-w-2xl text-navy-100">Upcoming camps, hikes and gatherings. Browse the details here, then sign in to register and pay.</p>
         <div class="mt-5 flex flex-wrap gap-2">
             <a href="{{ route('login') }}" class="btn-accent">Sign in</a>
-            <a href="{{ route('register') }}" class="rounded-lg border border-white/40 px-4 py-2 text-sm font-medium hover:bg-white/10">Create an account</a>
+            <a href="{{ route('register') }}" class="rounded-lg border border-white/40 px-4 py-2 text-sm font-medium hover:bg-white/10">Register as a scout</a>
+            <a href="{{ route('register.parent') }}" class="rounded-lg border border-white/40 px-4 py-2 text-sm font-medium hover:bg-white/10">Register as a parent</a>
+            <a href="{{ route('certificates.verify') }}" class="rounded-lg border border-white/40 px-4 py-2 text-sm font-medium hover:bg-white/10">Verify a certificate</a>
         </div>
     </section>
 

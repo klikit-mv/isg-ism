@@ -18,7 +18,9 @@
             @auth
                 <a href="{{ route('dashboard') }}" class="btn-accent btn-sm">Go to portal</a>
             @else
-                <a href="{{ route('register') }}" class="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-navy-100 hover:bg-navy-700 sm:inline-block">Join</a>
+                <a href="{{ route('register.parent') }}" class="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-navy-100 hover:bg-navy-700 md:inline-block">Parent registration</a>
+                <a href="{{ route('certificates.verify') }}" class="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-navy-100 hover:bg-navy-700 md:inline-block">Verify certificate</a>
+                <a href="{{ route('register') }}" class="hidden rounded-lg px-3 py-1.5 text-sm font-medium text-navy-100 hover:bg-navy-700 sm:inline-block">Scout registration</a>
                 <a href="{{ route('login') }}" class="btn-accent btn-sm">Sign in</a>
             @endauth
         </div>

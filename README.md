@@ -114,7 +114,7 @@ Sheets are imported in this order; headers are matched case- and punctuation-ins
 4. The unused `Rejected` fee status was removed.
 5. Purchases can be cancelled (`POST /purchases/{id}/cancel`) by the buyer side or shop staff until money is received.
 6. If stock runs out before an online payment is approved, approval is blocked with a message to reject and refund (or restock); the payment stays in the queue.
-7. No unscoped dashboard service; Breeze's email password-reset flow was removed (PINs are reset by an admin).
+7. No unscoped dashboard service; PIN reset is a small purpose-built flow (`PinResetController`), not Breeze's.
 8. Uploaded import files are deleted after confirmation; every export goes to its own temporary file.
 9. Any leader may verify any pending scout or parent registration (kept as intended).
 10. Activity scope is one query rule: all-scout activities, activities targeting a led group, or a section that a led group's members belong to.
