@@ -81,6 +81,14 @@ class SettingsService
         return Money::normalize($this->get('default_class_fee', (string) config('scout.default_class_fee')));
     }
 
+    /**
+     * Whether scouts must give an email address when they are registered or enrolled.
+     */
+    public function studentEmailRequired(): bool
+    {
+        return $this->get('student_email_required', '1') === '1';
+    }
+
     public function shopEnabled(): bool
     {
         return $this->get('shop_enabled', '1') === '1';

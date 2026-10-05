@@ -68,7 +68,8 @@ class StudentImportService
     {
         $sheets = SpreadsheetReader::read($path);
         $sheet = reset($sheets) ?: ['headers' => [], 'rows' => []];
-        $normalizedRequired = array_map([SpreadsheetReader::class, 'normalizeHeader'], self::REQUIRED);
+        $required = app(\App\Services\SettingsService::class)->studentEmailRequired() ? self::REQUIRED : ['name', 'national_id'];
+        $normalizedRequired = array_map([SpreadsheetReader::class, 'normalizeHeader'], $required);
         $missing = array_values(array_diff($normalizedRequired, $sheet['headers']));
         $report = ['rows' => [], 'created' => 0, 'skipped' => 0, 'errors' => 0, 'missing' => $missing];
 

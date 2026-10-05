@@ -48,6 +48,7 @@ class SettingsController extends Controller
             'account_number' => ['nullable', 'string', 'max:100'],
             'payment_instructions' => ['nullable', 'string', 'max:2000'],
             'shop_enabled' => ['sometimes', 'boolean'],
+            'student_email_required' => ['sometimes', 'boolean'],
             'proof_max_kb' => ['required', 'integer', 'min:100', 'max:20480'],
             'footer_text' => ['nullable', 'string', 'max:255'],
             'google_drive_folder' => ['nullable', 'string', 'max:500'],
@@ -76,6 +77,7 @@ class SettingsController extends Controller
 
         $this->settings->set('default_class_fee', Money::normalize($data['default_class_fee']), $actor);
         $this->settings->set('shop_enabled', $request->boolean('shop_enabled') ? '1' : '0', $actor);
+        $this->settings->set('student_email_required', $request->boolean('student_email_required') ? '1' : '0', $actor);
         $this->settings->set('proof_max_kb', (string) $data['proof_max_kb'], $actor);
 
         $messages[] = $this->saveFolder('google_drive_folder', $data['google_drive_folder'] ?? null, $actor, function (string $id) use ($photos): string {

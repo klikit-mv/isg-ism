@@ -24,7 +24,7 @@ final class StudentValidation
             'index_number' => ['required', 'string', 'max:50', Rule::unique('students', 'index_number')->ignore($student?->id)],
             'national_id' => ['required', 'string', 'max:64', Rule::unique('students', 'national_id')->ignore($student?->id), Rule::unique('users', 'national_id')->ignore($userId)],
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('students', 'email')->ignore($student?->id), Rule::unique('users', 'email')->ignore($userId)],
+            'email' => [app(\App\Services\SettingsService::class)->studentEmailRequired() ? 'required' : 'nullable', 'email', 'max:255', Rule::unique('students', 'email')->ignore($student?->id), Rule::unique('users', 'email')->ignore($userId)],
             'gender' => ['required', Rule::enum(Gender::class)],
             'permanent_address' => ['required', 'string', 'max:255'],
             'present_address' => ['required', 'string', 'max:255'],

@@ -26,6 +26,7 @@ class StudentService
     public function __construct(
         private AuditLogService $audit,
         private NotificationService $notifications,
+        private WelcomeEmailService $welcome,
     ) {}
 
     public function temporaryPin(): string
@@ -41,7 +42,7 @@ class StudentService
      */
     public function create(array $data, ?User $actor): array
     {
-        return DB::transaction(function () use ($data, $actor): array {
+        $result = DB::transaction(function () use ($data, $actor): array {
             $pin = filled($data['pin'] ?? null) ? (string) $data['pin'] : $this->temporaryPin();
             $attributes = $this->studentAttributes($data);
             $attributes['status'] ??= StudentStatus::Active->value;
@@ -70,6 +71,10 @@ class StudentService
 
             return ['student' => $student, 'pin' => $pin];
         });
+
+        $this->welcome->enrolled($result['student'], $result['pin']);
+
+        return $result;
     }
 
     /**
@@ -101,6 +106,7 @@ class StudentService
         });
 
         $this->notifications->studentRegistered($student);
+        $this->welcome->registered($student);
 
         return $student;
     }
@@ -124,6 +130,7 @@ class StudentService
         });
 
         $this->notifications->studentVerified($student->fresh());
+        $this->welcome->approved($student->fresh());
     }
 
     public function rejectRegistration(Student $student, User $actor): void

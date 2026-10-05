@@ -4,7 +4,7 @@
     <x-form.input name="name" label="Full name" :value="$student->name" required/>
     <x-form.input name="index_number" label="Index number" :value="$student->index_number" required/>
     <x-form.input name="national_id" label="National ID" :value="$student->national_id" required class="uppercase"/>
-    <x-form.input name="email" label="Email" type="email" :value="$student->email" required/>
+    <x-form.input name="email" label="Email{{ app(\App\Services\SettingsService::class)->studentEmailRequired() ? '' : ' (optional)' }}" type="email" :value="$student->email" :required="app(\App\Services\SettingsService::class)->studentEmailRequired()" help="A welcome email with the sign-in details is sent to this address."/>
     <x-form.select name="gender" label="Gender" :options="\App\Enums\Gender::options()" :value="$student->gender" placeholder="Choose" required/>
     <x-form.input name="date_of_birth" label="Date of birth" type="date" :value="$student->date_of_birth?->format('Y-m-d')" required/>
     <x-form.select name="section" label="Section" :options="\App\Enums\ScoutSection::options()" :value="$student->section" placeholder="Choose" required/>

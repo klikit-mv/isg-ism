@@ -40,6 +40,9 @@
                 <h2 class="font-semibold">Shop and portal</h2>
                 <input type="hidden" name="shop_enabled" value="0">
                 <x-form.checkbox name="shop_enabled" label="The shop is open" :checked="$settings->shopEnabled()"/>
+                <input type="hidden" name="student_email_required" value="0">
+                <x-form.checkbox name="student_email_required" label="Scouts must give an email address" :checked="$settings->studentEmailRequired()"/>
+                <p class="-mt-2 text-xs text-gray-500 dark:text-gray-400">Switch off to make the email optional when scouts register or are enrolled. Scouts without an email get no welcome email.</p>
                 <x-form.input name="footer_text" label="Footer text" :value="$settings->footerText()"/>
             </div>
 
