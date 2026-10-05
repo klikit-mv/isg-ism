@@ -57,9 +57,9 @@ class NumberingTest extends TestCase
         $special = $this->badge(['code' => 'CHIEF', 'category' => 'special', 'section' => null]);
         $prefixed = $this->badge(['code' => 'JOTA', 'category' => 'event', 'section' => null, 'number_prefix' => 'RADIO']);
 
-        $this->assertSame('FLHSG-CHIEF-2026-0001', $this->numbers()->nextBadgeNumber($special));
-        $this->assertSame('FLHSG-CHIEF-2026-0002', $this->numbers()->nextBadgeNumber($special));
-        $this->assertSame('FLHSG-RADIO-2026-0001', $this->numbers()->nextBadgeNumber($prefixed));
+        $this->assertSame('FLHSG-CHIEF-2026-001', $this->numbers()->nextBadgeNumber($special));
+        $this->assertSame('FLHSG-CHIEF-2026-002', $this->numbers()->nextBadgeNumber($special));
+        $this->assertSame('FLHSG-RADIO-2026-001', $this->numbers()->nextBadgeNumber($prefixed));
     }
 
     public function test_sequences_reset_every_calendar_year(): void
@@ -68,12 +68,12 @@ class NumberingTest extends TestCase
 
         $this->travelTo(now()->setDate(2026, 12, 31)->setTime(12, 0));
         $this->assertSame('FLHSG-PB-2026-001', $this->numbers()->nextBadgeNumber($badge));
-        $this->assertSame('FLHSG-CERT-2026-0001', $this->numbers()->nextGeneralNumber());
+        $this->assertSame('FLHSG-CERT-2026-001', $this->numbers()->nextGeneralNumber());
 
         $this->travelTo(now()->setDate(2027, 1, 2));
         $this->assertSame('FLHSG-PB-2027-001', $this->numbers()->nextBadgeNumber($badge));
-        $this->assertSame('FLHSG-CERT-2027-0001', $this->numbers()->nextGeneralNumber());
-        $this->assertSame('FLHSG-LEAD-2027-0001', $this->numbers()->nextLeadershipNumber());
+        $this->assertSame('FLHSG-CERT-2027-001', $this->numbers()->nextGeneralNumber());
+        $this->assertSame('FLHSG-LEAD-2027-001', $this->numbers()->nextLeadershipNumber());
     }
 
     public function test_year_follows_the_organisation_timezone(): void
@@ -81,18 +81,18 @@ class NumberingTest extends TestCase
         // 20:00 UTC on 31 December is already 1 January in the Maldives (UTC+5).
         $this->travelTo(Carbon::parse('2026-12-31 20:00:00', 'UTC'));
 
-        $this->assertSame('FLHSG-CERT-2027-0001', $this->numbers()->nextGeneralNumber());
+        $this->assertSame('FLHSG-CERT-2027-001', $this->numbers()->nextGeneralNumber());
     }
 
     public function test_peek_does_not_consume_and_admin_can_set_next(): void
     {
         $this->travelTo(now()->setDate(2026, 3, 1));
 
-        $this->assertSame('FLHSG-LEAD-2026-0001', $this->numbers()->peekLeadershipNumber());
-        $this->assertSame('FLHSG-LEAD-2026-0001', $this->numbers()->peekLeadershipNumber());
+        $this->assertSame('FLHSG-LEAD-2026-001', $this->numbers()->peekLeadershipNumber());
+        $this->assertSame('FLHSG-LEAD-2026-001', $this->numbers()->peekLeadershipNumber());
 
         $this->numbers()->setNextSequence('leadership:2026', 40);
-        $this->assertSame('FLHSG-LEAD-2026-0040', $this->numbers()->nextLeadershipNumber());
+        $this->assertSame('FLHSG-LEAD-2026-040', $this->numbers()->nextLeadershipNumber());
     }
 
     public function test_badge_next_number_can_be_set_from_the_badge_form(): void

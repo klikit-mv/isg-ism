@@ -161,8 +161,8 @@ class CertificateGenerationService
             'title' => 'Sample Achievement',
             'badge_name' => 'Sample Badge',
             'cert_number' => match ($template->type) {
-                CertificateType::Leadership => 'FLHSG-LEAD-'.date('Y').'-0001',
-                CertificateType::General => 'FLHSG-CERT-'.date('Y').'-0001',
+                CertificateType::Leadership => 'FLHSG-LEAD-'.date('Y').'-001',
+                CertificateType::General => 'FLHSG-CERT-'.date('Y').'-001',
                 default => 'FLHSG-PB-'.date('Y').'-001',
             },
             'id_card_no' => 'A000000',

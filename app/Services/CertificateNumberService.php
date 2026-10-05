@@ -35,7 +35,7 @@ class CertificateNumberService
         return [
             'counter' => 'badge:'.$badge->badge_id.':'.$year,
             'prefix' => strtoupper((string) ($badge->number_prefix ?: $badge->code)),
-            'width' => 4,
+            'width' => 3,
         ];
     }
 
@@ -86,7 +86,7 @@ class CertificateNumberService
     /**
      * Take the next number, skipping any already used on a certificate.
      */
-    public function nextSequence(string $counterId, int $year, string $prefix, ?int $badgeId = null, int $width = 4): int
+    public function nextSequence(string $counterId, int $year, string $prefix, ?int $badgeId = null, int $width = 3): int
     {
         return DB::transaction(function () use ($counterId, $year, $prefix, $badgeId, $width): int {
             CertificateCounter::query()->firstOrCreate(['counter_id' => $counterId], ['year' => $year, 'badge_id' => $badgeId, 'last_number' => 0]);
@@ -133,7 +133,7 @@ class CertificateNumberService
         return str_starts_with($prefix, $org.'-') ? $prefix : $org.'-'.$prefix;
     }
 
-    public function format(string $prefix, int $year, int $number, int $width = 4): string
+    public function format(string $prefix, int $year, int $number, int $width = 3): string
     {
         return $this->withOrganisationCode($prefix).'-'.$year.'-'.str_pad((string) $number, $width, '0', STR_PAD_LEFT);
     }
