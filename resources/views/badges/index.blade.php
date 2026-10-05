@@ -7,6 +7,20 @@
         </x-slot:actions>
     </x-page-header>
 
+    @can('create', \App\Models\Badge::class)
+        <form method="POST" action="{{ route('badges.section-codes') }}" class="card mb-4" data-testid="section-codes">
+            @csrf
+            <h2 class="font-semibold">Section proficiency codes</h2>
+            <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Every proficiency badge of a section shares one code and one yearly number sequence, for example SCOUT-{{ now()->year }}-0001.</p>
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach ($sectionCodes as $section => $code)
+                    <x-form.input :name="'codes['.$section.']'" :label="$section" :value="$code" class="uppercase"/>
+                @endforeach
+            </div>
+            <div class="mt-3"><button type="submit" class="btn-primary btn-sm">Save codes</button></div>
+        </form>
+    @endcan
+
     <x-filters>
         <x-form.input name="q" label="Search" :value="request('q')" placeholder="Name or code"/>
         <x-form.select name="section" label="Section" :options="\App\Enums\ScoutSection::options()" :value="request('section')" placeholder="Any section"/>

@@ -29,6 +29,28 @@ class NumberingTest extends TestCase
         $this->assertSame('CUB-2026-0001', $this->numbers()->nextBadgeNumber($cubBadge));
     }
 
+    public function test_an_admin_sets_the_code_shared_by_a_sections_proficiency_badges(): void
+    {
+        $this->travelTo(now()->setDate(2026, 3, 1));
+        $camping = $this->badge(['code' => 'CAMP']);
+        $cooking = $this->badge(['code' => 'COOK', 'name' => 'Cooking']);
+
+        $this->actingAs($this->admin())->post(route('badges.section-codes'), ['codes' => ['Scout' => 'sct', 'Cub Scout' => '']])
+            ->assertSessionHas('success');
+
+        $this->assertSame('SCT-2026-0001', $this->numbers()->nextBadgeNumber($camping));
+        $this->assertSame('SCT-2026-0002', $this->numbers()->nextBadgeNumber($cooking));
+        $this->actingAs($this->admin())->get(route('badges.index'))->assertSee('data-testid="section-codes"', false)->assertSee('SCT');
+
+        $this->actingAs($this->admin())->post(route('badges.section-codes'), ['codes' => ['Scout' => '']]);
+        $this->assertSame('SCOUT-2026-0003', $this->numbers()->nextBadgeNumber($camping));
+    }
+
+    public function test_parents_cannot_change_section_codes(): void
+    {
+        $this->actingAs(\App\Models\User::factory()->parentRole()->create())->post(route('badges.section-codes'), ['codes' => ['Scout' => 'X']])->assertForbidden();
+    }
+
     public function test_other_badges_have_their_own_sequence_with_prefix_or_code(): void
     {
         $this->travelTo(now()->setDate(2026, 3, 1));

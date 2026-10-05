@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\Money;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
 
@@ -54,6 +55,14 @@ class SettingsService
 
         Setting::query()->updateOrCreate(['key' => $key], ['value' => $value, 'updated_by' => $actor?->id]);
         $this->flush();
+    }
+
+    /**
+     * The certificate number code shared by every proficiency badge of a section (e.g. SCOUT).
+     */
+    public function sectionBadgeCode(\App\Enums\ScoutSection $section): string
+    {
+        return strtoupper($this->get('badge_code_'.Str::slug($section->value, '_')) ?: $section->numberPrefix());
     }
 
     public function forget(string $key): void

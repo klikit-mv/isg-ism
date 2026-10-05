@@ -27,7 +27,7 @@ class CertificateNumberService
         if ($badge->isSectionProficiency()) {
             return [
                 'counter' => 'badge:proficiency:'.$badge->section->value.':'.$year,
-                'prefix' => $badge->section->numberPrefix(),
+                'prefix' => app(SettingsService::class)->sectionBadgeCode($badge->section),
             ];
         }
 

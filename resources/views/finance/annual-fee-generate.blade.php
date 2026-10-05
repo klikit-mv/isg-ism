@@ -15,7 +15,14 @@
                 <option value="">Any section</option>
                 @foreach (\App\Enums\ScoutSection::cases() as $s)<option value="{{ $s->value }}">{{ $s->value }}</option>@endforeach
             </select>
-            <div class="flex gap-2 sm:col-span-2">
+            <div class="flex items-center gap-2 sm:col-span-4">
+                <label class="text-sm text-gray-600 dark:text-gray-300" for="bulk-section">Set the section for everyone shown to</label>
+                <select id="bulk-section" class="input !w-auto !py-1 text-sm" x-ref="bulk">
+                    @foreach (\App\Enums\ScoutSection::cases() as $s)<option value="{{ $s->value }}">{{ $s->value }}</option>@endforeach
+                </select>
+                <button type="button" class="btn-secondary btn-sm" x-on:click="$root.querySelectorAll('tbody tr').forEach(r => { if (r.style.display !== 'none') { const sel = r.querySelector('select'); if (sel) sel.value = $refs.bulk.value; } })">Apply</button>
+            </div>
+            <div class="flex gap-2 sm:col-span-4">
                 <button type="button" class="btn-secondary btn-sm" x-on:click="$root.querySelectorAll('input[name=\'people[]\']').forEach(c => c.checked = true)">Select all</button>
                 <button type="button" class="btn-secondary btn-sm" x-on:click="$root.querySelectorAll('input[name=\'people[]\']').forEach(c => c.checked = false)">Deselect all</button>
                 <button type="submit" class="btn-primary btn-sm ml-auto">Generate</button>

@@ -157,6 +157,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::post('/certificates/{certificate}/sign', [CertificateController::class, 'sign'])->name('certificates.sign');
 
     Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
+    Route::post('/badges/section-codes', [BadgeController::class, 'sectionCodes'])->name('badges.section-codes');
     Route::post('/badges', [BadgeController::class, 'store'])->name('badges.store');
     Route::put('/badges/{badge}', [BadgeController::class, 'update'])->name('badges.update');
     Route::delete('/badges/{badge}', [BadgeController::class, 'destroy'])->name('badges.destroy');

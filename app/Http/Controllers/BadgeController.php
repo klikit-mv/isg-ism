@@ -24,8 +24,28 @@ class BadgeController extends Controller
         return view('badges.index', [
             'badges' => $this->badges->paginate($request->only('q', 'section')),
             'numbers' => $this->numbers,
+            'sectionCodes' => collect(ScoutSection::cases())->mapWithKeys(fn (ScoutSection $s) => [$s->value => app(\App\Services\SettingsService::class)->sectionBadgeCode($s)])->all(),
             'templates' => $this->templateOptions(),
         ]);
+    }
+
+    public function sectionCodes(Request $request, \App\Services\SettingsService $settings): RedirectResponse
+    {
+        $this->authorize('create', Badge::class);
+        $rules = [];
+
+        foreach (ScoutSection::cases() as $section) {
+            $rules['codes.'.$section->value] = ['nullable', 'string', 'max:20', 'alpha_dash'];
+        }
+
+        $data = $request->validate($rules);
+
+        foreach (ScoutSection::cases() as $section) {
+            $code = strtoupper(trim((string) ($data['codes'][$section->value] ?? '')));
+            $settings->set('badge_code_'.\Illuminate\Support\Str::slug($section->value, '_'), $code === '' ? null : $code, $request->user());
+        }
+
+        return back()->with('success', 'The section badge codes were saved. New certificate numbers use them.');
     }
 
     public function store(Request $request): RedirectResponse
