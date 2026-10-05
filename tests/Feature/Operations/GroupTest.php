@@ -88,7 +88,47 @@ class GroupTest extends TestCase
             ->assertSessionHas('error', "{$scout->name} is not in the Cub Scout section, so cannot join this group.");
         $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['members' => [$cub->id]])->assertSessionHas('success');
 
-        $this->actingAs($admin)->put("/groups/{$group->uuid}", ['name' => 'Cub Pack', 'section' => 'Scout'])
+        $this->actingAs($admin)->put("/groups/{$group->uuid}", ['name' => 'Cub Pack', 'section' => 'Scout', 'status' => 'Active'])
             ->assertSessionHas('error', "Some members are not in the Scout section. Remove them first, then change the group's section.");
+    }
+
+    public function test_subgroups_can_be_created_renamed_assigned_and_deleted(): void
+    {
+        $admin = $this->admin();
+        $group = Group::factory()->create();
+        $scout = Student::factory()->create();
+        $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['members' => [$scout->id], 'leaders' => [$admin->id]]);
+
+        $this->actingAs($admin)->post("/groups/{$group->uuid}/subgroups", ['name' => 'Eagle'])->assertSessionHas('success');
+        $this->actingAs($admin)->post("/groups/{$group->uuid}/subgroups", ['name' => 'Eagle'])->assertSessionHas('error');
+        $eagle = $group->subgroups()->firstOrFail();
+
+        $this->actingAs($admin)->put("/groups/{$group->uuid}/subgroup-assignments", ['subgroup' => [$scout->id => $eagle->id]])->assertSessionHas('success');
+        $this->assertSame($eagle->id, $group->members()->first()->pivot->subgroup_id);
+        $this->actingAs($admin)->get("/students/{$scout->uuid}")->assertSee("{$group->name} › Eagle");
+
+        $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['members' => [$scout->id], 'leaders' => [$admin->id]]);
+        $this->assertSame($eagle->id, $group->members()->first()->pivot->subgroup_id, 'saving membership keeps sub-groups');
+
+        $this->actingAs($admin)->put("/groups/{$group->uuid}/subgroups/{$eagle->uuid}", ['name' => 'Falcon'])->assertSessionHas('success');
+        $this->assertSame('Falcon', $eagle->fresh()->name);
+
+        $other = Group::factory()->create();
+        $this->actingAs($admin)->put("/groups/{$other->uuid}/subgroup-assignments", ['subgroup' => [$scout->id => $eagle->id]]);
+        $this->actingAs($admin)->put("/groups/{$other->uuid}/subgroups/{$eagle->uuid}", ['name' => 'X'])->assertNotFound();
+
+        $this->actingAs($admin)->delete("/groups/{$group->uuid}/subgroups/{$eagle->uuid}")->assertSessionHas('success');
+        $this->assertNull($group->members()->first()->pivot->subgroup_id);
+    }
+
+    public function test_group_status_can_be_changed_and_the_student_form_has_no_patrol_or_class(): void
+    {
+        $admin = $this->admin();
+        $group = Group::factory()->create();
+
+        $this->actingAs($admin)->put("/groups/{$group->uuid}", ['name' => $group->name, 'status' => 'Inactive'])->assertSessionHas('success');
+        $this->assertSame('Inactive', $group->fresh()->status->value);
+
+        $this->actingAs($admin)->get('/students/create')->assertOk()->assertDontSee('name="patrol"', false)->assertDontSee('name="class_name"', false);
     }
 }

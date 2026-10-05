@@ -54,8 +54,6 @@
                     'Secondary mobile' => $student->secondary_mobile,
                     'Permanent address' => $student->permanent_address,
                     'Present address' => $student->present_address,
-                    'Class' => $student->class_name,
-                    'Patrol' => $student->patrol,
                     'Groups' => implode(', ', $groups),
                     'Linked parent' => $parent?->name,
                     'Verified' => $student->verified_at ? scout_datetime($student->verified_at) : null,

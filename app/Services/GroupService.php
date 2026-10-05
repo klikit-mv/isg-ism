@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Enums\ScoutSection;
 use App\Exceptions\ScoutException;
 use App\Models\Group;
+use App\Models\Subgroup;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -33,10 +34,15 @@ class GroupService
         });
     }
 
-    public function rename(Group $group, string $name, ?string $type, User $actor, ?ScoutSection $section = null): void
+    public function rename(Group $group, string $name, ?string $type, User $actor, ?ScoutSection $section = null, ?RecordStatus $status = null): void
     {
         $from = $group->name;
-        $group->update(['name' => $name, 'type' => $type, 'section' => $section]);
+        $group->update(['name' => $name, 'type' => $type, 'section' => $section, 'status' => $status ?? $group->status]);
+
+        if ($status !== null && $status !== $group->getOriginal('status')) {
+            $this->audit->record('group.status_changed', $group, ['status' => $status->value], $actor);
+        }
+
         $this->audit->record('group.renamed', $group, ['from' => $from, 'to' => $name], $actor);
     }
 
@@ -91,6 +97,70 @@ class GroupService
                 'leaders' => count($leaderIds),
                 'assistant_leaders' => count($assistantIds),
             ], $actor);
+        });
+    }
+
+    public function addSubgroup(Group $group, string $name, User $actor): Subgroup
+    {
+        $name = trim($name);
+
+        if ($group->subgroups()->where('name', $name)->exists()) {
+            throw new ScoutException("This group already has a sub-group called {$name}.");
+        }
+
+        $subgroup = $group->subgroups()->create(['name' => $name]);
+        $this->audit->record('group.subgroup_created', $group, ['subgroup' => $name], $actor);
+
+        return $subgroup;
+    }
+
+    public function renameSubgroup(Subgroup $subgroup, string $name, User $actor): void
+    {
+        $name = trim($name);
+
+        if ($subgroup->group->subgroups()->where('name', $name)->whereKeyNot($subgroup->id)->exists()) {
+            throw new ScoutException("This group already has a sub-group called {$name}.");
+        }
+
+        $subgroup->update(['name' => $name]);
+        $this->audit->record('group.subgroup_renamed', $subgroup->group, ['subgroup' => $name], $actor);
+    }
+
+    /**
+     * Members of the sub-group fall back to "no sub-group".
+     */
+    public function deleteSubgroup(Subgroup $subgroup, User $actor): void
+    {
+        $this->audit->record('group.subgroup_deleted', $subgroup->group, ['subgroup' => $subgroup->name], $actor);
+        $subgroup->delete();
+    }
+
+    /**
+     * Set which sub-group each member belongs to.
+     *
+     * @param  array<int|string, int|string|null>  $assignments  student id => sub-group id (or empty)
+     */
+    public function assignSubgroups(Group $group, array $assignments, User $actor): void
+    {
+        $valid = $group->subgroups()->pluck('id')->all();
+        $memberIds = $group->members()->pluck('students.id')->all();
+
+        DB::transaction(function () use ($group, $assignments, $valid, $memberIds, $actor): void {
+            foreach ($assignments as $studentId => $subgroupId) {
+                if (! in_array((int) $studentId, $memberIds, true)) {
+                    continue;
+                }
+
+                $subgroupId = $subgroupId === null || $subgroupId === '' ? null : (int) $subgroupId;
+
+                if ($subgroupId !== null && ! in_array($subgroupId, $valid, true)) {
+                    throw new ScoutException('That sub-group does not belong to this group.');
+                }
+
+                $group->members()->updateExistingPivot((int) $studentId, ['subgroup_id' => $subgroupId]);
+            }
+
+            $this->audit->record('group.subgroups_assigned', $group, ['members' => count($assignments)], $actor);
         });
     }
 }

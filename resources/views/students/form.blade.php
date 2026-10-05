@@ -13,8 +13,6 @@
         @include('students.partials.fields', ['student' => $student])
 
         <div class="grid gap-4 sm:grid-cols-3">
-            <x-form.input name="class_name" label="Class" :value="$student->class_name"/>
-            <x-form.input name="patrol" label="Patrol" :value="$student->patrol"/>
             <x-form.select name="status" label="Status" :options="\App\Enums\StudentStatus::options()" :value="$student->status"/>
         </div>
 

@@ -20,7 +20,7 @@ class StudentImportService
 {
     public const HEADERS = [
         'name', 'national_id', 'email', 'gender', 'section', 'index_number', 'permanent_address', 'present_address',
-        'date_of_birth', 'parent_name', 'primary_mobile', 'secondary_mobile', 'class_name', 'patrol', 'status', 'pin',
+        'date_of_birth', 'parent_name', 'primary_mobile', 'secondary_mobile', 'status', 'pin',
     ];
 
     public const REQUIRED = ['name', 'national_id', 'email'];
@@ -31,7 +31,7 @@ class StudentImportService
     {
         return (new TemplateBuilder)
             ->sheet('Students', self::HEADERS, [
-                ['Aishath Example', 'A123456', 'aishath@example.com', 'Female', 'Cub Scout', 'IX1001', 'Henveiru, Male', 'Henveiru, Male', '15.03.2015', 'Ibrahim Example', '7771234', '', 'Grade 4', 'Eagle', 'active', ''],
+                ['Aishath Example', 'A123456', 'aishath@example.com', 'Female', 'Cub Scout', 'IX1001', 'Henveiru, Male', 'Henveiru, Male', '15.03.2015', 'Ibrahim Example', '7771234', '', 'active', ''],
             ], [
                 'gender' => Gender::values(),
                 'section' => ScoutSection::values(),

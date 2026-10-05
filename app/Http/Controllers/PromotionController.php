@@ -24,7 +24,6 @@ class PromotionController extends Controller
             ->where('section', $from->value)
             ->search($request->query('q'))
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
-            ->when($request->query('patrol'), fn ($q, $patrol) => $q->where('patrol', 'like', "%{$patrol}%"))
             ->when($request->query('group'), fn ($q, $group) => $q->whereHas('groups', fn ($g) => $g->where('groups.uuid', $group)))
             ->orderBy('name')
             ->get();

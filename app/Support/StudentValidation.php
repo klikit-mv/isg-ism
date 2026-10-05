@@ -41,8 +41,6 @@ final class StudentValidation
             return $rules;
         }
 
-        $rules['class_name'] = ['nullable', 'string', 'max:100'];
-        $rules['patrol'] = ['nullable', 'string', 'max:100'];
         $rules['status'] = ['required', Rule::enum(StudentStatus::class)];
 
         if ($student === null) {

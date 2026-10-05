@@ -24,7 +24,7 @@ class Student extends Model
     protected $fillable = [
         'index_number', 'name', 'national_id', 'email', 'photo_path', 'gender',
         'permanent_address', 'present_address', 'date_of_birth', 'parent_name',
-        'primary_mobile', 'secondary_mobile', 'section', 'class_name', 'patrol',
+        'primary_mobile', 'secondary_mobile', 'section',
         'status', 'verified_at', 'verified_by', 'legacy_id',
     ];
 

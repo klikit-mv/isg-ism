@@ -20,7 +20,7 @@ class StudentService
 {
     public const STUDENT_FIELDS = [
         'index_number', 'name', 'national_id', 'email', 'gender', 'permanent_address', 'present_address',
-        'date_of_birth', 'parent_name', 'primary_mobile', 'secondary_mobile', 'section', 'class_name', 'patrol', 'status',
+        'date_of_birth', 'parent_name', 'primary_mobile', 'secondary_mobile', 'section', 'status',
     ];
 
     public function __construct(

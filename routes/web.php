@@ -104,6 +104,10 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::put('/groups/{group}', [GroupController::class, 'update'])->name('groups.update');
     Route::delete('/groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
     Route::put('/groups/{group}/membership', [GroupController::class, 'membership'])->name('groups.membership');
+    Route::post('/groups/{group}/subgroups', [GroupController::class, 'storeSubgroup'])->name('groups.subgroups.store');
+    Route::put('/groups/{group}/subgroups/{subgroup}', [GroupController::class, 'updateSubgroup'])->name('groups.subgroups.update');
+    Route::delete('/groups/{group}/subgroups/{subgroup}', [GroupController::class, 'destroySubgroup'])->name('groups.subgroups.destroy');
+    Route::put('/groups/{group}/subgroup-assignments', [GroupController::class, 'assignSubgroups'])->name('groups.subgroups.assign');
 
     // Activities and attendance.
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');

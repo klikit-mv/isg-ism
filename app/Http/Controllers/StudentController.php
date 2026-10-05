@@ -169,10 +169,12 @@ class StudentController extends Controller
     {
         return DB::table('group_members')
             ->join('groups', 'groups.id', '=', 'group_members.group_id')
+            ->leftJoin('group_subgroups', 'group_subgroups.id', '=', 'group_members.subgroup_id')
             ->whereNull('groups.deleted_at')
             ->where('group_members.student_id', $student->id)
             ->orderBy('groups.name')
-            ->pluck('groups.name')
+            ->get(['groups.name as group', 'group_subgroups.name as subgroup'])
+            ->map(fn ($row) => $row->subgroup ? "{$row->group} › {$row->subgroup}" : $row->group)
             ->all();
     }
 }
