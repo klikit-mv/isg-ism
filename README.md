@@ -29,7 +29,7 @@ On Windows use `copy .env.example .env` and `type nul > database\database.sqlite
 
 Only developers changing front-end code need Node.js: after `composer require …` commit `composer.json` and `composer.lock` (never `composer update laravel/framework`); after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`. The front-end tools (Vite 5, Tailwind 3) are pinned to work on Node.js 18 to 21; `.nvmrc` selects Node 21.
 
-The demo data includes sample sign-ins. In the local environment they are listed on the sign-in page, and **Use** fills in the form:
+The demo data includes sample sign-ins. They are not shown on the sign-in page:
 
 | Role | National ID | PIN |
 | --- | --- | --- |

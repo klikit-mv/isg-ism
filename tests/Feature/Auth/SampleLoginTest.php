@@ -49,12 +49,11 @@ class SampleLoginTest extends TestCase
         $this->get('/dashboard')->assertSee('data-module="administration"', false);
     }
 
-    public function test_sample_logins_are_listed_only_in_the_local_environment(): void
+    public function test_the_sign_in_page_never_lists_sample_logins(): void
     {
-        $this->app['env'] = 'local';
-        $this->get('/login')->assertOk()->assertSee('data-testid="sample-logins"', false)->assertSee('A000001');
-
-        $this->app['env'] = 'production';
-        $this->get('/login')->assertOk()->assertDontSee('data-testid="sample-logins"', false);
+        foreach (['local', 'production'] as $environment) {
+            $this->app['env'] = $environment;
+            $this->get('/login')->assertOk()->assertDontSee('data-testid="sample-logins"', false)->assertDontSee('A000001')->assertDontSee('Sample logins');
+        }
     }
 }
