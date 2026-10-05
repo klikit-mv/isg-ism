@@ -34,10 +34,10 @@ enum ScoutSection: string
     public function numberPrefix(): string
     {
         return match ($this) {
-            self::PreCub => 'PRECUB',
+            self::PreCub => 'FLHSG-PC',
             self::CubScout => 'FLHSG-PA',
             self::Scout => 'FLHSG-PB',
-            self::Rover => 'ROVER',
+            self::Rover => 'FLHSG-PD',
         };
     }
 

@@ -4,6 +4,7 @@ return [
     'name' => env('SCOUT_NAME', 'Ifthithaah Scout Group'),
     'short_name' => env('SCOUT_SHORT_NAME', 'Scout Management System'),
     'organisation' => env('SCOUT_ORG', 'Ifthithaah Scout Group'),
+    'certificate_prefix' => env('SCOUT_CERT_PREFIX', 'FLHSG'),
     'timezone' => env('SCOUT_TIMEZONE', 'Indian/Maldives'),
     'currency' => env('SCOUT_CURRENCY', 'MVR'),
     'currency_symbol' => env('SCOUT_CURRENCY_SYMBOL', 'MVR'),

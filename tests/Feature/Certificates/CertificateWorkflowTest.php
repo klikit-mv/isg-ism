@@ -250,7 +250,7 @@ class CertificateWorkflowTest extends TestCase
 
         $this->actingAs($admin)->post("/leadership/{$record->uuid}/generate");
         $certificate = $record->fresh()->certificate;
-        $this->assertSame('LEAD-2026-0001', $certificate->cert_number);
+        $this->assertSame('FLHSG-LEAD-2026-0001', $certificate->cert_number);
 
         $html = app(CertificateGenerationService::class)->previewHtml($certificate);
         $this->assertStringContainsString('10 January 2026', $html);
@@ -260,7 +260,7 @@ class CertificateWorkflowTest extends TestCase
         $this->actingAs($admin)->post("/leadership/{$record->uuid}/generate");
 
         $this->assertSame(1, Certificate::query()->count());
-        $this->assertSame('LEAD-2026-0001', $record->fresh()->certificate->cert_number);
+        $this->assertSame('FLHSG-LEAD-2026-0001', $record->fresh()->certificate->cert_number);
         $this->assertStringContainsString('Hawk Patrol', app(CertificateGenerationService::class)->previewHtml($record->fresh()->certificate));
     }
 

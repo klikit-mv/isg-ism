@@ -11,7 +11,7 @@
         <form method="POST" action="{{ route('badges.section-codes') }}" class="card mb-4" data-testid="section-codes">
             @csrf
             <h2 class="font-semibold">Section proficiency codes</h2>
-            <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Every proficiency badge of a section shares one code and one yearly number sequence, for example FLHSG-PB-{{ now()->year }}-001. Codes may contain letters, numbers and hyphens.</p>
+            <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Every proficiency badge of a section shares one code and one yearly number sequence, for example FLHSG-PB-{{ now()->year }}-001. Codes may contain letters, numbers and hyphens; FLHSG- is added automatically if missing.</p>
             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ($sectionCodes as $section => $code)
                     <x-form.input :name="'codes['.$section.']'" :label="$section" :value="$code" class="uppercase"/>

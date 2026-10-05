@@ -122,8 +122,19 @@ class CertificateNumberService
         });
     }
 
+    /**
+     * Every certificate number starts with the organisation code (FLHSG-).
+     */
+    public function withOrganisationCode(string $prefix): string
+    {
+        $org = strtoupper((string) config('scout.certificate_prefix', 'FLHSG'));
+        $prefix = strtoupper($prefix);
+
+        return str_starts_with($prefix, $org.'-') ? $prefix : $org.'-'.$prefix;
+    }
+
     public function format(string $prefix, int $year, int $number, int $width = 4): string
     {
-        return $prefix.'-'.$year.'-'.str_pad((string) $number, $width, '0', STR_PAD_LEFT);
+        return $this->withOrganisationCode($prefix).'-'.$year.'-'.str_pad((string) $number, $width, '0', STR_PAD_LEFT);
     }
 }
