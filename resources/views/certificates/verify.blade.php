@@ -3,7 +3,7 @@
     <p class="mb-4 text-sm text-gray-500 dark:text-gray-400">Enter the certificate number printed on the certificate.</p>
 
     <form method="GET" action="{{ route('certificates.verify') }}" class="mb-6 flex gap-2">
-        <input name="cert_number" value="{{ $number }}" class="input uppercase" placeholder="e.g. SCOUT-2026-0001" aria-label="Certificate number" required>
+        <input name="cert_number" value="{{ $number }}" class="input uppercase" placeholder="e.g. FLHSG-PB-2026-001" aria-label="Certificate number" required>
         <button class="btn-primary">Check</button>
     </form>
 

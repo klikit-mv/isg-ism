@@ -51,12 +51,12 @@ class CertificateWorkflowTest extends TestCase
         $this->actingAs($admin)->post("/badge-requests/{$request->uuid}/generate", ['date_awarded' => '2026-09-27']);
 
         $certificate = Certificate::query()->firstOrFail();
-        $this->assertSame('SCOUT-2026-0001', $certificate->cert_number);
+        $this->assertSame('FLHSG-PB-2026-001', $certificate->cert_number);
         $this->assertMatchesRegularExpression('/^C[A-Z0-9]{8}$/', $certificate->cert_id);
         $this->assertSame(BadgeRequestStatus::Generated, $request->fresh()->status);
-        $this->assertSame('SCOUT-2026-0001', $request->fresh()->certificate_number);
-        Storage::disk('certificates')->assertExists("{$student->id}/SCOUT-2026-0001.pdf");
-        $this->assertStringStartsWith('%PDF', Storage::disk('certificates')->get("{$student->id}/SCOUT-2026-0001.pdf"));
+        $this->assertSame('FLHSG-PB-2026-001', $request->fresh()->certificate_number);
+        Storage::disk('certificates')->assertExists("{$student->id}/FLHSG-PB-2026-001.pdf");
+        $this->assertStringStartsWith('%PDF', Storage::disk('certificates')->get("{$student->id}/FLHSG-PB-2026-001.pdf"));
     }
 
     public function test_rejected_request_cannot_be_generated_and_duplicates_are_refused(): void

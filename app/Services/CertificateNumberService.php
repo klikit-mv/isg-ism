@@ -18,7 +18,7 @@ class CertificateNumberService
     }
 
     /**
-     * @return array{counter: string, prefix: string}
+     * @return array{counter: string, prefix: string, width: int}
      */
     public function badgeSequence(Badge $badge, ?int $year = null): array
     {
@@ -28,12 +28,14 @@ class CertificateNumberService
             return [
                 'counter' => 'badge:proficiency:'.$badge->section->value.':'.$year,
                 'prefix' => app(SettingsService::class)->sectionBadgeCode($badge->section),
+                'width' => 3,
             ];
         }
 
         return [
             'counter' => 'badge:'.$badge->badge_id.':'.$year,
             'prefix' => strtoupper((string) ($badge->number_prefix ?: $badge->code)),
+            'width' => 4,
         ];
     }
 
@@ -42,7 +44,7 @@ class CertificateNumberService
         $year = $this->currentYear();
         $sequence = $this->badgeSequence($badge, $year);
 
-        return $this->format($sequence['prefix'], $year, $this->nextSequence($sequence['counter'], $year, $sequence['prefix'], $badge->id));
+        return $this->format($sequence['prefix'], $year, $this->nextSequence($sequence['counter'], $year, $sequence['prefix'], $badge->id, $sequence['width']), $sequence['width']);
     }
 
     public function peekBadgeNumber(Badge $badge): string
@@ -50,7 +52,7 @@ class CertificateNumberService
         $year = $this->currentYear();
         $sequence = $this->badgeSequence($badge, $year);
 
-        return $this->format($sequence['prefix'], $year, $this->peekSequence($sequence['counter']));
+        return $this->format($sequence['prefix'], $year, $this->peekSequence($sequence['counter']), $sequence['width']);
     }
 
     public function nextGeneralNumber(): string
@@ -84,15 +86,15 @@ class CertificateNumberService
     /**
      * Take the next number, skipping any already used on a certificate.
      */
-    public function nextSequence(string $counterId, int $year, string $prefix, ?int $badgeId = null): int
+    public function nextSequence(string $counterId, int $year, string $prefix, ?int $badgeId = null, int $width = 4): int
     {
-        return DB::transaction(function () use ($counterId, $year, $prefix, $badgeId): int {
+        return DB::transaction(function () use ($counterId, $year, $prefix, $badgeId, $width): int {
             CertificateCounter::query()->firstOrCreate(['counter_id' => $counterId], ['year' => $year, 'badge_id' => $badgeId, 'last_number' => 0]);
             $counter = CertificateCounter::query()->where('counter_id', $counterId)->lockForUpdate()->firstOrFail();
 
             $next = $counter->last_number + 1;
 
-            while (Certificate::query()->where('cert_number', $this->format($prefix, $year, $next))->exists()) {
+            while (Certificate::query()->where('cert_number', $this->format($prefix, $year, $next, $width))->exists()) {
                 $next++;
             }
 
@@ -120,8 +122,8 @@ class CertificateNumberService
         });
     }
 
-    public function format(string $prefix, int $year, int $number): string
+    public function format(string $prefix, int $year, int $number, int $width = 4): string
     {
-        return $prefix.'-'.$year.'-'.str_pad((string) $number, 4, '0', STR_PAD_LEFT);
+        return $prefix.'-'.$year.'-'.str_pad((string) $number, $width, '0', STR_PAD_LEFT);
     }
 }

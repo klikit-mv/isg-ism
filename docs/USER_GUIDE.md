@@ -42,4 +42,4 @@ Leaders with extra permissions also see: **Verification** (approve or reject onl
 
 ## Checking a certificate
 
-Anyone can open **Verify a certificate** (link on the sign-in page) and enter the number printed on it, such as `SCOUT-2026-0001`.
+Anyone can open **Verify a certificate** (link on the sign-in page) and enter the number printed on it, such as `FLHSG-PB-2026-001`.

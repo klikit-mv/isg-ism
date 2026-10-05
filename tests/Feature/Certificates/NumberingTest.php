@@ -24,9 +24,9 @@ class NumberingTest extends TestCase
         $cooking = $this->badge(['code' => 'COOK', 'name' => 'Cooking']);
         $cubBadge = $this->badge(['code' => 'CUBX', 'section' => 'Cub Scout']);
 
-        $this->assertSame('SCOUT-2026-0001', $this->numbers()->nextBadgeNumber($camping));
-        $this->assertSame('SCOUT-2026-0002', $this->numbers()->nextBadgeNumber($cooking));
-        $this->assertSame('CUB-2026-0001', $this->numbers()->nextBadgeNumber($cubBadge));
+        $this->assertSame('FLHSG-PB-2026-001', $this->numbers()->nextBadgeNumber($camping));
+        $this->assertSame('FLHSG-PB-2026-002', $this->numbers()->nextBadgeNumber($cooking));
+        $this->assertSame('FLHSG-PA-2026-001', $this->numbers()->nextBadgeNumber($cubBadge));
     }
 
     public function test_an_admin_sets_the_code_shared_by_a_sections_proficiency_badges(): void
@@ -38,12 +38,12 @@ class NumberingTest extends TestCase
         $this->actingAs($this->admin())->post(route('badges.section-codes'), ['codes' => ['Scout' => 'sct', 'Cub Scout' => '']])
             ->assertSessionHas('success');
 
-        $this->assertSame('SCT-2026-0001', $this->numbers()->nextBadgeNumber($camping));
-        $this->assertSame('SCT-2026-0002', $this->numbers()->nextBadgeNumber($cooking));
+        $this->assertSame('SCT-2026-001', $this->numbers()->nextBadgeNumber($camping));
+        $this->assertSame('SCT-2026-002', $this->numbers()->nextBadgeNumber($cooking));
         $this->actingAs($this->admin())->get(route('badges.index'))->assertSee('data-testid="section-codes"', false)->assertSee('SCT');
 
         $this->actingAs($this->admin())->post(route('badges.section-codes'), ['codes' => ['Scout' => '']]);
-        $this->assertSame('SCOUT-2026-0003', $this->numbers()->nextBadgeNumber($camping));
+        $this->assertSame('FLHSG-PB-2026-003', $this->numbers()->nextBadgeNumber($camping));
     }
 
     public function test_parents_cannot_change_section_codes(): void
@@ -67,11 +67,11 @@ class NumberingTest extends TestCase
         $badge = $this->badge();
 
         $this->travelTo(now()->setDate(2026, 12, 31)->setTime(12, 0));
-        $this->assertSame('SCOUT-2026-0001', $this->numbers()->nextBadgeNumber($badge));
+        $this->assertSame('FLHSG-PB-2026-001', $this->numbers()->nextBadgeNumber($badge));
         $this->assertSame('CERT-2026-0001', $this->numbers()->nextGeneralNumber());
 
         $this->travelTo(now()->setDate(2027, 1, 2));
-        $this->assertSame('SCOUT-2027-0001', $this->numbers()->nextBadgeNumber($badge));
+        $this->assertSame('FLHSG-PB-2027-001', $this->numbers()->nextBadgeNumber($badge));
         $this->assertSame('CERT-2027-0001', $this->numbers()->nextGeneralNumber());
         $this->assertSame('LEAD-2027-0001', $this->numbers()->nextLeadershipNumber());
     }
@@ -103,7 +103,7 @@ class NumberingTest extends TestCase
         $this->actingAs($admin)->post('/badges', ['name' => 'Hiking', 'code' => 'hike', 'section' => 'Rover', 'next_number' => 15])->assertSessionHas('success');
 
         $badge = Badge::query()->where('code', 'HIKE')->firstOrFail();
-        $this->assertSame('ROVER-2026-0015', $this->numbers()->peekBadgeNumber($badge));
+        $this->assertSame('ROVER-2026-015', $this->numbers()->peekBadgeNumber($badge));
     }
 
     public function test_proficiency_badges_need_a_section_but_other_categories_do_not(): void

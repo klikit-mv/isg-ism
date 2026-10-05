@@ -35,8 +35,8 @@ enum ScoutSection: string
     {
         return match ($this) {
             self::PreCub => 'PRECUB',
-            self::CubScout => 'CUB',
-            self::Scout => 'SCOUT',
+            self::CubScout => 'FLHSG-PA',
+            self::Scout => 'FLHSG-PB',
             self::Rover => 'ROVER',
         };
     }
