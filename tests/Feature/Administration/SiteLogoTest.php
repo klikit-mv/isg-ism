@@ -44,7 +44,7 @@ class SiteLogoTest extends TestCase
 
         $this->actingAs($admin)->get('/dashboard')->assertSee('data-testid="site-logo"', false)->assertSee('src="/branding/logo?v=', false);
         auth()->logout();
-        $this->get('/login')->assertSee('data-testid="site-logo"', false)->assertSee('rel="icon"', false);
+        $this->get('/login')->assertSee('data-testid="site-logo"', false)->assertSee('rel="icon"', false)->assertSee('rel="apple-touch-icon"', false);
     }
 
     /**

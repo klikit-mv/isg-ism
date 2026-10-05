@@ -2,7 +2,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @if ($faviconUrl = app(\App\Services\SettingsService::class)->logoUrl())
-    <link rel="icon" href="{{ $faviconUrl }}">
+    <link rel="icon" href="{{ $faviconUrl }}" sizes="any">
+    <link rel="shortcut icon" href="{{ $faviconUrl }}">
+    <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
 @endif
 <title>{{ isset($title) && $title ? $title.' · ' : '' }}{{ config('scout.short_name') }}</title>
 <script>
