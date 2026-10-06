@@ -70,7 +70,7 @@ Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 M
 
 ### Mobile (Android and iOS)
 
-The portal is an installable web app (PWA) with the group's logo as its icon, so no app store is needed. It needs **HTTPS**. On Android (Chrome): menu → *Install app*. On iPhone/iPad (Safari): Share → *Add to Home Screen*. It opens full-screen from the home screen and shows an offline page when there is no connection. Pages are never cached, so private data is not stored on the device.
+The portal is an installable web app (PWA) with the group's logo as its icon, so no app store is needed. It needs **HTTPS**. On Android (Chrome): menu → *Install app*. On iPhone/iPad (Safari): Share → *Add to Home Screen*. It opens full-screen from the home screen and shows an offline page when there is no connection. Pages are never cached, so private data is not stored on the device. **Push notifications:** each person turns them on per device under Profile → *Phone and browser notifications*; every portal alert is then also pushed to that device. The server's VAPID keys are created automatically on first use (stored in Settings, private key encrypted). On iPhone/iPad this works only from the installed Home Screen app (iOS 16.4+).
 
 ### Optional integrations
 

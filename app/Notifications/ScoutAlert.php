@@ -4,7 +4,9 @@ namespace App\Notifications;
 
 use App\Models\User;
 use App\Notifications\Channels\TelegramChannel;
+use App\Notifications\Channels\WebPushChannel;
 use App\Services\TelegramService;
+use App\Services\WebPushService;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
@@ -29,6 +31,10 @@ class ScoutAlert extends Notification
 
         if ($notifiable->telegram_notifications_enabled && filled($notifiable->telegram_chat_id) && app(TelegramService::class)->configured()) {
             $channels[] = TelegramChannel::class;
+        }
+
+        if (app(WebPushService::class)->hasSubscriptions($notifiable)) {
+            $channels[] = WebPushChannel::class;
         }
 
         return $channels;

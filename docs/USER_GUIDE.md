@@ -8,7 +8,7 @@ After signing in you see the **module hub**. Open a module; the left menu then s
 
 ## On your phone
 
-Open the website in Chrome (Android) and choose *Install app*, or in Safari (iPhone/iPad) choose Share → *Add to Home Screen*. It then opens like an app.
+Open the website in Chrome (Android) and choose *Install app*, or in Safari (iPhone/iPad) choose Share → *Add to Home Screen*. It then opens like an app. To get alerts when the app is closed, open **Profile → Phone and browser notifications → Turn on notifications** and allow them (on iPhone this works only from the Home Screen app).
 
 ## Parents (Family)
 

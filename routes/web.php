@@ -31,6 +31,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\PushController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SelfController;
@@ -72,6 +73,9 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/signature', [ProfileController::class, 'signature'])->name('profile.signature');
     Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::post('/profile/push', [PushController::class, 'subscribe'])->name('profile.push.subscribe');
+    Route::delete('/profile/push', [PushController::class, 'unsubscribe'])->name('profile.push.unsubscribe');
+    Route::post('/profile/push/test', [PushController::class, 'test'])->middleware('throttle:integration-tests')->name('profile.push.test');
     Route::post('/profile/telegram/confirm', [TelegramConnectController::class, 'confirm'])->middleware('throttle:60,1')->name('profile.telegram.confirm');
     Route::middleware('throttle:integration-tests')->group(function () {
         Route::post('/profile/telegram/connect', [TelegramConnectController::class, 'connect'])->name('profile.telegram.connect');

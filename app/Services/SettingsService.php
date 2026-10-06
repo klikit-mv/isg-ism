@@ -2,14 +2,15 @@
 
 namespace App\Services;
 
+use App\Enums\ScoutSection;
 use App\Models\Setting;
 use App\Models\User;
 use App\Support\Money;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Key/value settings, cached for 60 seconds.
@@ -18,7 +19,7 @@ class SettingsService
 {
     public const CACHE_KEY = 'scout.settings';
 
-    public const ENCRYPTED = ['telegram_bot_token', 'google_service_account_json', 'google_oauth_client_secret', 'google_oauth_refresh_token'];
+    public const ENCRYPTED = ['telegram_bot_token', 'google_service_account_json', 'google_oauth_client_secret', 'google_oauth_refresh_token', 'webpush_private_key'];
 
     /**
      * @return array<string, string|null>
@@ -60,7 +61,7 @@ class SettingsService
     /**
      * The certificate number code shared by every proficiency badge of a section (e.g. SCOUT).
      */
-    public function sectionBadgeCode(\App\Enums\ScoutSection $section): string
+    public function sectionBadgeCode(ScoutSection $section): string
     {
         return strtoupper($this->get('badge_code_'.Str::slug($section->value, '_')) ?: $section->numberPrefix());
     }
