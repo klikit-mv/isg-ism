@@ -69,7 +69,21 @@ class PaymentController extends Controller
     {
         $this->authorize('view', $payment);
         $proof = $payment->proof;
-        abort_if($proof === null || ! Storage::disk($proof->disk)->exists($proof->path), 404);
+        abort_if($proof === null, 404);
+
+        if ($proof->disk === 'drive') {
+            $contents = app(\App\Services\GoogleDrivePaymentService::class)->contents($proof->path);
+            abort_if($contents === null, 404);
+
+            return response($contents, 200, [
+                'Content-Type' => $proof->mime_type ?: 'application/octet-stream',
+                'Content-Disposition' => 'inline; filename="'.addslashes($proof->original_filename ?: 'proof').'"',
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store',
+            ]);
+        }
+
+        abort_if(! Storage::disk($proof->disk)->exists($proof->path), 404);
 
         return Storage::disk($proof->disk)->response($proof->path, $proof->original_filename ?: basename($proof->path), [
             'Content-Type' => $proof->mime_type ?: 'application/octet-stream',

@@ -100,7 +100,7 @@ class PaymentService
         $storedPath = $proof ? $this->storeProofFile($proof, $uuid) : null;
 
         try {
-            return DB::transaction(function () use ($payable, $actor, $amount, $method, $proof, $storedPath, $uuid): Payment {
+            $payment = DB::transaction(function () use ($payable, $actor, $amount, $method, $proof, $storedPath, $uuid): Payment {
                 $staffCash = $method === PaymentMethod::Cash;
 
                 $payment = Payment::query()->forceCreate([
@@ -147,6 +147,12 @@ class PaymentService
 
                 return $payment;
             });
+
+            if ($storedPath) {
+                $this->moveProofToDrive($payment, (string) $storedPath);
+            }
+
+            return $payment;
         } catch (Throwable $e) {
             if ($storedPath) {
                 Storage::disk(self::PROOF_DISK)->delete($storedPath);
@@ -275,6 +281,39 @@ class PaymentService
         $this->audit->record('payment.roster_recorded', $payment, ['amount' => $payment->amount], $actor);
 
         return $payment;
+    }
+
+    /**
+     * Keep the proof in the Drive payments folder (one sub-folder per module) once the payment exists.
+     * The local copy is removed only after Drive accepted the file; otherwise it stays and a warning says why.
+     */
+    private function moveProofToDrive(Payment $payment, string $localPath): void
+    {
+        $drive = app(GoogleDrivePaymentService::class);
+
+        if (! $drive->enabled() || ! isset(GoogleDrivePaymentService::MODULES[$payment->payable_type])) {
+            return;
+        }
+
+        $proof = $payment->proof()->first();
+        $contents = Storage::disk(self::PROOF_DISK)->get($localPath);
+
+        if ($proof === null || $contents === null) {
+            return;
+        }
+
+        $who = $payment->student?->name ?? $payment->submitter?->name ?? 'payment';
+        $extension = pathinfo($localPath, PATHINFO_EXTENSION);
+        $ref = $drive->put((string) $payment->payable_type, now()->format('Y-m-d').' '.$who.' '.mb_substr((string) $payment->uuid, 0, 8).'.'.$extension, $contents, (string) ($proof->mime_type ?: 'application/octet-stream'));
+
+        if ($ref === null) {
+            session()->flash('warning', 'The payment proof was saved on the server, not in Google Drive. '.$drive->lastError());
+
+            return;
+        }
+
+        $proof->update(['disk' => 'drive', 'path' => $ref]);
+        Storage::disk(self::PROOF_DISK)->delete($localPath);
     }
 
     /**

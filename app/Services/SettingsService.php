@@ -182,6 +182,11 @@ class SettingsService
         return $this->get('google_drive_folder_'.$area);
     }
 
+    public function drivePaymentsFolderId(): ?string
+    {
+        return $this->get('google_drive_payments_folder_id');
+    }
+
     public function driveCertificatesFolderId(): ?string
     {
         return $this->get('google_drive_certificates_folder_id');

@@ -111,6 +111,7 @@
 
                 <x-form.input name="google_drive_folder" label="Photos folder (link or ID)" :value="$settings->get('google_drive_folder')" help="Students, Shop, Badges and Signatures sub-folders are created inside it."/>
                 <x-form.input name="google_drive_certificates_folder" label="Certificates folder (link or ID)" :value="$settings->get('google_drive_certificates_folder')" help="Each scout gets a sub-folder for their PDFs."/>
+                <x-form.input name="google_drive_payments_folder" label="Payments folder (link or ID)" :value="$settings->get('google_drive_payments_folder')" help="Payment proofs, bank deposit slips and receipts. A sub-folder per module is created: Class fees, Annual fees, Shop purchases, Events, Bank deposits, Bank expenses."/>
             </div>
 
             <div class="card space-y-4">

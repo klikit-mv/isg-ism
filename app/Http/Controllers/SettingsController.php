@@ -39,7 +39,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function update(Request $request, GoogleDrivePhotoService $photos, GoogleDriveCertificateService $certificates, TelegramService $telegram, GoogleApiClient $google): RedirectResponse
+    public function update(Request $request, GoogleDrivePhotoService $photos, GoogleDriveCertificateService $certificates, \App\Services\GoogleDrivePaymentService $paymentDrive, TelegramService $telegram, GoogleApiClient $google): RedirectResponse
     {
         $data = $request->validate([
             'default_class_fee' => ['required', 'numeric', 'min:0', 'max:9999999'],
@@ -53,6 +53,7 @@ class SettingsController extends Controller
             'footer_text' => ['nullable', 'string', 'max:255'],
             'google_drive_folder' => ['nullable', 'string', 'max:500'],
             'google_drive_certificates_folder' => ['nullable', 'string', 'max:500'],
+            'google_drive_payments_folder' => ['nullable', 'string', 'max:500'],
             'telegram_bot_token' => ['nullable', 'string', 'max:200'],
             'logo' => ['nullable', 'bail', 'file', 'mimes:png,jpg,jpeg', 'max:2048'],
             'remove_logo' => ['sometimes', 'boolean'],
@@ -86,6 +87,10 @@ class SettingsController extends Controller
 
         $messages[] = $this->saveFolder('google_drive_certificates_folder', $data['google_drive_certificates_folder'] ?? null, $actor, function (string $id) use ($certificates): string {
             return $certificates->verifyRootFolder($id)['message'];
+        });
+
+        $messages[] = $this->saveFolder('google_drive_payments_folder', $data['google_drive_payments_folder'] ?? null, $actor, function (string $id) use ($paymentDrive): string {
+            return $paymentDrive->prepareFolders($id)['message'];
         });
 
         if (filled($data['telegram_bot_token'] ?? null)) {
