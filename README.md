@@ -1,6 +1,6 @@
 # Scout Management System
 
-The Ifthithaah Scout Group portal: one Laravel 11.41 application and one database for scouts, groups, activities, attendance, fees, payments, the scout shop and certificates. It replaces the old Google Sheets + Apps Script workbooks.
+The Ifthithaah Scout Group portal: one Laravel 13 application and one database for scouts, groups, activities, attendance, fees, payments, the scout shop and certificates. It replaces the old Google Sheets + Apps Script workbooks.
 
 - **Sign-in:** National ID + PIN. Anyone can register as a scout or parent; a leader or admin verifies them first.
 - **Roles:** admin, leader, parent, student (a person may hold several). Extra permissions: Verify payments, Manage shop, Process delivery, Manage annual fees.
@@ -10,7 +10,7 @@ See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for how each role uses the portal.
 
 ## Stack
 
-PHP 8.3+, Laravel 11.41.3 (pinned exactly; do not run `composer update laravel/framework`), Livewire 3 (attendance registers, parent child lookup), Alpine.js, Tailwind CSS 3, Vite 5 (Node.js 21 or lower). MySQL 8 in production, SQLite locally and in tests. dompdf for certificate PDFs, PhpSpreadsheet for imports and exports. Google Drive/Slides and Telegram are optional and fail soft.
+PHP 8.3+, Laravel 13, Livewire 4 (attendance registers, parent child lookup), Alpine.js, Tailwind CSS 3, Vite 5 (Node.js 21 or lower). MySQL 8 in production, SQLite locally and in tests. dompdf for certificate PDFs, PhpSpreadsheet for imports and exports. Google Drive/Slides and Telegram are optional and fail soft.
 
 ## Local setup
 
@@ -27,7 +27,7 @@ php artisan serve
 
 On Windows use `copy .env.example .env` and `type nul > database\database.sqlite`.
 
-Only developers changing front-end code need Node.js: after `composer require …` commit `composer.json` and `composer.lock` (never `composer update laravel/framework`); after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`. The front-end tools (Vite 5, Tailwind 3) are pinned to work on Node.js 18 to 21; `.nvmrc` selects Node 21.
+Only developers changing front-end code need Node.js: after `composer require …` commit `composer.json` and `composer.lock` ; after changing CSS/JS in `resources/`, run `npm install && npm run build` and commit `public/build/`. The front-end tools (Vite 5, Tailwind 3) are pinned to work on Node.js 18 to 21; `.nvmrc` selects Node 21.
 
 The demo data includes sample sign-ins. They are not shown on the sign-in page:
 
