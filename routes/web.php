@@ -31,6 +31,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\PublicEventController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SelfController;
 use App\Http\Controllers\SettingsController;
@@ -49,6 +50,11 @@ require __DIR__.'/auth.php';
 
 // Website logo (shown on the sign-in page, so no sign-in needed).
 Route::get('/branding/logo', [MediaController::class, 'logo'])->name('branding.logo');
+
+// Installable app (Android and iOS home screen): manifest, icons and offline page.
+Route::get('/manifest.webmanifest', [PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/pwa-icon/{size}.png', [PwaController::class, 'icon'])->whereNumber('size')->name('pwa.icon');
+Route::get('/offline', [PwaController::class, 'offline'])->name('pwa.offline');
 
 // Public certificate verification (no sign-in).
 Route::middleware('throttle:certificate-verify')->group(function () {

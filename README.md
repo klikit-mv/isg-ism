@@ -68,6 +68,10 @@ Use the same steps, with Nginx or Apache serving `public/`, `CACHE_STORE=redis`,
 
 Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 MB). It replaces the built-in logo in the header, on the sign-in page, as the browser icon and on certificates. It is stored on the public disk and served by the app at `/branding/logo`, so it works without `storage:link` and whatever `APP_URL` is set to.
 
+### Mobile (Android and iOS)
+
+The portal is an installable web app (PWA) with the group's logo as its icon, so no app store is needed. It needs **HTTPS**. On Android (Chrome): menu → *Install app*. On iPhone/iPad (Safari): Share → *Add to Home Screen*. It opens full-screen from the home screen and shows an offline page when there is no connection. Pages are never cached, so private data is not stored on the device.
+
 ### Optional integrations
 
 - **Google Drive / Slides:** in Google Cloud Console enable the Drive and Slides APIs. Then either:

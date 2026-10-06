@@ -4,8 +4,19 @@
 @if ($faviconUrl = app(\App\Services\SettingsService::class)->logoUrl())
     <link rel="icon" href="{{ $faviconUrl }}" sizes="any">
     <link rel="shortcut icon" href="{{ $faviconUrl }}">
-    <link rel="apple-touch-icon" href="{{ $faviconUrl }}">
 @endif
+<link rel="manifest" href="{{ route('pwa.manifest', [], false) }}">
+<link rel="apple-touch-icon" href="{{ route('pwa.icon', ['size' => 180], false) }}">
+<meta name="theme-color" content="#1e3a8a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="{{ \Illuminate\Support\Str::limit(config('scout.short_name'), 12, '') }}">
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+    }
+</script>
 <title>{{ isset($title) && $title ? $title.' · ' : '' }}{{ config('scout.short_name') }}</title>
 <script>
     (function () {

@@ -6,6 +6,10 @@ Use your **National ID** and **PIN**. New scouts register at **Register as a sco
 
 After signing in you see the **module hub**. Open a module; the left menu then shows only that module's pages. **Modules** in the header returns to the hub.
 
+## On your phone
+
+Open the website in Chrome (Android) and choose *Install app*, or in Safari (iPhone/iPad) choose Share → *Add to Home Screen*. It then opens like an app.
+
 ## Parents (Family)
 
 - **My students:** each approved child's profile, certificates, badge requests and leadership records.
