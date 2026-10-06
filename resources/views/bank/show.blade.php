@@ -1,7 +1,6 @@
 <x-app-layout :title="$account->name">
     <x-page-header :title="$account->name" :description="$account->bank_name.' · '.$account->account_number">
         <x-slot:actions>
-            <a href="{{ route('bank.index') }}" class="btn-secondary">All accounts</a>
             <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('open-modal', 'edit-account')">Edit</button>
             @if ($account->status === 'Active')
                 <button type="button" class="btn-primary" x-data x-on:click="$dispatch('open-modal', 'add-deposit')">Add deposit</button>
@@ -61,7 +60,7 @@
     <section class="mt-10">
         <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Online payments (verified)</h2>
         @if (! $account->receives_online)
-            <p class="mt-1 text-sm text-gray-500">Verified online payments are not counted here. Edit this account and tick “Receives online payments” to add them to its balance.</p>
+            <p class="mt-1 text-sm text-gray-500">Verified online payments are not counted for this account.</p>
         @else
             <p class="mb-3 mt-1 text-sm text-gray-500">Added automatically when a leader verifies an online payment, from {{ scout_date($account->online_from) }}. They are kept apart from deposit slips.</p>
             @if ($online->isEmpty())
@@ -127,7 +126,6 @@
             <x-form.input name="account_number" label="Account number" :value="$account->account_number" required/>
             <x-form.input name="opening_balance" label="Opening balance" type="number" step="0.01" min="0" :value="$account->opening_balance"/>
             <x-form.select name="status" label="Status" :options="['Active' => 'Active', 'Inactive' => 'Inactive']" :value="$account->status"/>
-            <x-form.checkbox name="receives_online" label="Receives online payments (verified ones are added to the balance)" :checked="$account->receives_online"/>
             <x-form.input name="online_from" label="Count online payments verified from" type="date" :value="$account->online_from?->toDateString()"/>
             <x-form.textarea name="notes" label="Notes" :value="$account->notes"/>
             <div class="flex justify-end gap-2">

@@ -27,6 +27,10 @@ class BankService
      */
     public function createAccount(array $data, User $actor): BankAccount
     {
+        if (BankAccount::query()->exists()) {
+            throw new ScoutException('The group has one bank account. Edit it instead of adding another.');
+        }
+
         $account = BankAccount::query()->create([
             'name' => $data['name'],
             'bank_name' => $data['bank_name'],
@@ -36,8 +40,9 @@ class BankService
             'notes' => $data['notes'] ?? null,
             'status' => 'Active',
             'created_by' => $actor->id,
-        ] + $this->onlineSettings($data));
-        $this->releaseOnlineFromOthers($account);
+            'receives_online' => true,
+            'online_from' => $data['online_from'] ?? now()->toDateString(),
+        ]);
         $this->audit->record('bank_account.created', $account, ['name' => $account->name, 'opening_balance' => $account->opening_balance], $actor);
 
         return $account;
@@ -52,7 +57,7 @@ class BankService
 
         DB::transaction(function () use ($account, $data, $opening, $actor): void {
             $locked = BankAccount::query()->whereKey($account->id)->lockForUpdate()->firstOrFail();
-            $locked->fill($this->onlineSettings($data, $locked));
+            $locked->online_from = $data['online_from'] ?? $locked->online_from;
             $after = Money::sub(Money::add(Money::add($opening, $locked->totalDeposits()), $locked->totalOnline()), $locked->totalExpenses());
 
             if (Money::compare($after, '0') < 0) {
@@ -67,35 +72,10 @@ class BankService
                 'opening_balance' => $opening,
                 'notes' => $data['notes'] ?? null,
                 'status' => $data['status'] ?? $locked->status,
-                'receives_online' => $locked->receives_online,
                 'online_from' => $locked->online_from,
             ]);
-            $this->releaseOnlineFromOthers($locked);
             $this->audit->record('bank_account.updated', $locked, ['name' => $locked->name, 'opening_balance' => $opening], $actor);
         });
-    }
-
-    /**
-     * Only one account counts the verified online payments; it starts counting from the date given (today by default).
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function onlineSettings(array $data, ?BankAccount $current = null): array
-    {
-        $receives = (bool) ($data['receives_online'] ?? false);
-
-        return [
-            'receives_online' => $receives,
-            'online_from' => $receives ? ($data['online_from'] ?? $current?->online_from ?? now()->toDateString()) : null,
-        ];
-    }
-
-    private function releaseOnlineFromOthers(BankAccount $account): void
-    {
-        if ($account->receives_online) {
-            BankAccount::query()->where('id', '!=', $account->id)->where('receives_online', true)->update(['receives_online' => false, 'online_from' => null]);
-        }
     }
 
     /**

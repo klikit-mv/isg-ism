@@ -163,17 +163,16 @@ class BankTest extends TestCase
         $this->actingAs($this->admin())->get(route('bank.show', $account))->assertOk()->assertSee('Online payments (verified)')->assertSee('Deposit slips');
     }
 
-    public function test_only_one_account_receives_online_payments(): void
+    public function test_the_group_can_only_have_one_bank_account(): void
     {
-        $first = $this->account();
-        $second = $this->account();
         $admin = $this->admin();
-        $payload = fn (string $on) => ['name' => 'A', 'bank_name' => 'B', 'account_number' => '1', 'opening_balance' => '0', 'status' => 'Active', 'receives_online' => $on];
+        $payload = ['name' => 'A', 'bank_name' => 'B', 'account_number' => '1', 'opening_balance' => '10'];
 
-        $this->actingAs($admin)->put(route('bank.update', $first), $payload('1'));
-        $this->actingAs($admin)->put(route('bank.update', $second), $payload('1'));
+        $this->actingAs($admin)->post(route('bank.store'), $payload)->assertRedirect();
+        $this->actingAs($admin)->post(route('bank.store'), $payload)->assertSessionHas('error');
 
-        $this->assertFalse($first->fresh()->receives_online);
-        $this->assertTrue($second->fresh()->receives_online);
+        $this->assertSame(1, BankAccount::query()->count());
+        $this->assertTrue(BankAccount::query()->firstOrFail()->receives_online);
+        $this->actingAs($admin)->get(route('bank.index'))->assertRedirect(route('bank.show', BankAccount::query()->firstOrFail()));
     }
 }

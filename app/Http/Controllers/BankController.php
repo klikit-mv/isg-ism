@@ -15,11 +15,13 @@ class BankController extends Controller
 {
     public function __construct(private BankService $bank) {}
 
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
         $this->allow($request);
 
-        return view('bank.index', ['accounts' => BankAccount::query()->orderBy('name')->get()]);
+        $account = BankAccount::query()->orderBy('id')->first();
+
+        return $account ? redirect()->route('bank.show', $account) : view('bank.index');
     }
 
     public function show(Request $request, BankAccount $account): View
@@ -118,10 +120,7 @@ class BankController extends Controller
      */
     private function accountData(Request $request): array
     {
-        $request->merge(['receives_online' => $request->boolean('receives_online')]);
-
         return $request->validate([
-            'receives_online' => ['boolean'],
             'online_from' => ['nullable', 'date'],
             'name' => ['required', 'string', 'max:255'],
             'bank_name' => ['required', 'string', 'max:255'],
