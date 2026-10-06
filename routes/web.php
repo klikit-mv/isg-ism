@@ -6,6 +6,7 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BadgeRequestController;
+use App\Http\Controllers\BankController;
 use App\Http\Controllers\CertificateController;
 use App\Http\Controllers\CertificateTemplateController;
 use App\Http\Controllers\CertificateVerificationController;
@@ -119,6 +120,15 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/attendance/{activity}/mark', [AttendanceController::class, 'mark'])->name('attendance.mark');
     Route::get('/rover-attendance', [AttendanceController::class, 'roverIndex'])->name('rover-attendance.index');
     Route::get('/rover-attendance/{activity}/mark', [AttendanceController::class, 'roverMark'])->name('rover-attendance.mark');
+
+    // Bank accounts (admins and leaders).
+    Route::get('/bank', [BankController::class, 'index'])->name('bank.index');
+    Route::post('/bank', [BankController::class, 'store'])->name('bank.store');
+    Route::get('/bank/{account}', [BankController::class, 'show'])->name('bank.show');
+    Route::put('/bank/{account}', [BankController::class, 'update'])->name('bank.update');
+    Route::post('/bank/{account}/{type}', [BankController::class, 'record'])->whereIn('type', ['deposit', 'expense'])->name('bank.record');
+    Route::get('/bank/{account}/transactions/{transaction}/attachment', [BankController::class, 'attachment'])->name('bank.attachment');
+    Route::delete('/bank/{account}/transactions/{transaction}', [BankController::class, 'destroy'])->name('bank.transactions.destroy');
 
     // Fees and payments.
     Route::get('/class-fees', [ClassFeeController::class, 'index'])->name('class-fees.index');

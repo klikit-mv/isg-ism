@@ -103,6 +103,18 @@ final class ScoutModules
                     ['label' => 'Verification', 'route' => 'payment-verification.index', 'permission' => Permission::VerifyPayments, 'patterns' => ['payment-verification.*']],
                 ],
             ],
+            'bank' => [
+                'key' => 'bank',
+                'title' => 'Bank',
+                'description' => 'Bank balance, deposit slips and spending.',
+                'icon' => 'wallet',
+                'home' => 'bank.index',
+                'roles' => [Role::Admin, Role::Leader],
+                'routes' => ['bank.*'],
+                'nav' => [
+                    ['label' => 'Bank accounts', 'route' => 'bank.index', 'patterns' => ['bank.*']],
+                ],
+            ],
             'shop' => [
                 'key' => 'shop',
                 'title' => 'Scout shop',

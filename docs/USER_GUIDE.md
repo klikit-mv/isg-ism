@@ -29,6 +29,8 @@ Your details, attendance and fees, plus certificates, badge requests and the sho
 - **Certificates:** issue general certificates (one or in bulk), approve badge requests and generate their certificates, keep leadership records, and **Verify and sign** certificates. Upload your signature in Profile first.
 - **Reports:** attendance, Rover attendance, annual fees, class fees, payments and shop, with print and XLSX/CSV export.
 
+- **Bank** (admins and leaders): add the group's bank account with the money already in it, then record **deposits** (amount, date, collected from, deposit slip attached) and **spending** (amount, requested by, purpose, optional receipt). Spending is deducted from the balance and cannot exceed it. Only admins can delete an entry. Slips and receipts are filed in the Google Drive payments folder when it is set.
+
 Leaders with extra permissions also see: **Verification** (approve or reject online payments; rejecting needs a reason), shop item management, delivery (**Ready** / **Deliver**), and annual fee years (**Generate invoices**).
 
 ## Admins (Administration)

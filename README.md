@@ -4,7 +4,7 @@ The Ifthithaah Scout Group portal: one Laravel 13 application and one database f
 
 - **Sign-in:** National ID + PIN. Anyone can register as a scout or parent; a leader or admin verifies them first.
 - **Roles:** admin, leader, parent, student (a person may hold several). Extra permissions: Verify payments, Manage shop, Process delivery, Manage annual fees.
-- **Modules:** Scout operations, Family, My record, Certificates, Fees and payments, Scout shop, Reports, Administration.
+- **Modules:** Scout operations, Family, My record, Certificates, Fees and payments, Bank (admins and leaders), Scout shop, Reports, Administration.
 
 See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for how each role uses the portal.
 
@@ -74,7 +74,7 @@ Admins upload the logo under Administration → Settings (PNG or JPEG, up to 2 M
   - **Connect a Google account (recommended):** configure the OAuth consent screen (External, then *Publish app* so the connection does not expire after 7 days), create an *OAuth client ID* of type *Web application* with the redirect URI shown under Administration → Settings → Google Drive (`https://your-domain/settings/google/callback`; Google only accepts https on a public domain, or `http://localhost`), paste the Client ID and secret in Settings, save, and press **Connect Google account**. Files are stored in that account's Drive, so no sharing is needed.
   - **Or use a service account key:** upload the JSON key in Settings (or set `GOOGLE_SERVICE_ACCOUNT_JSON` on the server, which takes priority). Service accounts have no storage of their own, so use folders in a shared drive and share them with the service account's email as an editor.
 
-  Then paste the photos and certificates folder links in Settings and press **Test Google Drive**. API keys cannot be used: they only reach public data. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
+  Then paste the photos and certificates folder links in Settings. Optionally set a **payments folder**: every payment proof, bank deposit slip and spending receipt is filed in a sub-folder per module (Class fees, Annual fees, Shop purchases, Events, Bank deposits, Bank expenses), created automatically and press **Test Google Drive**. API keys cannot be used: they only reach public data. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
 - **Telegram:** create a bot with @BotFather and paste the token in Settings (it is stored encrypted and never shown again). Linking uses `getUpdates`, so the bot must **not** have a webhook set. Users connect from Profile.
 
 ## Commands

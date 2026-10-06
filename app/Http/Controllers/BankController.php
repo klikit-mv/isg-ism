@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\BankAccount;
+use App\Models\BankTransaction;
+use App\Services\BankService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
+
+class BankController extends Controller
+{
+    public function __construct(private BankService $bank) {}
+
+    public function index(Request $request): View
+    {
+        $this->allow($request);
+
+        return view('bank.index', ['accounts' => BankAccount::query()->orderBy('name')->get()]);
+    }
+
+    public function show(Request $request, BankAccount $account): View
+    {
+        $this->allow($request);
+
+        $transactions = $account->transactions()
+            ->with('recorder')
+            ->when($request->query('type'), fn ($q, $type) => $q->where('type', $type))
+            ->when($request->query('from'), fn ($q, $date) => $q->whereDate('transaction_date', '>=', $date))
+            ->when($request->query('to'), fn ($q, $date) => $q->whereDate('transaction_date', '<=', $date))
+            ->when($request->query('q'), fn ($q, $term) => $q->where(fn ($w) => $w
+                ->where('party', 'like', "%{$term}%")
+                ->orWhere('purpose', 'like', "%{$term}%")
+                ->orWhere('details', 'like', "%{$term}%")
+                ->orWhere('reference', 'like', "%{$term}%")))
+            ->orderByDesc('transaction_date')->orderByDesc('id')
+            ->paginate(25)->withQueryString();
+
+        return view('bank.show', ['account' => $account, 'transactions' => $transactions]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $this->allow($request);
+        $account = $this->bank->createAccount($this->accountData($request), $request->user());
+
+        return redirect()->route('bank.show', $account)->with('success', 'The bank account was added.');
+    }
+
+    public function update(Request $request, BankAccount $account): RedirectResponse
+    {
+        $this->allow($request);
+        $this->bank->updateAccount($account, $this->accountData($request) + ['status' => $request->validate(['status' => ['required', Rule::in(['Active', 'Inactive'])]])['status']], $request->user());
+
+        return back()->with('success', 'The account was updated.');
+    }
+
+    public function record(Request $request, BankAccount $account, string $type): RedirectResponse
+    {
+        $this->allow($request);
+        abort_unless(in_array($type, [BankTransaction::DEPOSIT, BankTransaction::EXPENSE], true), 404);
+        $deposit = $type === BankTransaction::DEPOSIT;
+
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999'],
+            'date' => ['required', 'date', 'before_or_equal:today'],
+            'party' => ['required', 'string', 'max:255'],
+            'purpose' => [$deposit ? 'nullable' : 'required', 'string', 'max:255'],
+            'details' => ['nullable', 'string', 'max:2000'],
+            'reference' => ['nullable', 'string', 'max:255'],
+            'attachment' => [$deposit ? 'required' : 'nullable', 'file'],
+        ]);
+
+        $this->bank->record($account, $type, $data, $request->file('attachment'), $request->user());
+
+        return back()->with('success', $deposit ? 'The deposit was recorded.' : 'The spending was recorded and deducted from the balance.');
+    }
+
+    public function destroy(Request $request, BankAccount $account, BankTransaction $transaction): RedirectResponse
+    {
+        abort_unless($request->user()->isAdmin() && $request->user()->isActive(), 403);
+        abort_unless($transaction->bank_account_id === $account->id, 404);
+        $this->bank->delete($transaction, $request->user());
+
+        return back()->with('success', 'The entry was removed.');
+    }
+
+    public function attachment(Request $request, BankAccount $account, BankTransaction $transaction): Response
+    {
+        $this->allow($request);
+        abort_unless($transaction->bank_account_id === $account->id, 404);
+        $contents = $this->bank->attachment($transaction);
+        abort_if($contents === null, 404);
+
+        return response($contents, 200, [
+            'Content-Type' => $transaction->attachment_mime ?: 'application/octet-stream',
+            'Content-Disposition' => 'inline; filename="'.addslashes($transaction->attachment_name ?: 'attachment').'"',
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    private function allow(Request $request): void
+    {
+        $user = $request->user();
+        abort_unless($user && $user->isActive() && ($user->isAdmin() || $user->isLeader()), 403);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function accountData(Request $request): array
+    {
+        return $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'bank_name' => ['required', 'string', 'max:255'],
+            'account_name' => ['nullable', 'string', 'max:255'],
+            'account_number' => ['required', 'string', 'max:64'],
+            'opening_balance' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+    }
+}
