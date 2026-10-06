@@ -65,7 +65,7 @@ class PaymentController extends Controller
         return back()->with('success', $message);
     }
 
-    public function proof(Payment $payment): StreamedResponse
+    public function proof(Payment $payment): \Symfony\Component\HttpFoundation\Response
     {
         $this->authorize('view', $payment);
         $proof = $payment->proof;
