@@ -4,6 +4,7 @@ namespace Tests\Feature\Bank;
 
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
+use App\Models\Payment;
 use App\Models\User;
 use App\Services\SettingsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,6 +12,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class BankTest extends TestCase
@@ -141,5 +143,37 @@ class BankTest extends TestCase
 
         $this->spend($this->admin(), $account, '5.00')->assertSessionHas('error');
         $this->assertSame(0, BankTransaction::query()->count());
+    }
+
+    public function test_verified_online_payments_are_added_to_the_account_that_receives_them_and_shown_separately(): void
+    {
+        $account = $this->account('100.00');
+        $account->update(['receives_online' => true, 'online_from' => now()->subDay()->toDateString()]);
+        $make = fn (string $method, string $status, string $amount, $verifiedAt) => Payment::query()->forceCreate([
+            'uuid' => (string) Str::uuid(), 'payable_type' => 'class_fee', 'payable_id' => 1, 'amount' => $amount,
+            'method' => $method, 'status' => $status, 'submitted_at' => now(), 'verified_at' => $verifiedAt,
+        ]);
+        $make('online', 'Paid', '40.00', now());
+        $make('online', 'AwaitingVerification', '15.00', null);
+        $make('cash', 'Paid', '25.00', now());
+        $make('online', 'Paid', '9.00', now()->subDays(5));
+
+        $this->assertSame('40.00', $account->totalOnline());
+        $this->assertSame('140.00', $account->balance());
+        $this->actingAs($this->admin())->get(route('bank.show', $account))->assertOk()->assertSee('Online payments (verified)')->assertSee('Deposit slips');
+    }
+
+    public function test_only_one_account_receives_online_payments(): void
+    {
+        $first = $this->account();
+        $second = $this->account();
+        $admin = $this->admin();
+        $payload = fn (string $on) => ['name' => 'A', 'bank_name' => 'B', 'account_number' => '1', 'opening_balance' => '0', 'status' => 'Active', 'receives_online' => $on];
+
+        $this->actingAs($admin)->put(route('bank.update', $first), $payload('1'));
+        $this->actingAs($admin)->put(route('bank.update', $second), $payload('1'));
+
+        $this->assertFalse($first->fresh()->receives_online);
+        $this->assertTrue($second->fresh()->receives_online);
     }
 }

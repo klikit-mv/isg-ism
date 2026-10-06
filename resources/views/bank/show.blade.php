@@ -14,13 +14,15 @@
         <p class="mb-4 text-sm text-amber-700 dark:text-amber-300">This account is inactive. Make it active to record entries.</p>
     @endif
 
-    <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div class="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <x-stat label="Opening balance" :value="scout_money($account->opening_balance)"/>
-        <x-stat label="Deposits" :value="scout_money($account->totalDeposits())"/>
+        <x-stat label="Deposit slips" :value="scout_money($account->totalDeposits())"/>
+        <x-stat label="Online payments" :value="scout_money($account->totalOnline())"/>
         <x-stat label="Spent" :value="scout_money($account->totalExpenses())"/>
         <x-stat label="Balance" :value="scout_money($account->balance())" tone="gold"/>
     </div>
 
+    <h2 class="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">Deposits and spending</h2>
     <x-filters>
         <x-form.input name="q" label="Search" :value="request('q')" placeholder="Name, purpose or reference"/>
         <x-form.select name="type" label="Type" :options="['deposit' => 'Deposits', 'expense' => 'Spending']" :value="request('type')" placeholder="Everything"/>
@@ -55,6 +57,31 @@
         </x-table>
         <div class="mt-4">{{ $transactions->links() }}</div>
     @endif
+
+    <section class="mt-10">
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Online payments (verified)</h2>
+        @if (! $account->receives_online)
+            <p class="mt-1 text-sm text-gray-500">Verified online payments are not counted here. Edit this account and tick “Receives online payments” to add them to its balance.</p>
+        @else
+            <p class="mb-3 mt-1 text-sm text-gray-500">Added automatically when a leader verifies an online payment, from {{ scout_date($account->online_from) }}. They are kept apart from deposit slips.</p>
+            @if ($online->isEmpty())
+                <x-empty message="No verified online payments yet."/>
+            @else
+                <x-table :headers="['Verified', 'For', 'Scout', 'Amount', '']">
+                    @foreach ($online as $payment)
+                        <tr>
+                            <td data-label="Verified" class="whitespace-nowrap">{{ scout_datetime($payment->verified_at) }}</td>
+                            <td data-label="For">{{ $payment->typeLabel() }}</td>
+                            <td data-label="Scout">{{ $payment->student?->name ?? $payment->submitter?->name }}</td>
+                            <td data-label="Amount" class="whitespace-nowrap font-semibold text-emerald-600">+ {{ scout_money($payment->amount) }}</td>
+                            <td class="text-right">@if ($payment->proof)<a href="{{ route('payments.proof', $payment) }}" class="link" target="_blank" rel="noopener">Proof</a>@endif</td>
+                        </tr>
+                    @endforeach
+                </x-table>
+                <div class="mt-4">{{ $online->links() }}</div>
+            @endif
+        @endif
+    </section>
 
     <x-modal name="add-deposit" title="Add deposit" maxWidth="md">
         <form method="POST" action="{{ route('bank.record', [$account, 'deposit']) }}" enctype="multipart/form-data" class="space-y-4">
@@ -100,6 +127,8 @@
             <x-form.input name="account_number" label="Account number" :value="$account->account_number" required/>
             <x-form.input name="opening_balance" label="Opening balance" type="number" step="0.01" min="0" :value="$account->opening_balance"/>
             <x-form.select name="status" label="Status" :options="['Active' => 'Active', 'Inactive' => 'Inactive']" :value="$account->status"/>
+            <x-form.checkbox name="receives_online" label="Receives online payments (verified ones are added to the balance)" :checked="$account->receives_online"/>
+            <x-form.input name="online_from" label="Count online payments verified from" type="date" :value="$account->online_from?->toDateString()"/>
             <x-form.textarea name="notes" label="Notes" :value="$account->notes"/>
             <div class="flex justify-end gap-2">
                 <button type="button" class="btn-secondary" x-on:click="$dispatch('close-modal', 'edit-account')">Cancel</button>

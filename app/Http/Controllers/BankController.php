@@ -39,7 +39,11 @@ class BankController extends Controller
             ->orderByDesc('transaction_date')->orderByDesc('id')
             ->paginate(25)->withQueryString();
 
-        return view('bank.show', ['account' => $account, 'transactions' => $transactions]);
+        $online = $account->receives_online
+            ? $account->onlinePayments()->with('student', 'submitter')->orderByDesc('verified_at')->paginate(15, ['*'], 'online_page')->withQueryString()
+            : null;
+
+        return view('bank.show', ['account' => $account, 'transactions' => $transactions, 'online' => $online]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -114,7 +118,11 @@ class BankController extends Controller
      */
     private function accountData(Request $request): array
     {
+        $request->merge(['receives_online' => $request->boolean('receives_online')]);
+
         return $request->validate([
+            'receives_online' => ['boolean'],
+            'online_from' => ['nullable', 'date'],
             'name' => ['required', 'string', 'max:255'],
             'bank_name' => ['required', 'string', 'max:255'],
             'account_name' => ['nullable', 'string', 'max:255'],

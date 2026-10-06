@@ -36,7 +36,8 @@ class BankService
             'notes' => $data['notes'] ?? null,
             'status' => 'Active',
             'created_by' => $actor->id,
-        ]);
+        ] + $this->onlineSettings($data));
+        $this->releaseOnlineFromOthers($account);
         $this->audit->record('bank_account.created', $account, ['name' => $account->name, 'opening_balance' => $account->opening_balance], $actor);
 
         return $account;
@@ -51,7 +52,8 @@ class BankService
 
         DB::transaction(function () use ($account, $data, $opening, $actor): void {
             $locked = BankAccount::query()->whereKey($account->id)->lockForUpdate()->firstOrFail();
-            $after = Money::sub(Money::add($opening, $locked->totalDeposits()), $locked->totalExpenses());
+            $locked->fill($this->onlineSettings($data, $locked));
+            $after = Money::sub(Money::add(Money::add($opening, $locked->totalDeposits()), $locked->totalOnline()), $locked->totalExpenses());
 
             if (Money::compare($after, '0') < 0) {
                 throw new ScoutException('That opening balance would make the account balance negative, because spending already recorded is higher.');
@@ -65,9 +67,35 @@ class BankService
                 'opening_balance' => $opening,
                 'notes' => $data['notes'] ?? null,
                 'status' => $data['status'] ?? $locked->status,
+                'receives_online' => $locked->receives_online,
+                'online_from' => $locked->online_from,
             ]);
+            $this->releaseOnlineFromOthers($locked);
             $this->audit->record('bank_account.updated', $locked, ['name' => $locked->name, 'opening_balance' => $opening], $actor);
         });
+    }
+
+    /**
+     * Only one account counts the verified online payments; it starts counting from the date given (today by default).
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function onlineSettings(array $data, ?BankAccount $current = null): array
+    {
+        $receives = (bool) ($data['receives_online'] ?? false);
+
+        return [
+            'receives_online' => $receives,
+            'online_from' => $receives ? ($data['online_from'] ?? $current?->online_from ?? now()->toDateString()) : null,
+        ];
+    }
+
+    private function releaseOnlineFromOthers(BankAccount $account): void
+    {
+        if ($account->receives_online) {
+            BankAccount::query()->where('id', '!=', $account->id)->where('receives_online', true)->update(['receives_online' => false, 'online_from' => null]);
+        }
     }
 
     /**
