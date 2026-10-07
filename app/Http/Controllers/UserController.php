@@ -7,8 +7,6 @@ use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Models\Student;
 use App\Models\User;
-use App\Services\AuditLogService;
-use App\Services\SignatureService;
 use App\Services\UserService;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
@@ -92,17 +90,6 @@ class UserController extends Controller
         $this->users->resetPin($user, $data['pin'], $request->user());
 
         return redirect()->route('users.edit', $user)->with('success', 'The PIN was reset and the user was signed out everywhere.');
-    }
-
-    public function signature(Request $request, User $user, SignatureService $signatures, AuditLogService $audit): RedirectResponse
-    {
-        abort_unless($user->hasAnyRole([Role::Admin, Role::Leader]), 422, 'Signatures are only for leaders and admins.');
-        $request->validate(['signature' => ['required', 'file', 'mimes:png,jpg,jpeg', 'max:2048']]);
-
-        $signatures->storeUpload($user, $request->file('signature'));
-        $audit->record('user.signature_uploaded', $user);
-
-        return redirect()->route('users.edit', $user)->with('success', 'The signature was uploaded.');
     }
 
     public function destroy(Request $request, User $user): RedirectResponse

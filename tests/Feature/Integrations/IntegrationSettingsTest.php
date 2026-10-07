@@ -67,7 +67,7 @@ class IntegrationSettingsTest extends TestCase
     public function test_photos_folder_creates_area_folders_when_google_is_configured(): void
     {
         $this->configureGoogle();
-        $created = ['STUDENTSFOLDER1', 'SHOPFOLDER00001', 'BADGESFOLDER001', 'SIGNATURESFLDR1'];
+        $created = ['STUDENTSFOLDER1', 'SHOPFOLDER00001', 'BADGESFOLDER001'];
         Http::fake(function (Request $request) use (&$created) {
             return match (true) {
                 str_contains($request->url(), 'oauth2.googleapis.com') => Http::response(['access_token' => 'token']),
@@ -84,7 +84,6 @@ class IntegrationSettingsTest extends TestCase
         $settings = app(SettingsService::class);
         $this->assertSame('ROOTFOLDER123', $settings->driveFolderId());
         $this->assertSame('STUDENTSFOLDER1', $settings->driveAreaFolderId('students'));
-        $this->assertSame('SIGNATURESFLDR1', $settings->driveAreaFolderId('signatures'));
         $this->assertStringContainsString('Drive is ready', session('success'));
     }
 

@@ -30,7 +30,7 @@ Your details, attendance and fees, plus certificates, badge requests and the sho
 - **Activities:** create an activity for all scouts, sections or groups, optionally charging a fee or linking a certificate template. Scouts and parents are notified.
 - **Mark attendance:** Present, Late, Absent or Excused. On charged activities choose what was paid now (0, 5, 10, 15 or Other); cash taken here is recorded automatically. Excused scouts are not charged. Rows left blank are not saved.
 - **Rover attendance:** required Rovers take Present/Absent/Excused; optional and extra Rovers can only be Present.
-- **Certificates:** issue general certificates (one or in bulk), approve badge requests and generate their certificates, keep leadership records, and **Verify and sign** certificates. Upload your signature in Profile first.
+- **Certificates:** issue general certificates (one or in bulk), approve badge requests and generate their certificates, keep leadership records. Upload your signature in Profile first.
 - **Reports:** attendance, Rover attendance, annual fees, class fees, payments and shop, with print and XLSX/CSV export.
 
 - **Bank** (admins and leaders): set up the group's single bank account with the money already in it, then record **deposits** (amount, date, collected from, deposit slip attached) and **spending** (amount, requested by, purpose, optional receipt). Spending is deducted from the balance and cannot exceed it. Every online payment a leader verifies is added to its balance automatically, shown in its own "Online payments (verified)" area, separate from deposit slips (it counts from the date you set). Only admins can delete an entry. Slips and receipts are filed in the Google Drive payments folder when it is set.
@@ -39,7 +39,7 @@ Leaders with extra permissions also see: **Verification** (approve or reject onl
 
 ## Admins (Administration)
 
-- **Users:** create accounts, set roles and permissions, reset PINs (signs the user out everywhere), upload leader signatures.
+- **Users:** create accounts, set roles and permissions, reset PINs (signs the user out everywhere).
 - **Parent links:** a scout can have only one pending or approved parent.
 - **Settings:** default class fee, bank details, shop open/closed, proof size, footer, Google Drive folders, Telegram bot. Use the **Test** buttons to check connections.
 - **Audit logs:** every financial, membership, attendance, import and sign-in event.

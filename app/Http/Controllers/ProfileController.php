@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\AuditLogService;
-use App\Services\SignatureService;
 use App\Services\TelegramService;
 use App\Support\Uploads;
 use Illuminate\Http\RedirectResponse;
@@ -93,17 +92,5 @@ class ProfileController extends Controller
         if ($path && str_starts_with($path, 'avatars/')) {
             Storage::disk('public')->delete($path);
         }
-    }
-
-    public function signature(Request $request, SignatureService $signatures): RedirectResponse
-    {
-        $user = $request->user();
-        abort_unless($user->isStaff(), 403);
-
-        $request->validate(['signature' => ['required', 'file', 'mimes:png,jpg,jpeg', 'max:2048']]);
-        $signatures->storeUpload($user, $request->file('signature'));
-        $this->audit->record('user.signature_uploaded', $user);
-
-        return redirect()->route('profile.edit')->with('success', 'Your signature was uploaded.');
     }
 }

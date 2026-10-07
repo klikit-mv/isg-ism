@@ -33,7 +33,6 @@ class CertificateGenerationService
         private CertificateDocumentRenderer $renderer,
         private GoogleSlideExporter $slides,
         private GoogleDriveCertificateService $storage,
-        private SignatureService $signatures,
         private AuditLogService $audit,
         private SettingsService $settings,
     ) {}
@@ -83,9 +82,9 @@ class CertificateGenerationService
     /**
      * First time: a new LEAD number. Again: refresh the same certificate and number.
      */
-    public function generateLeadershipCertificate(LeadershipRecord $record, User $actor): Certificate
+    public function generateLeadershipCertificate(LeadershipRecord $record, User $actor, ?CertificateTemplate $template = null): Certificate
     {
-        $template = $this->activeTemplate(CertificateType::Leadership);
+        $template ??= $this->activeTemplate(CertificateType::Leadership);
         $this->assertTemplate($template, CertificateType::Leadership);
         $student = $record->student;
 
@@ -124,24 +123,6 @@ class CertificateGenerationService
 
         $certificate->forceFill(['path' => $path, 'generated_by' => $actor->id, 'generated_at' => now()])->save();
         $this->audit->record('certificate.regenerated', $certificate, ['cert_number' => $certificate->cert_number], $actor);
-
-        return $certificate;
-    }
-
-    /**
-     * Apply the signer's signature and mark the certificate verified.
-     */
-    public function applyLeaderVerification(Certificate $certificate, User $actor): Certificate
-    {
-        $certificate->forceFill([
-            'status' => CertificateStatus::Verified,
-            'verified_by' => $actor->id,
-            'verified_at' => now(),
-        ])->save();
-        $certificate->setRelation('verifier', $actor);
-
-        $this->regenerate($certificate, $actor);
-        $this->audit->record('certificate.verified_signed', $certificate, ['cert_number' => $certificate->cert_number], $actor);
 
         return $certificate;
     }
@@ -186,9 +167,6 @@ class CertificateGenerationService
             ? LeadershipRecord::query()->where('certificate_id', $certificate->id)->first()
             : null;
 
-        $verified = $certificate->status === CertificateStatus::Verified;
-        $verifier = $verified ? $certificate->verifier : null;
-
         return [
             'name' => (string) $certificate->student_name,
             'badge' => (string) $certificate->badge_name,
@@ -201,9 +179,9 @@ class CertificateGenerationService
             'start_date' => $record ? scout_long_date($record->start_date) : '',
             'organisation' => (string) config('scout.organisation'),
             'logo' => $this->settings->logoDataUri() ?? CertificateTemplateDefaults::logoDataUri(),
-            'signature' => $verifier ? ($this->signatures->dataUri($verifier) ?? $this->signatures->fromName($verifier->name)) : $this->signatures->blank(),
-            'verifier' => (string) $verifier?->name,
-            'verified_at' => $verified && $certificate->verified_at ? scout_long_date($certificate->verified_at->copy()->setTimezone(config('scout.timezone'))) : '',
+            'signature' => '',
+            'verifier' => '',
+            'verified_at' => '',
         ];
     }
 

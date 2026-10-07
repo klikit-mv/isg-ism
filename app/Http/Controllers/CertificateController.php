@@ -218,14 +218,6 @@ class CertificateController extends Controller
         return back()->with('success', 'The certificate PDF was regenerated.');
     }
 
-    public function sign(Request $request, Certificate $certificate): RedirectResponse
-    {
-        $this->authorize('manage', $certificate);
-        $this->generator->applyLeaderVerification($certificate, $request->user());
-
-        return back()->with('success', 'The certificate is verified and your signature was applied.');
-    }
-
     /**
      * Stream a certificate PDF, regenerating it if the stored file is missing.
      */

@@ -71,7 +71,6 @@ Route::middleware(['auth', 'module.access'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::post('/profile/signature', [ProfileController::class, 'signature'])->name('profile.signature');
     Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
     Route::get('/profile/push/key', [PushController::class, 'key'])->name('profile.push.key');
     Route::post('/profile/push', [PushController::class, 'subscribe'])->name('profile.push.subscribe');
@@ -179,7 +178,6 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/certificates/{certificate}/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
     Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
     Route::post('/certificates/{certificate}/regenerate', [CertificateController::class, 'regenerate'])->name('certificates.regenerate');
-    Route::post('/certificates/{certificate}/sign', [CertificateController::class, 'sign'])->name('certificates.sign');
 
     Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');
     Route::post('/badges/section-codes', [BadgeController::class, 'sectionCodes'])->name('badges.section-codes');
@@ -245,7 +243,6 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::middleware('can:admin')->group(function () {
         Route::resource('users', UserController::class)->except('show');
         Route::post('/users/{user}/pin', [UserController::class, 'pin'])->name('users.pin');
-        Route::post('/users/{user}/signature', [UserController::class, 'signature'])->name('users.signature');
         Route::get('/parent-links', [ParentLinkController::class, 'index'])->name('parent-links.index');
         Route::post('/parent-links', [ParentLinkController::class, 'store'])->name('parent-links.store');
         Route::post('/parent-links/{parentLink}', [ParentLinkController::class, 'update'])->name('parent-links.update');

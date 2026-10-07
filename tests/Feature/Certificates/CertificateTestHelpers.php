@@ -13,7 +13,6 @@ trait CertificateTestHelpers
     protected function setUpCertificates(): void
     {
         Storage::fake('certificates');
-        Storage::fake('signatures');
     }
 
     protected function template(CertificateType $type, array $attributes = []): CertificateTemplate

@@ -148,20 +148,5 @@
             <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Choose light or dark mode for this device.</p>
             <x-theme-toggle/>
         </section>
-
-        @if ($user->isStaff())
-            <section class="card">
-                <h2 class="mb-2 text-lg font-semibold">Signature</h2>
-                <p class="mb-3 text-sm text-gray-500 dark:text-gray-400">Used when you sign certificates. PNG or JPEG, up to 2 MB.</p>
-                @if ($user->signature_path)
-                    <p class="mb-3 text-sm text-emerald-700 dark:text-emerald-300">A signature is on file.</p>
-                @endif
-                <form method="POST" action="{{ route('profile.signature') }}" enctype="multipart/form-data" class="space-y-3">
-                    @csrf
-                    <x-form.file-drop name="signature" accept="image/png,image/jpeg"/>
-                    <button type="submit" class="btn-primary">Upload signature</button>
-                </form>
-            </section>
-        @endif
     </div>
 </x-app-layout>

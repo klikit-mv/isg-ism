@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\CertificateType;
+use App\Models\CertificateTemplate;
 use App\Models\LeadershipRecord;
 use App\Models\Student;
 use App\Services\CertificateGenerationService;
@@ -43,7 +45,10 @@ class LeadershipController extends Controller
     {
         $this->authorize('view', $leadership);
 
-        return view('leadership.show', ['record' => $leadership->load('student', 'certificate')]);
+        return view('leadership.show', [
+            'record' => $leadership->load('student', 'certificate'),
+            'templates' => CertificateTemplate::query()->where('type', CertificateType::Leadership->value)->where('active', true)->orderBy('name')->pluck('name', 'uuid')->all(),
+        ]);
     }
 
     public function edit(Request $request, LeadershipRecord $leadership): View
@@ -75,7 +80,16 @@ class LeadershipController extends Controller
     public function generate(Request $request, LeadershipRecord $leadership, CertificateGenerationService $generator): RedirectResponse
     {
         $this->authorize('update', $leadership);
-        $certificate = $generator->generateLeadershipCertificate($leadership, $request->user());
+        $data = $request->validate(['template' => ['nullable', 'uuid']]);
+        $template = filled($data['template'] ?? null)
+            ? CertificateTemplate::query()->where('uuid', $data['template'])->where('type', CertificateType::Leadership->value)->where('active', true)->first()
+            : null;
+
+        if (filled($data['template'] ?? null) && $template === null) {
+            return back()->with('error', 'Choose an active leadership template.');
+        }
+
+        $certificate = $generator->generateLeadershipCertificate($leadership, $request->user(), $template);
 
         return redirect()->route('leadership.show', $leadership)->with('success', "Certificate {$certificate->cert_number} is ready.");
     }

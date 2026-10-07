@@ -72,10 +72,6 @@ final class CertificateTemplateDefaults
     <table class="footer">
         <tr>
             <td style="text-align:left"><span class="certno">Certificate no. {{certno}}</span></td>
-            <td style="text-align:center">
-                <img class="sig" src="{{signature}}" alt="">
-                <div class="line">{{verifier}}<br><span class="certno">{{verified_at}}</span></div>
-            </td>
         </tr>
     </table>
 </div>

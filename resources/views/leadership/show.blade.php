@@ -4,7 +4,17 @@
             <a href="{{ route('leadership.index') }}" class="btn-secondary">All records</a>
             @can('update', $record)
                 <a href="{{ route('leadership.edit', $record) }}" class="btn-secondary">Edit</a>
-                <form method="POST" action="{{ route('leadership.generate', $record) }}">@csrf<button class="btn-primary">{{ $record->certificate ? 'Regenerate certificate' : 'Generate certificate' }}</button></form>
+                <form method="POST" action="{{ route('leadership.generate', $record) }}" class="flex flex-wrap items-center gap-2">
+                    @csrf
+                    @if (count($templates) > 0)
+                        <select name="template" class="input !w-auto !py-1.5 text-sm" aria-label="Certificate template">
+                            @foreach ($templates as $uuid => $name)
+                                <option value="{{ $uuid }}" @selected($record->certificate?->template?->uuid === $uuid)>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+                    <button class="btn-primary">{{ $record->certificate ? 'Regenerate certificate' : 'Generate certificate' }}</button>
+                </form>
             @endcan
             @can('delete', $record)
                 <x-confirm :action="route('leadership.destroy', $record)" method="DELETE" label="Delete" size="md" message="Delete this leadership record?" confirm="Delete"/>

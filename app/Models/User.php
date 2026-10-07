@@ -25,7 +25,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name', 'national_id', 'email', 'password', 'status', 'student_id',
-        'verified_at', 'verified_by', 'signature_path', 'avatar_path',
+        'verified_at', 'verified_by', 'avatar_path',
         'email_notifications_enabled', 'telegram_notifications_enabled', 'telegram_chat_id',
         'telegram_connect_token', 'telegram_connect_token_expires_at',
         'legacy_pin_hash', 'legacy_pin_salt', 'last_login_at', 'legacy_id',

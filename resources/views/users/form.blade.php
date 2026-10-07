@@ -68,16 +68,6 @@
                     <button type="submit" class="btn-primary btn-sm">Reset PIN</button>
                 </form>
 
-                @if ($user->hasAnyRole([\App\Enums\Role::Admin, \App\Enums\Role::Leader]))
-                    <form method="POST" action="{{ route('users.signature', $user) }}" enctype="multipart/form-data" class="card space-y-3">
-                        @csrf
-                        <h2 class="font-semibold">Signature</h2>
-                        @if ($user->signature_path)<p class="text-sm text-emerald-700 dark:text-emerald-300">A signature is on file.</p>@endif
-                        <x-form.file-drop name="signature" accept="image/png,image/jpeg" help="PNG or JPEG, up to 2 MB."/>
-                        <button type="submit" class="btn-primary btn-sm">Upload</button>
-                    </form>
-                @endif
-
                 @unless ($user->is(auth()->user()))
                     <div class="card space-y-3">
                         <h2 class="font-semibold">Delete account</h2>

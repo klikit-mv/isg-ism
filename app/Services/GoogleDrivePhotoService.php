@@ -15,9 +15,9 @@ use Illuminate\Support\Str;
  */
 class GoogleDrivePhotoService
 {
-    public const AREAS = ['students' => 'Students', 'shop' => 'Shop', 'badges' => 'Badges', 'signatures' => 'Signatures'];
+    public const AREAS = ['students' => 'Students', 'shop' => 'Shop', 'badges' => 'Badges'];
 
-    public const LOCAL_DIRS = ['students' => 'students', 'shop' => 'shop-items', 'badges' => 'badges', 'signatures' => 'signatures'];
+    public const LOCAL_DIRS = ['students' => 'students', 'shop' => 'shop-items', 'badges' => 'badges'];
 
     public function __construct(private GoogleDriveClient $drive, private SettingsService $settings) {}
 
@@ -48,7 +48,7 @@ class GoogleDrivePhotoService
             $this->settings->set('google_drive_folder_'.$key, $id);
         }
 
-        return ['ok' => true, 'message' => 'Drive is ready. Photos will be stored in the Students, Shop, Badges and Signatures folders.'];
+        return ['ok' => true, 'message' => 'Drive is ready. Photos will be stored in the Students, Shop and Badges folders.'];
     }
 
     public function areaFolderId(string $area): ?string

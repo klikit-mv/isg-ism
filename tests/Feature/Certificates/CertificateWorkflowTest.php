@@ -3,7 +3,6 @@
 namespace Tests\Feature\Certificates;
 
 use App\Enums\BadgeRequestStatus;
-use App\Enums\CertificateStatus;
 use App\Enums\CertificateType;
 use App\Livewire\Attendance\Mark;
 use App\Models\Activity;
@@ -15,9 +14,10 @@ use App\Models\Student;
 use App\Services\CertificateGenerationService;
 use App\Services\GoogleDriveCertificateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\ViewErrorBag;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -174,36 +174,15 @@ class CertificateWorkflowTest extends TestCase
         $this->actingAs($this->studentUser($student))->get("/certificates/{$certificate->uuid}/preview")->assertOk();
     }
 
-    public function test_leader_signs_with_uploaded_signature_and_guests_or_students_cannot(): void
+    public function test_there_is_no_signing_step_or_signature_upload(): void
     {
         $leader = $this->leader();
-        $student = Student::factory()->create();
-        Group::factory()->ledBy($leader)->withMembers($student)->create();
-        $certificate = app(CertificateGenerationService::class)->generateGeneralCertificate($student, 'Award', '2026-05-05', $this->template(CertificateType::General), $this->admin());
+        $certificate = app(CertificateGenerationService::class)->generateGeneralCertificate(Student::factory()->create(), 'Award', '2026-05-05', $this->template(CertificateType::General), $this->admin());
 
-        $this->post("/certificates/{$certificate->uuid}/sign")->assertRedirect(route('login'));
-        $this->actingAs($this->studentUser($student))->post("/certificates/{$certificate->uuid}/sign")->assertForbidden();
-
-        $this->actingAs($leader)->post('/profile/signature', ['signature' => UploadedFile::fake()->image('sig.png', 300, 100)])->assertSessionHas('success');
-        $this->actingAs($leader)->post("/certificates/{$certificate->uuid}/sign")->assertSessionHas('success');
-
-        $certificate->refresh();
-        $this->assertSame(CertificateStatus::Verified, $certificate->status);
-        $this->assertSame($leader->id, $certificate->verified_by);
-        $values = app(CertificateGenerationService::class)->valuesFor($certificate);
-        $this->assertStringStartsWith('data:image/png;base64,', $values['signature']);
-        $this->assertSame($leader->name, $values['verifier']);
-    }
-
-    public function test_signing_without_uploaded_signature_draws_the_name(): void
-    {
-        $admin = $this->admin();
-        $certificate = app(CertificateGenerationService::class)->generateGeneralCertificate(Student::factory()->create(), 'Award', '2026-05-05', $this->template(CertificateType::General), $admin);
-
-        $this->actingAs($admin)->post("/certificates/{$certificate->uuid}/sign");
-
-        $values = app(CertificateGenerationService::class)->valuesFor($certificate->fresh());
-        $this->assertStringStartsWith('data:image/svg+xml;base64,', $values['signature']);
+        $this->actingAs($leader)->post("/certificates/{$certificate->uuid}/sign")->assertNotFound();
+        $this->actingAs($leader)->post('/profile/signature')->assertNotFound();
+        $this->actingAs($this->admin())->get(route('certificates.show', $certificate))->assertOk()->assertDontSee('Verify and sign');
+        $this->actingAs($leader)->get(route('profile.edit'))->assertOk()->assertDontSee('Upload signature');
     }
 
     public function test_placeholders_are_html_escaped(): void
@@ -262,6 +241,38 @@ class CertificateWorkflowTest extends TestCase
         $this->assertSame(1, Certificate::query()->count());
         $this->assertSame('FLHSG-LEAD-2026-001', $record->fresh()->certificate->cert_number);
         $this->assertStringContainsString('Hawk Patrol', app(CertificateGenerationService::class)->previewHtml($record->fresh()->certificate));
+    }
+
+    public function test_a_leadership_certificate_is_made_with_the_template_you_choose(): void
+    {
+        $admin = $this->admin();
+        $first = $this->template(CertificateType::Leadership, ['name' => 'Classic']);
+        $second = $this->template(CertificateType::Leadership, ['name' => 'Modern']);
+        $general = $this->template(CertificateType::General, ['name' => 'Other kind']);
+        $record = LeadershipRecord::query()->create(['student_id' => Student::factory()->create()->id, 'patrol_or_six' => 'Eagle Patrol', 'troop_or_group' => 'Group', 'start_date' => '2026-01-10']);
+
+        $this->actingAs($admin)->get(route('leadership.show', $record))->assertOk()->assertSee('Classic')->assertSee('Modern')->assertDontSee('Other kind');
+
+        $this->actingAs($admin)->post("/leadership/{$record->uuid}/generate", ['template' => $general->uuid])->assertSessionHas('error');
+        $this->assertNull($record->fresh()->certificate);
+
+        $this->actingAs($admin)->post("/leadership/{$record->uuid}/generate", ['template' => $second->uuid])->assertSessionHas('success');
+        $this->assertSame($second->id, $record->fresh()->certificate->template_id);
+
+        $this->actingAs($admin)->post("/leadership/{$record->uuid}/generate", ['template' => $first->uuid]);
+        $this->assertSame($first->id, $record->fresh()->certificate->template_id);
+    }
+
+    public function test_long_lists_become_a_searchable_dropdown_and_short_ones_stay_plain(): void
+    {
+        view()->share('errors', new ViewErrorBag);
+        $long = Blade::render('<x-form.select name="s" label="Scout" :options="$o" placeholder="Choose a scout"/>', ['o' => array_combine(range(1, 12), array_map(fn ($n) => "Scout {$n}", range(1, 12)))]);
+        $short = Blade::render('<x-form.select name="s" :options="$o"/>', ['o' => ['a' => 'A', 'b' => 'B']]);
+
+        $this->assertStringContainsString('Type to search', $long);
+        $this->assertStringContainsString('name="s"', $long);
+        $this->assertStringNotContainsString('<select', $long);
+        $this->assertStringContainsString('<select', $short);
     }
 
     public function test_leadership_is_managed_by_scoped_staff_and_viewed_by_families(): void
