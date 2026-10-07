@@ -16,7 +16,14 @@ use Throwable;
  */
 class WebPushService
 {
+    private ?string $lastError = null;
+
     public function __construct(private SettingsService $settings) {}
+
+    public function lastError(): ?string
+    {
+        return $this->lastError;
+    }
 
     /**
      * The server's VAPID key pair: from VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY when set, otherwise created on first use and
@@ -99,9 +106,12 @@ class WebPushService
      */
     public function send(User $user, string $title, string $body, ?string $url = null): int
     {
+        $this->lastError = null;
         $subscriptions = PushSubscription::query()->where('user_id', $user->id)->get();
 
         if ($subscriptions->isEmpty()) {
+            $this->lastError = 'This device is not registered on the server. Turn notifications off and on again.';
+
             return 0;
         }
 
@@ -124,12 +134,15 @@ class WebPushService
                 if ($report->isSuccess()) {
                     $reached++;
                 } elseif ($report->isSubscriptionExpired()) {
+                    $this->lastError = 'The push service says this device registration has expired. Turn notifications off and on again.';
                     PushSubscription::query()->where('endpoint_hash', hash('sha256', $report->getEndpoint()))->delete();
                 } else {
+                    $this->lastError = $report->getReason();
                     Log::warning('Push notification failed: '.$report->getReason());
                 }
             }
         } catch (Throwable $e) {
+            $this->lastError = $e->getMessage();
             Log::warning('Push notification failed: '.$e->getMessage());
         }
 

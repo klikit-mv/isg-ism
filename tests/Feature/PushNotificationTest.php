@@ -85,6 +85,13 @@ class PushNotificationTest extends TestCase
         $this->actingAs(User::factory()->parentRole()->create())->getJson(route('profile.push.key'))->assertOk()->assertJson(['key' => 'PUB']);
     }
 
+    public function test_the_test_notification_reports_why_it_could_not_be_delivered(): void
+    {
+        $user = User::factory()->parentRole()->create();
+
+        $this->actingAs($user)->postJson(route('profile.push.test'))->assertOk()->assertJson(['sent' => 0])->assertJsonPath('error', fn ($error) => str_contains($error, 'not registered'));
+    }
+
     public function test_alerts_go_to_devices_only_for_people_who_turned_push_on(): void
     {
         $with = User::factory()->parentRole()->create();

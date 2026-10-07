@@ -43,6 +43,6 @@ class PushController extends Controller
     {
         $reached = $this->push->send($request->user(), 'Test notification', 'Push notifications are working on this device.', route('dashboard'));
 
-        return response()->json(['sent' => $reached]);
+        return response()->json(['sent' => $reached, 'error' => $reached ? null : $this->push->lastError()]);
     }
 }

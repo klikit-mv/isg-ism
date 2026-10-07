@@ -27,7 +27,11 @@
                 const key = (await keyResponse.json()).key;
                 if (await Notification.requestPermission() !== 'granted') { this.message = 'Notifications are blocked. Allow them in your browser or phone settings, then try again.'; return; }
                 const reg = await navigator.serviceWorker.ready;
-                const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.toBytes(key) });
+                const keyBytes = this.toBytes(key);
+                let sub = await reg.pushManager.getSubscription();
+                const current = sub && sub.options && sub.options.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey) : null;
+                if (sub && current && (current.length !== keyBytes.length || current.some((b, i) => b !== keyBytes[i]))) { await sub.unsubscribe(); sub = null; }
+                sub = sub || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes });
                 const res = await this.call(@js(route('profile.push.subscribe')), 'POST', sub.toJSON());
                 this.on = res.ok;
                 this.message = res.ok ? 'Notifications are on for this device.' : 'Could not turn notifications on. Please try again.';
@@ -44,9 +48,17 @@
             } finally { this.busy = false; }
         },
         async test() {
-            const res = await this.call(@js(route('profile.push.test')), 'POST');
-            const data = res.ok ? await res.json() : {};
-            this.message = data.sent ? 'Test sent. It should arrive in a moment.' : 'The test could not be delivered.';
+            this.busy = true;
+            try {
+                // Register this device again first, in case the server lost it.
+                const reg = await navigator.serviceWorker.ready;
+                const sub = await reg.pushManager.getSubscription();
+                if (sub) { await this.call(@js(route('profile.push.subscribe')), 'POST', sub.toJSON()); }
+                const res = await this.call(@js(route('profile.push.test')), 'POST');
+                const data = res.ok ? await res.json() : {};
+                this.message = data.sent ? 'Test sent. It should arrive in a moment.' : 'The test could not be delivered. ' + (data.error || 'Turn notifications off and on again.');
+            } catch (e) { this.message = 'The test could not be delivered.'; }
+            finally { this.busy = false; }
         },
         };
     };
