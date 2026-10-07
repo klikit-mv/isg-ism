@@ -113,6 +113,7 @@ class UserAdministrationTest extends TestCase
     {
         $admin = User::factory()->admin()->inactive()->create();
 
-        $this->actingAs($admin)->get('/users')->assertForbidden();
+        $this->actingAs($admin)->get('/users')->assertRedirect(route('login'));
+        $this->assertGuest();
     }
 }

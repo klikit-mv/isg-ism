@@ -15,6 +15,8 @@ use Illuminate\Validation\ValidationException;
 
 class LoginRequest extends FormRequest
 {
+    private const ACCOUNT_ATTEMPTS = 10;
+
     public function authorize(): bool
     {
         return true;
@@ -49,7 +51,7 @@ class LoginRequest extends FormRequest
         $pin = (string) $this->input('pin');
 
         if ($user === null || ! $this->pinMatches($user, $pin)) {
-            RateLimiter::hit($this->throttleKey());
+            $this->hitLimiters();
 
             throw ValidationException::withMessages([
                 'national_id' => 'These details do not match an active account.',
@@ -57,7 +59,7 @@ class LoginRequest extends FormRequest
         }
 
         if ($user->status !== UserStatus::Active) {
-            RateLimiter::hit($this->throttleKey());
+            $this->hitLimiters();
 
             $message = $user->verified_at === null
                 ? 'Your registration is waiting for a leader to verify it.'
@@ -67,6 +69,7 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+        RateLimiter::clear($this->accountKey());
         Auth::login($user, $this->boolean('remember'));
 
         return $user;
@@ -116,17 +119,38 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        $key = match (true) {
+            RateLimiter::tooManyAttempts($this->throttleKey(), 5) => $this->throttleKey(),
+            RateLimiter::tooManyAttempts($this->accountKey(), self::ACCOUNT_ATTEMPTS) => $this->accountKey(),
+            default => null,
+        };
+
+        if ($key === null) {
             return;
         }
 
         event(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+        $seconds = RateLimiter::availableIn($key);
 
         throw ValidationException::withMessages([
             'national_id' => "Too many sign-in attempts. Please try again in {$seconds} seconds.",
         ]);
+    }
+
+    /**
+     * Failed attempts are also counted per account across every address, so a six-digit PIN cannot be guessed by
+     * spreading attempts over many IPs.
+     */
+    private function hitLimiters(): void
+    {
+        RateLimiter::hit($this->throttleKey());
+        RateLimiter::hit($this->accountKey(), 900);
+    }
+
+    public function accountKey(): string
+    {
+        return 'login-account|'.Str::transliterate(Str::lower((string) $this->input('national_id')));
     }
 
     public function throttleKey(): string

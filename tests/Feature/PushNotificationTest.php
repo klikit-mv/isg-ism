@@ -21,7 +21,7 @@ class PushNotificationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function payload(string $endpoint = 'https://push.example.com/abc'): array
+    private function payload(string $endpoint = 'https://fcm.googleapis.com/fcm/send/abc'): array
     {
         return ['endpoint' => $endpoint, 'keys' => ['p256dh' => 'BKey', 'auth' => 'auth']];
     }
@@ -34,7 +34,7 @@ class PushNotificationTest extends TestCase
         $this->actingAs($user)->postJson(route('profile.push.subscribe'), $this->payload())->assertOk();
         $this->assertSame(1, PushSubscription::query()->where('user_id', $user->id)->count());
 
-        $this->actingAs($user)->deleteJson(route('profile.push.unsubscribe'), ['endpoint' => 'https://push.example.com/abc'])->assertOk();
+        $this->actingAs($user)->deleteJson(route('profile.push.unsubscribe'), ['endpoint' => 'https://fcm.googleapis.com/fcm/send/abc'])->assertOk();
         $this->assertSame(0, PushSubscription::query()->count());
     }
 
@@ -42,7 +42,7 @@ class PushNotificationTest extends TestCase
     {
         $user = User::factory()->parentRole()->create();
 
-        $this->actingAs($user)->postJson(route('profile.push.subscribe'), $this->payload('http://push.example.com/abc'))->assertUnprocessable();
+        $this->actingAs($user)->postJson(route('profile.push.subscribe'), $this->payload('http://fcm.googleapis.com/fcm/send/abc'))->assertUnprocessable();
         auth()->logout();
         $this->postJson(route('profile.push.subscribe'), $this->payload())->assertUnauthorized();
     }
@@ -121,7 +121,7 @@ class PushNotificationTest extends TestCase
         $user = User::factory()->parentRole()->create();
         app(WebPushService::class)->subscribe($user, $this->payload());
 
-        $gone = new MessageSentReport(Mockery::mock(RequestInterface::class, ['getUri' => new Uri('https://push.example.com/abc')]), Mockery::mock(ResponseInterface::class, ['getStatusCode' => 410]), false, 'gone');
+        $gone = new MessageSentReport(Mockery::mock(RequestInterface::class, ['getUri' => new Uri('https://fcm.googleapis.com/fcm/send/abc')]), Mockery::mock(ResponseInterface::class, ['getStatusCode' => 410]), false, 'gone');
         $client = Mockery::mock(WebPush::class);
         $client->shouldReceive('queueNotification')->once();
         $client->shouldReceive('flush')->once()->andReturn((fn () => yield $gone)());

@@ -20,7 +20,7 @@ class PushController extends Controller
     public function subscribe(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'endpoint' => ['required', 'url', 'starts_with:https://', 'max:2000'],
+            'endpoint' => ['required', 'url', 'starts_with:https://', 'max:2000', fn ($attribute, $value, $fail) => $this->push->isKnownPushService((string) $value) ?: $fail('That is not a recognised browser push service.')],
             'keys.p256dh' => ['required', 'string', 'max:255'],
             'keys.auth' => ['required', 'string', 'max:255'],
             'contentEncoding' => ['nullable', 'in:aes128gcm,aesgcm'],

@@ -95,6 +95,28 @@ class WebPushService
         PushSubscription::query()->where('user_id', $user->id)->where('endpoint_hash', hash('sha256', $endpoint))->delete();
     }
 
+    /**
+     * The server posts to the subscription address, so only the browsers' own push services are accepted (this stops a
+     * signed-in user from making the server call arbitrary addresses).
+     */
+    public function isKnownPushService(string $endpoint): bool
+    {
+        $parts = parse_url($endpoint);
+        $host = strtolower((string) ($parts['host'] ?? ''));
+
+        if (($parts['scheme'] ?? '') !== 'https' || $host === '' || isset($parts['user']) || (isset($parts['port']) && $parts['port'] !== 443)) {
+            return false;
+        }
+
+        foreach (['fcm.googleapis.com', 'android.googleapis.com', 'push.services.mozilla.com', 'push.apple.com', 'notify.windows.com', 'push.microsoft.com'] as $suffix) {
+            if ($host === $suffix || str_ends_with($host, '.'.$suffix)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function hasSubscriptions(User $user): bool
     {
         return PushSubscription::query()->where('user_id', $user->id)->exists();
