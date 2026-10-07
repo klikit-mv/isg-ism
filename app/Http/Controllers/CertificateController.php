@@ -130,6 +130,26 @@ class CertificateController extends Controller
     {
         $this->authorize('view', $certificate);
 
+        return $this->previewResponse($certificate);
+    }
+
+    /**
+     * The certificate as generated (the PDF made from the Google Slides or built-in template) shown inline. Only when no PDF
+     * has been stored yet is the built-in HTML layout drawn.
+     */
+    public function previewResponse(Certificate $certificate): Response
+    {
+        $pdf = $this->storage->contents($certificate->path);
+
+        if ($pdf !== null && str_starts_with($pdf, '%PDF')) {
+            return response($pdf, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="'.$certificate->cert_number.'.pdf"',
+                'X-Content-Type-Options' => 'nosniff',
+                'Cache-Control' => 'private, no-store',
+            ]);
+        }
+
         return response($this->generator->previewHtml($certificate))
             ->header('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'")
             ->header('X-Content-Type-Options', 'nosniff');

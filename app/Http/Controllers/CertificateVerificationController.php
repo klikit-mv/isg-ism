@@ -35,9 +35,7 @@ class CertificateVerificationController extends Controller
         $certificate = $this->certificates->findByNumber((string) $request->query('cert_number'));
         abort_if($certificate === null, 404);
 
-        return response($generator->previewHtml($certificate))
-            ->header('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'")
-            ->header('X-Content-Type-Options', 'nosniff');
+        return app(CertificateController::class)->previewResponse($certificate);
     }
 
     public function download(Request $request): Response

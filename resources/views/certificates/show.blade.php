@@ -13,7 +13,8 @@
 
     <div class="grid gap-6 lg:grid-cols-3">
         <div class="card lg:col-span-2 !p-0 overflow-hidden">
-            <iframe src="{{ route('certificates.preview', $certificate) }}" title="Certificate preview" class="h-[480px] w-full bg-white" sandbox></iframe>
+            <iframe src="{{ route('certificates.preview', $certificate) }}" title="Certificate preview" class="h-[480px] w-full bg-white"></iframe>
+            <p class="border-t border-gray-100 px-4 py-2 text-xs text-gray-500 dark:border-gray-700">The preview is the generated PDF. If your phone does not show it, <a class="link" href="{{ route('certificates.preview', $certificate) }}" target="_blank" rel="noopener">open the PDF</a>.</p>
         </div>
         <div class="card">
             <dl class="space-y-3 text-sm">

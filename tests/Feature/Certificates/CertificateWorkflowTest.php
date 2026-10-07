@@ -159,7 +159,7 @@ class CertificateWorkflowTest extends TestCase
         $this->actingAs($this->admin())->get('/certificates/verify?cert_number='.$certificate->cert_number)->assertSee('A7654321');
         auth()->logout();
 
-        $this->get('/certificates/verify/view?cert_number='.$certificate->cert_number)->assertOk()->assertSee('Swimming Gala');
+        $this->get('/certificates/verify/view?cert_number='.$certificate->cert_number)->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->get('/certificates/verify/download?cert_number='.$certificate->cert_number)->assertOk()->assertHeader('Content-Type', 'application/pdf');
         $this->assertDatabaseHas('audit_logs', ['action' => 'certificate.downloaded']);
     }
@@ -369,5 +369,17 @@ class CertificateWorkflowTest extends TestCase
         openssl_pkey_export($key, $pem);
 
         return $pem;
+    }
+
+    public function test_the_certificate_page_shows_the_generated_pdf_not_the_built_in_layout(): void
+    {
+        $admin = $this->admin();
+        $certificate = app(CertificateGenerationService::class)->generateGeneralCertificate(Student::factory()->create(), 'Swimming Gala', '2026-05-05', $this->template(CertificateType::General), $admin);
+        $stored = app(GoogleDriveCertificateService::class)->put($certificate->student, $certificate->cert_number, "%PDF-1.4 from google slides\n", $certificate->path);
+        $certificate->forceFill(['path' => $stored])->save();
+
+        $response = $this->actingAs($admin)->get(route('certificates.preview', $certificate))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringContainsString('from google slides', $response->getContent());
+        $this->actingAs($admin)->get(route('certificates.show', $certificate))->assertOk()->assertDontSee('sandbox', false);
     }
 }

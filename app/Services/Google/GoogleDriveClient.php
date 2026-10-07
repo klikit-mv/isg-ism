@@ -143,7 +143,18 @@ class GoogleDriveClient
     {
         $response = $this->request()?->delete(self::API.'/files/'.$fileId.'?supportsAllDrives=true');
 
-        return (bool) $response?->successful();
+        if ($response?->successful()) {
+            return true;
+        }
+
+        // Not allowed to delete (for example a shared-drive file): move it to the bin instead so it does not stay in the folder.
+        $trashed = $this->request()?->patch(self::API.'/files/'.$fileId.'?supportsAllDrives=true', ['trashed' => true]);
+
+        if (! $trashed?->successful()) {
+            $this->failed('Deleting the Drive file', $response);
+        }
+
+        return (bool) $trashed?->successful();
     }
 
     /**
