@@ -14,7 +14,9 @@ use App\Services\AttendanceService;
 use App\Services\CertificateService;
 use App\Services\ClassFeeService;
 use App\Support\Money;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -188,6 +190,40 @@ class Mark extends Component
         }
     }
 
+    /**
+     * The visible scouts split by the sub-group they belong to (group order, then sub-group name), scouts without a
+     * sub-group last. Each list keeps the name order.
+     *
+     * @param  Collection<int, Student>  $students
+     * @return list<array{title: string, students: Collection<int, Student>}>
+     */
+    private function bySubgroup(Collection $students): array
+    {
+        $memberships = DB::table('group_members')
+            ->join('groups', 'groups.id', '=', 'group_members.group_id')
+            ->join('group_subgroups', 'group_subgroups.id', '=', 'group_members.subgroup_id')
+            ->whereIn('group_members.student_id', $students->pluck('id')->all() ?: [0])
+            ->orderBy('groups.name')->orderBy('group_subgroups.name')
+            ->get(['group_members.student_id', 'groups.name as group_name', 'group_subgroups.name as subgroup_name'])
+            ->unique('student_id')
+            ->keyBy('student_id');
+
+        $multipleGroups = $memberships->pluck('group_name')->unique()->count() > 1;
+        $buckets = [];
+
+        foreach ($students as $student) {
+            $membership = $memberships->get($student->id);
+            $title = $membership
+                ? ($multipleGroups ? $membership->group_name.' · ' : '').$membership->subgroup_name
+                : 'No sub-group';
+            $buckets[$title][] = $student;
+        }
+
+        uksort($buckets, fn (string $a, string $b): int => ($a === 'No sub-group') <=> ($b === 'No sub-group') ?: strnatcasecmp($a, $b));
+
+        return collect($buckets)->map(fn (array $list, string $title): array => ['title' => $title, 'students' => collect($list)])->values()->all();
+    }
+
     private function resetMessages(): void
     {
         $this->flash = null;
@@ -217,6 +253,8 @@ class Mark extends Component
             return $this->statusFilter === '' || ($row['status'] ?? '') === $this->statusFilter;
         });
 
+        $sections = $this->bySubgroup($visible);
+
         $fees = $activity->charge_fee
             ? ClassFee::query()->where('activity_id', $activity->id)->get()->keyBy('student_id')
             : collect();
@@ -224,6 +262,7 @@ class Mark extends Component
         return view('livewire.attendance.mark', [
             'activity' => $activity,
             'students' => $visible,
+            'sections' => $sections,
             'total' => $students->count(),
             'fees' => $fees,
             'choices' => app(ClassFeeService::class)->rosterPaymentChoices(),

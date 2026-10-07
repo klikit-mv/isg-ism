@@ -278,4 +278,31 @@ class AttendanceTest extends TestCase
 
         $this->assertSame(2, AttendanceRecord::query()->where('status', 'Present')->count());
     }
+
+    public function test_the_register_lists_scouts_under_their_sub_group(): void
+    {
+        $admin = $this->admin();
+        $one = Student::factory()->create(['name' => 'Student 1']);
+        $two = Student::factory()->create(['name' => 'Student 2']);
+        $three = Student::factory()->create(['name' => 'Student 3']);
+        $four = Student::factory()->create(['name' => 'Student 4']);
+        $five = Student::factory()->create(['name' => 'Student 5']);
+        $group = Group::factory()->withMembers($one, $two, $three, $four, $five)->create();
+        $alpha = $group->subgroups()->create(['name' => 'Sub group 1']);
+        $beta = $group->subgroups()->create(['name' => 'Sub group 2']);
+        $group->members()->updateExistingPivot([$three->id, $five->id], ['subgroup_id' => $alpha->id]);
+        $group->members()->updateExistingPivot([$one->id, $four->id], ['subgroup_id' => $beta->id]);
+        $activity = Activity::factory()->forGroups($group)->create();
+
+        $html = Livewire::actingAs($admin)->test(Mark::class, ['activity' => $activity])->html();
+
+        $order = ['Sub group 1', 'Student 3', 'Student 5', 'Sub group 2', 'Student 1', 'Student 4', 'No sub-group', 'Student 2'];
+        $last = -1;
+
+        foreach ($order as $text) {
+            $position = strpos($html, $text, $last + 1);
+            $this->assertNotFalse($position, "{$text} is missing or out of order");
+            $last = $position;
+        }
+    }
 }

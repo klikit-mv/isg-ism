@@ -41,7 +41,13 @@
         <x-empty message="Nobody on this roster is in your groups."/>
     @else
         <x-table :headers="array_values(array_filter(['Scout', 'Status', 'Remarks', $activity->charge_fee ? 'Paid now' : null]))">
-            @foreach ($students as $student)
+            @foreach ($sections as $section)
+                @if (count($sections) > 1 || $section['title'] !== 'No sub-group')
+                    <tr wire:key="section-{{ $loop->index }}" class="bg-gray-50 dark:bg-gray-900/40">
+                        <td colspan="{{ $activity->charge_fee ? 4 : 3 }}" class="!py-2 text-sm font-semibold text-navy-800 dark:text-navy-200">{{ $section['title'] }} <span class="font-normal text-gray-500">({{ $section['students']->count() }})</span></td>
+                    </tr>
+                @endif
+                @foreach ($section['students'] as $student)
                 <tr wire:key="row-{{ $student->id }}">
                     <td data-label="Scout">
                         <div class="font-medium">{{ $student->name }}</div>
@@ -79,6 +85,7 @@
                         </td>
                     @endif
                 </tr>
+                @endforeach
             @endforeach
         </x-table>
 
