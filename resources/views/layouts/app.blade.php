@@ -104,6 +104,11 @@
 
         <main class="min-w-0 flex-1 px-4 py-6 sm:px-6">
             <x-flash/>
+            <div x-data="scoutPushBanner()" x-show="show" x-cloak class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-900 dark:border-navy-800 dark:bg-navy-900/40 dark:text-navy-100" data-testid="push-banner">
+                <span class="min-w-0 flex-1">Turn on notifications to get alerts from the portal on this device, even when the app is closed.</span>
+                <button type="button" class="btn-primary btn-sm" x-on:click="turnOn()" x-bind:disabled="busy">Turn on</button>
+                <button type="button" class="btn-secondary btn-sm" x-on:click="later()">Not now</button>
+            </div>
             {{ $slot }}
         </main>
     </div>

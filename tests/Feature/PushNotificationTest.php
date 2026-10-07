@@ -56,6 +56,11 @@ class PushNotificationTest extends TestCase
         $this->assertSame($key, app(WebPushService::class)->publicKey());
     }
 
+    public function test_the_installed_app_offers_to_turn_notifications_on_after_sign_in(): void
+    {
+        $this->actingAs(User::factory()->parentRole()->create())->get(route('dashboard'))->assertOk()->assertSee('data-testid="push-banner"', false)->assertSee('scoutPushBanner', false);
+    }
+
     public function test_alerts_go_to_devices_only_for_people_who_turned_push_on(): void
     {
         $with = User::factory()->parentRole()->create();
