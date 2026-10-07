@@ -92,6 +92,20 @@ class PushNotificationTest extends TestCase
         $this->actingAs($user)->postJson(route('profile.push.test'))->assertOk()->assertJson(['sent' => 0])->assertJsonPath('error', fn ($error) => str_contains($error, 'not registered'));
     }
 
+    public function test_the_push_client_can_be_built_with_the_configured_keys(): void
+    {
+        config(['scout.vapid_public_key' => 'BNinndqr8Q8xrl-SX1G8A15t9dBqguyxhrTJMhAJXE_iUludCvh8Fb0WpT7rmG43UeQoliBpNsaZLtwitwGdA04', 'scout.vapid_private_key' => '1_gBOU-iWj6baRWexkFCM4tM_e6_ePTmzrM6hNCG7h0']);
+        $service = new class(app(SettingsService::class)) extends WebPushService
+        {
+            public function build(): WebPush
+            {
+                return $this->client();
+            }
+        };
+
+        $this->assertInstanceOf(WebPush::class, $service->build());
+    }
+
     public function test_alerts_go_to_devices_only_for_people_who_turned_push_on(): void
     {
         $with = User::factory()->parentRole()->create();

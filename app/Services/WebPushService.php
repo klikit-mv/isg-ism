@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\PushSubscription;
 use App\Models\User;
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\VAPID;
@@ -157,6 +158,6 @@ class WebPushService
             'subject' => config('app.url') ?: 'mailto:admin@example.org',
             'publicKey' => $keys['publicKey'],
             'privateKey' => $keys['privateKey'],
-        ]], ['TTL' => 86400], 8);
+        ]], ['TTL' => 86400], new Client(['timeout' => 8, 'connect_timeout' => 5]), null, null, null, app('log'));
     }
 }
