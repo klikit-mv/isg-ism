@@ -304,7 +304,8 @@ class PaymentService
 
         $who = $payment->student?->name ?? $payment->submitter?->name ?? 'payment';
         $extension = pathinfo($localPath, PATHINFO_EXTENSION);
-        $ref = $drive->put((string) $payment->payable_type, now()->format('Y-m-d').' '.$who.' '.mb_substr((string) $payment->uuid, 0, 8).'.'.$extension, $contents, (string) ($proof->mime_type ?: 'application/octet-stream'));
+        $person = $payment->student ? trim($payment->student->name.' '.($payment->student->national_id ? '('.$payment->student->national_id.')' : '')) : $who;
+        $ref = $drive->put((string) $payment->payable_type, now()->format('Y-m-d').' '.$who.' '.mb_substr((string) $payment->uuid, 0, 8).'.'.$extension, $contents, (string) ($proof->mime_type ?: 'application/octet-stream'), $person);
 
         if ($ref === null) {
             session()->flash('warning', 'The payment proof was saved on the server, not in Google Drive. '.$drive->lastError());

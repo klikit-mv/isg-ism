@@ -106,7 +106,10 @@ class BankTest extends TestCase
         Cache::put('google.access_token.'.md5('bot@example.iam.gserviceaccount.com'), 'token', 600);
         app(SettingsService::class)->set('google_drive_payments_folder_id', 'payroot');
         app(SettingsService::class)->set('google_drive_payments_bank_deposit', 'bankfolder');
-        Http::fake(['www.googleapis.com/upload/*' => Http::response(['id' => 'slip1'])]);
+        Http::fake([
+            'www.googleapis.com/upload/*' => Http::response(['id' => 'slip1']),
+            'www.googleapis.com/drive/v3/files*' => fn ($request) => $request->method() === 'GET' ? Http::response(['files' => [['id' => 'bankfolder']]]) : Http::response(['id' => 'bankfolder']),
+        ]);
 
         $this->deposit($this->admin(), $this->account());
 

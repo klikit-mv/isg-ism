@@ -51,14 +51,18 @@ class PaymentDriveTest extends TestCase
     public function test_a_proof_is_filed_in_the_modules_drive_folder_and_the_local_copy_is_removed(): void
     {
         $this->connect();
-        Http::fake(['www.googleapis.com/upload/*' => Http::response(['id' => 'proof123']), 'www.googleapis.com/drive/v3/files/proof123*' => Http::response('%PDF stored')]);
+        Http::fake([
+            'www.googleapis.com/upload/*' => Http::response(['id' => 'proof123']),
+            'www.googleapis.com/drive/v3/files/proof123*' => Http::response('%PDF stored'),
+            'www.googleapis.com/drive/v3/files*' => fn ($request) => $request->method() === 'GET' ? Http::response(['files' => [['id' => 'classfolder']]]) : Http::response(['id' => 'classfolder']),
+        ]);
 
         $this->submit();
 
         $proof = PaymentProof::query()->firstOrFail();
         $this->assertSame('drive', $proof->disk);
         $this->assertSame('drive:proof123', $proof->path);
-        Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive') && str_contains($r->body(), '"parents":["classfolder"]'));
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive'));
         $this->assertSame([], Storage::disk('local')->allFiles('payment-proofs'));
 
         $this->actingAs($this->admin())->get(route('payments.proof', $proof->payment))->assertOk()->assertSee('%PDF stored', false);
@@ -96,5 +100,22 @@ class PaymentDriveTest extends TestCase
         $this->assertSame('financeId', $settings->drivePaymentsFolderId());
         Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":"Finance"') && str_contains($r->body(), '"parents":["mainroot"]'));
         $this->assertSame('drive', PaymentProof::query()->firstOrFail()->disk);
+    }
+
+    public function test_the_proof_goes_into_a_folder_for_the_scout(): void
+    {
+        $this->connect();
+        app(SettingsService::class)->set('google_drive_payments_class_fee', 'classfolder');
+        Http::fake([
+            'www.googleapis.com/drive/v3/files*' => fn ($request) => $request->method() === 'GET'
+                ? Http::response(['files' => []])
+                : Http::response(['id' => 'scoutFolder']),
+            'www.googleapis.com/upload/*' => Http::response(['id' => 'proof1']),
+        ]);
+
+        $student = $this->submit();
+
+        Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":"'.$student->name.' ('.$student->national_id.')"') && str_contains($r->body(), '"parents":["classfolder"]'));
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive') && str_contains($r->body(), '"parents":["scoutFolder"]'));
     }
 }

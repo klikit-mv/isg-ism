@@ -91,7 +91,7 @@ class BankService
             throw new ScoutException('Enter an amount greater than zero.');
         }
 
-        $attachmentData = $attachment ? $this->storeAttachment($attachment, $type) : [];
+        $attachmentData = $attachment ? $this->storeAttachment($attachment, $type, $actor) : [];
 
         try {
             return DB::transaction(function () use ($account, $type, $data, $amount, $attachmentData, $actor): BankTransaction {
@@ -166,7 +166,7 @@ class BankService
      *
      * @return array<string, ?string>
      */
-    private function storeAttachment(UploadedFile $file, string $type): array
+    private function storeAttachment(UploadedFile $file, string $type, User $actor): array
     {
         $extension = strtolower($file->getClientOriginalExtension() ?: (string) $file->extension());
 
@@ -176,7 +176,7 @@ class BankService
 
         $mime = (string) ($file->getMimeType() ?: 'application/octet-stream');
         $name = mb_substr($file->getClientOriginalName(), 0, 255);
-        $ref = $this->drive->put('bank_'.$type, now()->format('Y-m-d').' '.Str::limit(pathinfo($name, PATHINFO_FILENAME), 60, '').' '.Str::random(5).'.'.$extension, (string) $file->get(), $mime);
+        $ref = $this->drive->put('bank_'.$type, now()->format('Y-m-d').' '.Str::limit(pathinfo($name, PATHINFO_FILENAME), 60, '').' '.Str::random(5).'.'.$extension, (string) $file->get(), $mime, $actor->name);
 
         if ($ref !== null) {
             return ['attachment_disk' => 'drive', 'attachment_path' => $ref, 'attachment_name' => $name, 'attachment_mime' => $mime];

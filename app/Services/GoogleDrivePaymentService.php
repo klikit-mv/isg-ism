@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Services\Google\GoogleDriveClient;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 /**
@@ -89,9 +90,10 @@ class GoogleDrivePaymentService
     }
 
     /**
-     * Store a file under the module's folder and return "drive:{id}", or null when Drive is off or refuses it.
+     * Store a file under the module's folder (inside a folder for the person, so one person's documents sit together and
+     * can be searched by name) and return "drive:{id}", or null when Drive is off or refuses it.
      */
-    public function put(string $module, string $filename, string $contents, string $mime): ?string
+    public function put(string $module, string $filename, string $contents, string $mime, ?string $person = null): ?string
     {
         if (! $this->enabled() || ! isset(self::MODULES[$module])) {
             return null;
@@ -101,14 +103,20 @@ class GoogleDrivePaymentService
 
         for ($attempt = 0; $attempt < 2; $attempt++) {
             $folderId = $this->folderId($module);
+
+            if ($folderId && filled($person)) {
+                $folderId = $this->personFolderId($module, $folderId, $person);
+            }
+
             $id = $folderId ? $this->drive->upload($folderId, $name, $contents, $mime) : null;
 
             if ($id !== null) {
                 return 'drive:'.$id;
             }
 
-            // The cached folder may have been deleted in Drive: forget it and look it up again.
+            // A cached folder may have been deleted in Drive: forget them and look them up again.
             $this->settings->forget($this->cacheKey($module));
+            Cache::forget($this->personCacheKey($module, (string) $person));
         }
 
         return null;
@@ -124,6 +132,18 @@ class GoogleDrivePaymentService
         if (str_starts_with($ref, 'drive:')) {
             $this->drive->delete(substr($ref, 6));
         }
+    }
+
+    private function personFolderId(string $module, string $moduleFolderId, string $person): ?string
+    {
+        $name = Str::limit(trim(preg_replace('/[^\w .()\-]+/u', '_', $person) ?: 'Unknown'), 100, '');
+
+        return Cache::remember($this->personCacheKey($module, $person), 86400, fn () => $this->drive->findOrCreateFolder($name, $moduleFolderId)) ?: null;
+    }
+
+    private function personCacheKey(string $module, string $person): string
+    {
+        return 'google_drive_person_'.$module.'_'.md5($person);
     }
 
     private function cacheKey(string $module): string
