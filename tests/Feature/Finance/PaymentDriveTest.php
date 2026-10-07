@@ -118,4 +118,12 @@ class PaymentDriveTest extends TestCase
         Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":"'.$student->name.' ('.$student->national_id.')"') && str_contains($r->body(), '"parents":["classfolder"]'));
         Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive') && str_contains($r->body(), '"parents":["scoutFolder"]'));
     }
+
+    public function test_the_settings_page_shows_the_finance_folder_input(): void
+    {
+        $html = $this->actingAs($this->admin())->get('/settings')->assertOk()->getContent();
+
+        $this->assertStringContainsString('name="google_drive_payments_folder"', $html);
+        $this->assertStringNotContainsString('<x-form', $html);
+    }
 }
