@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
  */
 class GoogleDrivePaymentService
 {
+    public const ROOT_NAME = 'Finance';
+
     /** Payable type => Drive sub-folder. */
     public const MODULES = [
         'class_fee' => 'Class fees',
@@ -24,7 +26,7 @@ class GoogleDrivePaymentService
 
     public function enabled(): bool
     {
-        return $this->drive->configured() && filled($this->settings->drivePaymentsFolderId());
+        return $this->drive->configured() && (filled($this->settings->drivePaymentsFolderId()) || filled($this->settings->driveFolderId()));
     }
 
     public function lastError(): ?string
@@ -33,14 +35,40 @@ class GoogleDrivePaymentService
     }
 
     /**
+     * The folder every module folder lives in: the one set in Settings, otherwise a "Finance" folder created inside the
+     * main Google Drive folder.
+     */
+    public function rootId(): ?string
+    {
+        if ($id = $this->settings->drivePaymentsFolderId()) {
+            return $id;
+        }
+
+        $main = $this->settings->driveFolderId();
+        $id = $main ? $this->drive->findOrCreateFolder(self::ROOT_NAME, $main) : null;
+
+        if ($id) {
+            $this->settings->set('google_drive_payments_folder_id', $id);
+        }
+
+        return $id;
+    }
+
+    /**
      * Create (or find) every module sub-folder under the root.
      *
      * @return array{ok: bool, message: string}
      */
-    public function prepareFolders(string $rootId): array
+    public function prepareFolders(?string $rootId = null): array
     {
         if (! $this->drive->configured()) {
             return ['ok' => false, 'message' => 'The payments folder was saved, but Google is not connected yet. Until then proofs and slips are stored on the server.'];
+        }
+
+        $rootId ??= $this->rootId();
+
+        if ($rootId === null) {
+            return ['ok' => false, 'message' => 'The Finance folder could not be created in Google Drive. '.$this->drive->lastError()];
         }
 
         if (! $this->drive->folderAccessible($rootId)) {
@@ -57,7 +85,7 @@ class GoogleDrivePaymentService
             $this->settings->set($this->cacheKey($key), $id);
         }
 
-        return ['ok' => true, 'message' => 'Payments folder is ready: a sub-folder for each module was created.'];
+        return ['ok' => true, 'message' => 'The Finance folder is ready in Google Drive, with a sub-folder for each module.'];
     }
 
     /**
@@ -111,7 +139,7 @@ class GoogleDrivePaymentService
             return $cached;
         }
 
-        $root = $this->settings->drivePaymentsFolderId();
+        $root = $this->rootId();
         $id = $root ? $this->drive->findOrCreateFolder(self::MODULES[$module], $root) : null;
 
         if ($id) {

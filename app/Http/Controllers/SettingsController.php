@@ -7,6 +7,7 @@ use App\Services\AuditLogService;
 use App\Services\ConnectionTestService;
 use App\Services\Google\GoogleApiClient;
 use App\Services\GoogleDriveCertificateService;
+use App\Services\GoogleDrivePaymentService;
 use App\Services\GoogleDrivePhotoService;
 use App\Services\SettingsService;
 use App\Services\TelegramService;
@@ -39,7 +40,7 @@ class SettingsController extends Controller
         ]);
     }
 
-    public function update(Request $request, GoogleDrivePhotoService $photos, GoogleDriveCertificateService $certificates, \App\Services\GoogleDrivePaymentService $paymentDrive, TelegramService $telegram, GoogleApiClient $google): RedirectResponse
+    public function update(Request $request, GoogleDrivePhotoService $photos, GoogleDriveCertificateService $certificates, GoogleDrivePaymentService $paymentDrive, TelegramService $telegram, GoogleApiClient $google): RedirectResponse
     {
         $data = $request->validate([
             'default_class_fee' => ['required', 'numeric', 'min:0', 'max:9999999'],
@@ -92,6 +93,10 @@ class SettingsController extends Controller
         $messages[] = $this->saveFolder('google_drive_payments_folder', $data['google_drive_payments_folder'] ?? null, $actor, function (string $id) use ($paymentDrive): string {
             return $paymentDrive->prepareFolders($id)['message'];
         });
+
+        if (blank($data['google_drive_payments_folder'] ?? null) && filled($this->settings->driveFolderId()) && $paymentDrive->enabled() && blank($this->settings->get('google_drive_payments_class_fee'))) {
+            $messages[] = $paymentDrive->prepareFolders()['message'];
+        }
 
         if (filled($data['telegram_bot_token'] ?? null)) {
             $result = $telegram->storeToken(trim($data['telegram_bot_token']), $actor);

@@ -76,4 +76,25 @@ class PaymentDriveTest extends TestCase
         Storage::disk('local')->assertExists($proof->path);
         $this->assertStringContainsString('not in Google Drive', session('warning'));
     }
+
+    public function test_a_finance_folder_is_created_inside_the_main_drive_folder_when_none_is_set(): void
+    {
+        $this->connect();
+        $settings = app(SettingsService::class);
+        $settings->set('google_drive_payments_folder_id', null);
+        $settings->set('google_drive_payments_class_fee', null);
+        $settings->set('google_drive_folder_id', 'mainroot');
+        Http::fake([
+            'www.googleapis.com/drive/v3/files*' => fn ($request) => $request->method() === 'GET'
+                ? Http::response(['files' => []])
+                : Http::response(['id' => str_contains($request->body(), '"Finance"') ? 'financeId' : 'classId']),
+            'www.googleapis.com/upload/*' => Http::response(['id' => 'proof1']),
+        ]);
+
+        $this->submit();
+
+        $this->assertSame('financeId', $settings->drivePaymentsFolderId());
+        Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":"Finance"') && str_contains($r->body(), '"parents":["mainroot"]'));
+        $this->assertSame('drive', PaymentProof::query()->firstOrFail()->disk);
+    }
 }
