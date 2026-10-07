@@ -19,27 +19,49 @@ class WebPushService
     public function __construct(private SettingsService $settings) {}
 
     /**
-     * @return array{publicKey: string, privateKey: string}
+     * The server's VAPID key pair: from VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY when set, otherwise created on first use and
+     * kept in the settings. Null when PHP's OpenSSL cannot create keys (push is then simply unavailable).
+     *
+     * @return array{publicKey: string, privateKey: string}|null
      */
-    public function keys(): array
+    public function keys(): ?array
     {
+        if (filled(config('scout.vapid_public_key')) && filled(config('scout.vapid_private_key'))) {
+            return ['publicKey' => (string) config('scout.vapid_public_key'), 'privateKey' => (string) config('scout.vapid_private_key')];
+        }
+
         $public = $this->settings->get('webpush_public_key');
         $private = $this->settings->get('webpush_private_key');
 
-        if (! $public || ! $private) {
-            $pair = VAPID::createVapidKeys();
-            $this->settings->set('webpush_public_key', $pair['publicKey']);
-            $this->settings->set('webpush_private_key', $pair['privateKey']);
-
-            return $pair;
+        if ($public && $private) {
+            return ['publicKey' => $public, 'privateKey' => $private];
         }
 
-        return ['publicKey' => $public, 'privateKey' => $private];
+        try {
+            $pair = $this->generateKeys();
+        } catch (Throwable $e) {
+            Log::warning('Push notifications unavailable: the VAPID keys could not be created ('.$e->getMessage().'). Set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY (php artisan webpush:keys) or fix PHP OpenSSL.');
+
+            return null;
+        }
+
+        $this->settings->set('webpush_public_key', $pair['publicKey']);
+        $this->settings->set('webpush_private_key', $pair['privateKey']);
+
+        return $pair;
     }
 
-    public function publicKey(): string
+    /**
+     * @return array{publicKey: string, privateKey: string}
+     */
+    public function generateKeys(): array
     {
-        return $this->keys()['publicKey'];
+        return VAPID::createVapidKeys();
+    }
+
+    public function publicKey(): ?string
+    {
+        return $this->keys()['publicKey'] ?? null;
     }
 
     /**
@@ -116,7 +138,7 @@ class WebPushService
 
     protected function client(): WebPush
     {
-        $keys = $this->keys();
+        $keys = $this->keys() ?? throw new \RuntimeException('Push notification keys are not available.');
 
         return new WebPush(['VAPID' => [
             'subject' => config('app.url') ?: 'mailto:admin@example.org',

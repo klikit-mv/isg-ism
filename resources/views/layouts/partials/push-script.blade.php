@@ -5,7 +5,6 @@
         return {
         supported: 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
         on: false, busy: false, message: '',
-        key: @js(app(\App\Services\WebPushService::class)->publicKey()),
         csrf: document.querySelector('meta[name=csrf-token]').content,
         async init() {
             if (! this.supported) return;
@@ -23,9 +22,12 @@
         async enable() {
             this.busy = true; this.message = '';
             try {
+                const keyResponse = await fetch(@js(route('profile.push.key')), { headers: { 'Accept': 'application/json' } });
+                if (! keyResponse.ok) { this.message = 'Push notifications are not available on this server yet. Please tell an administrator.'; return; }
+                const key = (await keyResponse.json()).key;
                 if (await Notification.requestPermission() !== 'granted') { this.message = 'Notifications are blocked. Allow them in your browser or phone settings, then try again.'; return; }
                 const reg = await navigator.serviceWorker.ready;
-                const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.toBytes(this.key) });
+                const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: this.toBytes(key) });
                 const res = await this.call(@js(route('profile.push.subscribe')), 'POST', sub.toJSON());
                 this.on = res.ok;
                 this.message = res.ok ? 'Notifications are on for this device.' : 'Could not turn notifications on. Please try again.';

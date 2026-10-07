@@ -3,6 +3,8 @@
 return [
     'name' => env('SCOUT_NAME', 'Ifthithaah Scout Group'),
     'short_name' => env('SCOUT_SHORT_NAME', 'Scout Management System'),
+    'vapid_public_key' => env('VAPID_PUBLIC_KEY'),
+    'vapid_private_key' => env('VAPID_PRIVATE_KEY'),
     'organisation' => env('SCOUT_ORG', 'Ifthithaah Scout Group'),
     'certificate_prefix' => env('SCOUT_CERT_PREFIX', 'FLHSG'),
     'timezone' => env('SCOUT_TIMEZONE', 'Indian/Maldives'),

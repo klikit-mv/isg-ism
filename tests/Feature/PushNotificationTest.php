@@ -61,6 +61,30 @@ class PushNotificationTest extends TestCase
         $this->actingAs(User::factory()->parentRole()->create())->get(route('dashboard'))->assertOk()->assertSee('data-testid="push-banner"', false)->assertSee('scoutPushBanner', false);
     }
 
+    public function test_pages_still_work_when_the_server_cannot_create_push_keys(): void
+    {
+        $this->app->bind(WebPushService::class, fn () => new class(app(SettingsService::class)) extends WebPushService
+        {
+            public function generateKeys(): array
+            {
+                throw new \RuntimeException('Unable to create the key');
+            }
+        });
+        $user = User::factory()->parentRole()->create();
+
+        $this->actingAs($user)->get(route('dashboard'))->assertOk();
+        $this->actingAs($user)->get(route('profile.edit'))->assertOk();
+        $this->actingAs($user)->getJson(route('profile.push.key'))->assertStatus(503);
+        $this->assertSame(0, app(WebPushService::class)->send($user, 'Hi', 'Body'));
+    }
+
+    public function test_keys_from_the_environment_are_used_when_set(): void
+    {
+        config(['scout.vapid_public_key' => 'PUB', 'scout.vapid_private_key' => 'PRIV']);
+
+        $this->actingAs(User::factory()->parentRole()->create())->getJson(route('profile.push.key'))->assertOk()->assertJson(['key' => 'PUB']);
+    }
+
     public function test_alerts_go_to_devices_only_for_people_who_turned_push_on(): void
     {
         $with = User::factory()->parentRole()->create();

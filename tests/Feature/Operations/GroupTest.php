@@ -82,7 +82,7 @@ class GroupTest extends TestCase
         $group = Group::query()->where('name', 'Cub Pack')->firstOrFail();
         $this->assertSame(ScoutSection::CubScout, $group->section);
 
-        $this->actingAs($admin)->get("/groups/{$group->uuid}")->assertOk()->assertSee($cub->name)->assertDontSee($scout->name);
+        $this->actingAs($admin)->get("/groups/{$group->uuid}")->assertOk()->assertSee(e($cub->name), false)->assertDontSee(e($scout->name), false);
 
         $this->actingAs($admin)->put("/groups/{$group->uuid}/membership", ['members' => [$scout->id]])
             ->assertSessionHas('error', "{$scout->name} is not in the Cub Scout section, so cannot join this group.");

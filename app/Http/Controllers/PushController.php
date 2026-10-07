@@ -10,6 +10,13 @@ class PushController extends Controller
 {
     public function __construct(private WebPushService $push) {}
 
+    public function key(): JsonResponse
+    {
+        $key = $this->push->publicKey();
+
+        return $key ? response()->json(['key' => $key]) : response()->json(['message' => 'Push notifications are not available.'], 503);
+    }
+
     public function subscribe(Request $request): JsonResponse
     {
         $data = $request->validate([

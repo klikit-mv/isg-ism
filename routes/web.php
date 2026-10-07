@@ -73,6 +73,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/signature', [ProfileController::class, 'signature'])->name('profile.signature');
     Route::post('/profile/avatar', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::get('/profile/push/key', [PushController::class, 'key'])->name('profile.push.key');
     Route::post('/profile/push', [PushController::class, 'subscribe'])->name('profile.push.subscribe');
     Route::delete('/profile/push', [PushController::class, 'unsubscribe'])->name('profile.push.unsubscribe');
     Route::post('/profile/push/test', [PushController::class, 'test'])->middleware('throttle:integration-tests')->name('profile.push.test');
