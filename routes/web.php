@@ -186,6 +186,8 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::delete('/badges/{badge}', [BadgeController::class, 'destroy'])->name('badges.destroy');
 
     Route::get('/badge-requests', [BadgeRequestController::class, 'index'])->name('badge-requests.index');
+    Route::post('/badge-requests/bulk', [BadgeRequestController::class, 'bulk'])->name('badge-requests.bulk');
+    Route::post('/badge-requests/approve-selected', [BadgeRequestController::class, 'approveSelected'])->name('badge-requests.approve-selected');
     Route::get('/badge-requests/create', [BadgeRequestController::class, 'create'])->name('badge-requests.create');
     Route::post('/badge-requests', [BadgeRequestController::class, 'store'])->name('badge-requests.store');
     Route::get('/badge-requests/{badgeRequest}', [BadgeRequestController::class, 'show'])->name('badge-requests.show');

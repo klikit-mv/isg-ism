@@ -272,6 +272,80 @@ class CertificateService
         return Student::query()->whereIn('id', $attendedIds->diff($haveIds)->values()->all() ?: [0])->orderBy('name')->get();
     }
 
+    /**
+     * Request one badge for many scouts and, when asked, approve each request and generate its certificate. Every scout
+     * is handled on its own, so one failure never undoes the others.
+     *
+     * @param  iterable<Student>  $students
+     * @return list<array{student: string, status: string, certificate: ?string, message: string}>
+     */
+    public function bulkRequestBadge(Badge $badge, iterable $students, User $actor, bool $approveAndGenerate, ?string $date = null, ?CertificateTemplate $template = null): array
+    {
+        $rows = [];
+
+        foreach ($students as $student) {
+            $row = ['student' => $student->name, 'status' => 'failed', 'certificate' => null, 'message' => ''];
+
+            try {
+                if ($badge->section !== null && $student->section !== $badge->section) {
+                    throw new ScoutException("The {$badge->name} badge is for {$badge->section->value} scouts.");
+                }
+
+                $request = $this->requestBadge($student, $badge, $actor);
+                $row['status'] = 'requested';
+                $row['message'] = 'Request created.';
+
+                if ($approveAndGenerate) {
+                    $this->approve($request, $actor);
+                    $row['status'] = 'approved';
+                    $row['message'] = 'Approved.';
+
+                    $certificate = $this->generateApproved($request->fresh(), $actor, (string) $date, $template);
+                    $row['status'] = 'generated';
+                    $row['certificate'] = $certificate->cert_number;
+                    $row['message'] = 'Approved and certificate generated.';
+                }
+            } catch (ScoutException $e) {
+                $row['message'] = $e->getMessage();
+            } catch (Throwable $e) {
+                $row['message'] = $row['status'] === 'approved' ? 'Approved, but the certificate could not be generated: '.$e->getMessage() : 'Could not be processed: '.$e->getMessage();
+            }
+
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Approve several requests; ones that are not waiting for a decision (or that the user may not decide) are skipped.
+     *
+     * @param  iterable<BadgeRequest>  $requests
+     * @return array{approved: int, skipped: int}
+     */
+    public function approveMany(iterable $requests, User $actor, ?string $note = null): array
+    {
+        $approved = 0;
+        $skipped = 0;
+
+        foreach ($requests as $request) {
+            if (! $actor->can('decide', $request)) {
+                $skipped++;
+
+                continue;
+            }
+
+            try {
+                $this->approve($request, $actor, $note);
+                $approved++;
+            } catch (ScoutException) {
+                $skipped++;
+            }
+        }
+
+        return ['approved' => $approved, 'skipped' => $skipped];
+    }
+
     private function decide(BadgeRequest $request, User $actor, BadgeRequestStatus $status, ?string $note): void
     {
         DB::transaction(function () use ($request, $actor, $status, $note): void {

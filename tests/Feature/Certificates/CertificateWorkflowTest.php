@@ -4,6 +4,7 @@ namespace Tests\Feature\Certificates;
 
 use App\Enums\BadgeRequestStatus;
 use App\Enums\CertificateType;
+use App\Enums\ScoutSection;
 use App\Livewire\Attendance\Mark;
 use App\Models\Activity;
 use App\Models\BadgeRequest;
@@ -12,6 +13,7 @@ use App\Models\Group;
 use App\Models\LeadershipRecord;
 use App\Models\Student;
 use App\Services\CertificateGenerationService;
+use App\Services\CertificateService;
 use App\Services\GoogleDriveCertificateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
@@ -298,6 +300,62 @@ class CertificateWorkflowTest extends TestCase
         $this->actingAs($admin)->get('/badges')->assertOk()->assertSee('Live badge layout')->assertDontSee('Retired badge layout');
         $this->actingAs($admin)->get('/activities')->assertOk()->assertSee('Live general layout')->assertDontSee('Retired general layout');
         $this->actingAs($admin)->get('/certificates/create')->assertOk()->assertSee('Live general layout')->assertDontSee('Retired general layout');
+    }
+
+    public function test_a_leader_can_request_approve_and_generate_a_badge_for_many_scouts_at_once(): void
+    {
+        $leader = $this->leader();
+        $badge = $this->badge(['name' => 'Camping', 'section' => 'Scout']);
+        $this->template(CertificateType::Badge);
+        $one = Student::factory()->section(ScoutSection::Scout)->create();
+        $two = Student::factory()->section(ScoutSection::Scout)->create();
+        $cub = Student::factory()->section(ScoutSection::CubScout)->create();
+        Group::factory()->ledBy($leader)->withMembers($one, $two, $cub)->create();
+
+        $this->actingAs($leader)->get('/badge-requests')->assertOk()->assertSee('Bulk badge request');
+
+        $response = $this->actingAs($leader)->postJson('/badge-requests/bulk', [
+            'badge' => $badge->uuid, 'students' => [$one->uuid, $two->uuid, $cub->uuid], 'approve' => true, 'date_awarded' => '2026-05-05',
+        ])->assertOk();
+
+        $response->assertJsonPath('counts.generated', 2)->assertJsonPath('counts.failed', 1);
+        $this->assertSame(2, Certificate::query()->count());
+        $this->assertSame(2, BadgeRequest::query()->where('status', 'generated')->count());
+        $this->assertStringContainsString('is for Scout scouts', collect($response->json('rows'))->firstWhere('status', 'failed')['message']);
+
+        $again = $this->actingAs($leader)->postJson('/badge-requests/bulk', ['badge' => $badge->uuid, 'students' => [$one->uuid], 'approve' => false])->assertOk();
+        $again->assertJsonPath('counts.failed', 1);
+    }
+
+    public function test_bulk_requests_without_approval_only_wait_for_a_decision_and_need_a_leader(): void
+    {
+        $leader = $this->leader();
+        $badge = $this->badge();
+        $student = Student::factory()->section(ScoutSection::Scout)->create();
+        Group::factory()->ledBy($leader)->withMembers($student)->create();
+
+        $this->actingAs($this->parentOf($student))->postJson('/badge-requests/bulk', ['badge' => $badge->uuid, 'students' => [$student->uuid]])->assertForbidden();
+        $this->actingAs($leader)->postJson('/badge-requests/bulk', ['badge' => $badge->uuid, 'students' => [$student->uuid], 'approve' => false])->assertOk()->assertJsonPath('counts.requested', 1);
+        $this->assertSame('requested', BadgeRequest::query()->firstOrFail()->status->value);
+        $this->actingAs($leader)->postJson('/badge-requests/bulk', ['badge' => $badge->uuid, 'students' => [$student->uuid], 'approve' => true])->assertUnprocessable();
+    }
+
+    public function test_selected_badge_requests_can_be_approved_together(): void
+    {
+        $leader = $this->leader();
+        $badge = $this->badge();
+        $mine = Student::factory()->create();
+        $other = Student::factory()->create();
+        Group::factory()->ledBy($leader)->withMembers($mine)->create();
+        $first = app(CertificateService::class)->requestBadge($mine, $badge, $this->admin());
+        $second = app(CertificateService::class)->requestBadge($other, $badge, $this->admin());
+
+        $this->actingAs($leader)->post('/badge-requests/approve-selected', ['requests' => [$first->uuid, $second->uuid]])
+            ->assertSessionHas('success', '1 badge request(s) approved. 1 skipped (already decided or outside your groups).');
+
+        $this->assertSame('approved', $first->fresh()->status->value);
+        $this->assertSame('requested', $second->fresh()->status->value);
+        $this->actingAs($leader)->post('/badge-requests/approve-selected', [])->assertSessionHasErrors('requests');
     }
 
     public function test_leadership_is_managed_by_scoped_staff_and_viewed_by_families(): void
