@@ -96,6 +96,31 @@ class AnnualFeeService
     }
 
     /**
+     * The annual fee is a yearly subscription: every year every active scout is invoiced again. Invoices people already
+     * have for the year are skipped, so this can be repeated safely (for example after new scouts join).
+     *
+     * @return array{created: int, skipped: int}
+     */
+    public function generateForEveryone(AnnualFeeYear $year, User $actor, bool $includeLeaders = false): array
+    {
+        $people = $this->invoicePeople($year)
+            ->filter(fn (array $p) => ! $p['invoiced'] && ($includeLeaders || $p['type'] === PersonType::Student))
+            ->map(fn (array $p) => ['type' => $p['type']->value, 'id' => $p['id'], 'section' => $p['section']])
+            ->values()
+            ->all();
+
+        return $this->generate($year, $people, $actor);
+    }
+
+    /**
+     * Active scouts that have no invoice for the year yet.
+     */
+    public function scoutsWithoutInvoice(AnnualFeeYear $year): int
+    {
+        return $this->invoicePeople($year)->filter(fn (array $p) => $p['type'] === PersonType::Student && ! $p['invoiced'])->count();
+    }
+
+    /**
      * Match the rows of an Excel/CSV list to people by National ID (when the sheet has that column) or by name, so a
      * ready-made list can be turned into invoices after a preview.
      *

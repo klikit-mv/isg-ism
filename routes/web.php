@@ -147,6 +147,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::post('/annual-fees/years', [AnnualFeeController::class, 'storeYear'])->name('annual-fees.years.store');
     Route::post('/annual-fees/years/{year}/status', [AnnualFeeController::class, 'yearStatus'])->name('annual-fees.years.status');
     Route::get('/annual-fees/years/{year}/generate', [AnnualFeeController::class, 'generateForm'])->name('annual-fees.generate');
+    Route::post('/annual-fees/years/{year}/generate-all', [AnnualFeeController::class, 'generateAll'])->name('annual-fees.generate-all');
     Route::post('/annual-fees/years/{year}/import-preview', [AnnualFeeController::class, 'importPreview'])->name('annual-fees.import-preview');
     Route::post('/annual-fees/years/{year}/generate', [AnnualFeeController::class, 'generate'])->name('annual-fees.generate.store');
     Route::get('/payments', [PaymentController::class, 'index'])->name('payments.index');

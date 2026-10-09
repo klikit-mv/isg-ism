@@ -72,6 +72,35 @@ class AnnualFeeTest extends TestCase
         $this->actingAs($this->admin())->post("/annual-fees/years/{$year->uuid}/import-preview", ['file' => UploadedFile::fake()->create('x.exe', 5)])->assertSessionHasErrors('file');
     }
 
+    public function test_each_year_every_active_scout_can_be_invoiced_again_in_one_step(): void
+    {
+        $admin = $this->admin();
+        $active = Student::factory()->count(3)->create();
+        Student::factory()->inactive()->create();
+        $leader = $this->leader();
+        $this->actingAs($admin)->post('/annual-fees/years', ['year' => 2026, 'amount' => '100', 'invoice_everyone' => '1'])
+            ->assertSessionHas('success', 'Fee year 2026 was created. 3 active scout(s) were invoiced.');
+        $this->assertSame(3, AnnualFee::query()->whereNotNull('student_id')->count());
+        $this->assertSame(0, AnnualFee::query()->whereNotNull('user_id')->count());
+
+        $next = Student::factory()->create();
+        $this->actingAs($admin)->post('/annual-fees/years', ['year' => 2027, 'amount' => '120', 'invoice_everyone' => '1'])
+            ->assertSessionHas('success', 'Fee year 2027 was created. 4 active scout(s) were invoiced.');
+
+        $this->assertSame(4, AnnualFee::query()->whereHas('feeYear', fn ($q) => $q->where('year', 2027))->count());
+        $this->assertSame(3, AnnualFee::query()->whereHas('feeYear', fn ($q) => $q->where('year', 2026))->count());
+        $this->assertSame('120.00', AnnualFee::query()->where('student_id', $next->id)->whereHas('feeYear', fn ($q) => $q->where('year', 2027))->firstOrFail()->amount);
+
+        $late = Student::factory()->create();
+        $year = AnnualFeeYear::query()->where('year', 2027)->firstOrFail();
+        $this->actingAs($admin)->get('/annual-fees/years')->assertOk()->assertSee('Invoice all scouts');
+        $this->actingAs($admin)->post("/annual-fees/years/{$year->uuid}/generate-all", ['include_leaders' => '1'])
+            ->assertSessionHas('success', fn ($m) => str_contains($m, 'invoice(s) created for 2027'));
+        $this->assertTrue(AnnualFee::query()->where('student_id', $late->id)->whereHas('feeYear', fn ($q) => $q->where('year', 2027))->exists());
+        $this->assertTrue(AnnualFee::query()->where('user_id', $leader->id)->whereHas('feeYear', fn ($q) => $q->where('year', 2027))->exists());
+        $this->actingAs($this->parentOf($late))->post("/annual-fees/years/{$year->uuid}/generate-all")->assertForbidden();
+    }
+
     public function test_back_dated_section_is_stored_without_changing_the_scout(): void
     {
         $year = AnnualFeeYear::query()->create(['year' => 2025, 'amount' => '80.00', 'status' => 'Active']);

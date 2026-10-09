@@ -60,7 +60,7 @@ class AnnualFeeController extends Controller
         $this->authorizeFees($request);
 
         return view('finance.annual-fee-years', [
-            'years' => AnnualFeeYear::query()->withCount('fees')->orderByDesc('year')->get(),
+            'years' => AnnualFeeYear::query()->withCount('fees')->orderByDesc('year')->get()->each(fn (AnnualFeeYear $y) => $y->setAttribute('scouts_without_invoice', $y->status === RecordStatus::Active ? $this->fees->scoutsWithoutInvoice($y) : 0)),
             'suggestedYear' => $this->fees->suggestedYear(),
         ]);
     }
@@ -74,9 +74,15 @@ class AnnualFeeController extends Controller
             'amount' => ['required', 'numeric', 'min:0', 'max:9999999'],
         ]);
 
-        $this->fees->createYear((int) $data['year'], Money::normalize($data['amount']), $request->user());
+        $year = $this->fees->createYear((int) $data['year'], Money::normalize($data['amount']), $request->user());
+        $message = "Fee year {$data['year']} was created.";
 
-        return redirect()->route('annual-fees.years')->with('success', "Fee year {$data['year']} was created.");
+        if ($request->boolean('invoice_everyone') && $request->user()->hasPermission(Permission::ManageFees)) {
+            $result = $this->fees->generateForEveryone($year, $request->user());
+            $message .= " {$result['created']} active scout(s) were invoiced.";
+        }
+
+        return redirect()->route('annual-fees.years')->with('success', $message);
     }
 
     public function yearStatus(Request $request, AnnualFeeYear $year): RedirectResponse
@@ -119,6 +125,14 @@ class AnnualFeeController extends Controller
         $result = $this->fees->generate($year, $people, $request->user());
 
         return redirect()->route('annual-fees.years')->with('success', "{$result['created']} invoice(s) created, {$result['skipped']} skipped (already invoiced).");
+    }
+
+    public function generateAll(Request $request, AnnualFeeYear $year): RedirectResponse
+    {
+        $this->authorizeFees($request);
+        $result = $this->fees->generateForEveryone($year, $request->user(), $request->boolean('include_leaders'));
+
+        return redirect()->route('annual-fees.years')->with('success', "{$result['created']} invoice(s) created for {$year->year}, {$result['skipped']} skipped (already invoiced).");
     }
 
     /**
