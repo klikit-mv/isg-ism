@@ -80,6 +80,11 @@ class LeadershipController extends Controller
     public function generate(Request $request, LeadershipRecord $leadership, CertificateGenerationService $generator): RedirectResponse
     {
         $this->authorize('update', $leadership);
+
+        if ($leadership->missingForCertificate() !== []) {
+            return redirect()->route('leadership.edit', $leadership)->with('error', 'Enter '.implode(', ', $leadership->missingForCertificate()).' before generating the certificate.');
+        }
+
         $data = $request->validate(['template' => ['nullable', 'uuid']]);
         $template = filled($data['template'] ?? null)
             ? CertificateTemplate::query()->where('uuid', $data['template'])->where('type', CertificateType::Leadership->value)->where('active', true)->first()
@@ -101,6 +106,7 @@ class LeadershipController extends Controller
     {
         return $request->validate([
             'student_id' => ['required', 'integer', 'exists:students,id'],
+            'post' => ['required', 'string', 'max:255'],
             'patrol_or_six' => ['required', 'string', 'max:255'],
             'troop_or_group' => ['nullable', 'string', 'max:255'],
             'start_date' => ['required', 'date'],

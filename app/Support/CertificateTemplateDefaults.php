@@ -32,9 +32,10 @@ final class CertificateTemplateDefaults
                 'Certificate of Leadership',
                 '<p class="lead">This is to certify that</p>
                 <p class="name">{{name}}</p>
-                <p class="lead">served as leader of</p>
-                <p class="title">{{patrol_or_six}}</p>
-                <p class="lead">in {{troop_or_group}} from {{start_date}}</p>',
+                <p class="lead">is hereby appointed to function as</p>
+                <p class="title">{{post}}</p>
+                <p class="lead">of {{patrol_or_six}} in {{troop_or_group}}</p>
+                <p class="lead">from {{start_date}}</p>',
             ],
         };
 

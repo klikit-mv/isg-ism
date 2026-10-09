@@ -25,6 +25,7 @@
     <div class="card max-w-2xl">
         <dl class="grid gap-4 text-sm sm:grid-cols-2">
             <div><dt class="text-gray-500">Scout</dt><dd>{{ $record->student?->name }}</dd></div>
+            <div><dt class="text-gray-500">Post</dt><dd>{{ $record->post ?: '—' }}</dd></div>
             <div><dt class="text-gray-500">Patrol or six</dt><dd>{{ $record->patrol_or_six }}</dd></div>
             <div><dt class="text-gray-500">Troop or group</dt><dd>{{ $record->troop_or_group }}</dd></div>
             <div><dt class="text-gray-500">Start</dt><dd>{{ scout_long_date($record->start_date) }}</dd></div>
@@ -35,5 +36,8 @@
                 @else — @endif
             </dd></div>
         </dl>
+        @if ($record->missingForCertificate() !== [])
+            <p class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:bg-amber-900/30 dark:text-amber-200">Enter {{ implode(', ', $record->missingForCertificate()) }} before a certificate can be generated. <a class="link" href="{{ route('leadership.edit', $record) }}">Edit the record</a></p>
+        @endif
     </div>
 </x-app-layout>

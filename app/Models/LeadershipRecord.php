@@ -11,13 +11,28 @@ class LeadershipRecord extends Model
     use HasUuid;
 
     protected $fillable = [
-        'student_id', 'patrol_or_six', 'troop_or_group', 'start_date', 'end_date',
+        'student_id', 'post', 'patrol_or_six', 'troop_or_group', 'start_date', 'end_date',
         'certificate_id', 'created_by', 'updated_by',
     ];
 
     protected function casts(): array
     {
         return ['start_date' => 'date', 'end_date' => 'date'];
+    }
+
+    /**
+     * What must still be filled in before a certificate can be generated.
+     *
+     * @return list<string>
+     */
+    public function missingForCertificate(): array
+    {
+        return array_keys(array_filter([
+            'Scout' => $this->student_id === null,
+            'Post' => blank($this->post),
+            'Patrol or six' => blank($this->patrol_or_six),
+            'Start date' => $this->start_date === null,
+        ]));
     }
 
     /**

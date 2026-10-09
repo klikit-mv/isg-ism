@@ -1,6 +1,6 @@
 @php $editing = $record->exists; @endphp
 <x-app-layout :title="$editing ? 'Edit leadership record' : 'Add leadership record'">
-    <x-page-header :title="$editing ? 'Edit leadership record' : 'Add leadership record'" description="The end date is kept for the record but never printed on the certificate.">
+    <x-page-header :title="$editing ? 'Edit leadership record' : 'Add leadership record'" description="Scout, post, patrol and start date are printed on the certificate, so all four are required. The end date is kept for the record but never printed.">
         <x-slot:actions><a href="{{ $editing ? route('leadership.show', $record) : route('leadership.index') }}" class="btn-secondary">Cancel</a></x-slot:actions>
     </x-page-header>
 
@@ -8,6 +8,7 @@
         @csrf
         @if ($editing) @method('PUT') @endif
         <x-form.select name="student_id" label="Scout" :options="$students" :value="$record->student_id" placeholder="Choose a scout" required/>
+        <x-form.input name="post" label="Post" :value="$record->post" placeholder="Patrol Leader, Second, Troop Leader…" required/>
         <x-form.input name="patrol_or_six" label="Patrol or six" :value="$record->patrol_or_six" required/>
         <x-form.input name="troop_or_group" label="Troop or group" :value="$record->troop_or_group"/>
         <div class="grid gap-4 sm:grid-cols-2">

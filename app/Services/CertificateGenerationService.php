@@ -151,7 +151,8 @@ class CertificateGenerationService
         ]);
 
         $values = $this->valuesFor($sample);
-        $values['patrol_or_six'] = 'Eagle Patrol';
+        $values['post'] = 'Patrol Leader';
+        $values['patrol_or_six'] = $values['patrol'] = 'Eagle Patrol';
         $values['troop_or_group'] = (string) config('scout.organisation');
         $values['start_date'] = scout_long_date(now());
 
@@ -174,7 +175,9 @@ class CertificateGenerationService
             'date' => scout_long_date($certificate->date_awarded),
             'id_card_no' => (string) $certificate->id_card_no,
             'title' => (string) $certificate->title,
+            'post' => (string) $record?->post,
             'patrol_or_six' => (string) $record?->patrol_or_six,
+            'patrol' => (string) $record?->patrol_or_six,
             'troop_or_group' => (string) $record?->troop_or_group,
             'start_date' => $record ? scout_long_date($record->start_date) : '',
             'organisation' => (string) config('scout.organisation'),
@@ -248,7 +251,9 @@ class CertificateGenerationService
 
             foreach ($values as $key => $value) {
                 if (! in_array($key, self::RAW_PLACEHOLDERS, true)) {
-                    $text['{{'.$key.'}}'] = $value;
+                    foreach ($this->slidePlaceholders($key, $certificate->type === CertificateType::Leadership) as $placeholder) {
+                        $text[$placeholder] = $value;
+                    }
                 }
             }
 
@@ -262,6 +267,31 @@ class CertificateGenerationService
         }
 
         return $this->renderer->render($this->fillTemplate($this->htmlFor($template, $certificate->type), $values));
+    }
+
+    /**
+     * The ways a value can be written in a Slides template: {{name}}, or the angle-bracket style many templates use
+     * (<Name>, <name>, <post>, <start date>…).
+     *
+     * @return list<string>
+     */
+    private function slidePlaceholders(string $key, bool $leadership): array
+    {
+        $words = str_replace('_', ' ', $key);
+        $variants = [$key, $words, str_replace(' ', '', $words), ucfirst($key), ucfirst($words), ucwords($words), strtoupper($words)];
+
+        if ($leadership && $key === 'start_date') {
+            $variants[] = 'date';
+            $variants[] = 'Date';
+        }
+
+        $placeholders = ['{{'.$key.'}}'];
+
+        foreach (array_unique($variants) as $variant) {
+            $placeholders[] = '<'.$variant.'>';
+        }
+
+        return $placeholders;
     }
 
     private function htmlFor(?CertificateTemplate $template, CertificateType $type): string

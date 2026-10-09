@@ -65,6 +65,7 @@ class LeadershipRecordService
     {
         return [
             'student_id' => $data['student_id'],
+            'post' => $data['post'],
             'patrol_or_six' => $data['patrol_or_six'],
             'troop_or_group' => filled($data['troop_or_group'] ?? null) ? $data['troop_or_group'] : config('scout.organisation'),
             'start_date' => $data['start_date'],

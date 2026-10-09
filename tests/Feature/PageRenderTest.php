@@ -99,7 +99,7 @@ class PageRenderTest extends TestCase
         $certificate = app(CertificateGenerationService::class)->generateGeneralCertificate($student, 'Award', '2026-01-01', $template, $admin);
         $badge = Badge::query()->create(['badge_id' => 'BAAAAA', 'name' => 'Camping', 'code' => 'CAMP', 'section' => 'Scout']);
         $request = app(CertificateService::class)->requestBadge($student, $badge, $admin);
-        $record = LeadershipRecord::query()->create(['student_id' => $student->id, 'patrol_or_six' => 'Eagle', 'troop_or_group' => 'Group', 'start_date' => '2026-01-01']);
+        $record = LeadershipRecord::query()->create(['student_id' => $student->id, 'post' => 'Leader', 'patrol_or_six' => 'Eagle', 'troop_or_group' => 'Group', 'start_date' => '2026-01-01']);
         Activity::factory()->forAll()->create(['certificate_template_id' => $template->id]);
 
         $pages = [

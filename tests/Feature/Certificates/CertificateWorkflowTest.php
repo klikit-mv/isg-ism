@@ -14,6 +14,7 @@ use App\Models\LeadershipRecord;
 use App\Models\Student;
 use App\Services\CertificateGenerationService;
 use App\Services\CertificateService;
+use App\Services\Google\GoogleSlideExporter;
 use App\Services\GoogleDriveCertificateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
@@ -224,7 +225,7 @@ class CertificateWorkflowTest extends TestCase
         $student = Student::factory()->create();
 
         $this->actingAs($admin)->post('/leadership', [
-            'student_id' => $student->id, 'patrol_or_six' => 'Eagle Patrol', 'start_date' => '2026-01-10', 'end_date' => '2026-05-20',
+            'student_id' => $student->id, 'post' => 'Patrol Leader', 'patrol_or_six' => 'Eagle Patrol', 'start_date' => '2026-01-10', 'end_date' => '2026-05-20',
         ])->assertSessionHas('success');
         $record = LeadershipRecord::query()->firstOrFail();
         $this->assertSame(config('scout.organisation'), $record->troop_or_group);
@@ -237,7 +238,7 @@ class CertificateWorkflowTest extends TestCase
         $this->assertStringContainsString('10 January 2026', $html);
         $this->assertStringNotContainsString('20 May 2026', $html);
 
-        $this->actingAs($admin)->put("/leadership/{$record->uuid}", ['student_id' => $student->id, 'patrol_or_six' => 'Hawk Patrol', 'start_date' => '2026-02-01']);
+        $this->actingAs($admin)->put("/leadership/{$record->uuid}", ['student_id' => $student->id, 'post' => 'Second', 'patrol_or_six' => 'Hawk Patrol', 'start_date' => '2026-02-01']);
         $this->actingAs($admin)->post("/leadership/{$record->uuid}/generate");
 
         $this->assertSame(1, Certificate::query()->count());
@@ -251,7 +252,7 @@ class CertificateWorkflowTest extends TestCase
         $first = $this->template(CertificateType::Leadership, ['name' => 'Classic']);
         $second = $this->template(CertificateType::Leadership, ['name' => 'Modern']);
         $general = $this->template(CertificateType::General, ['name' => 'Other kind']);
-        $record = LeadershipRecord::query()->create(['student_id' => Student::factory()->create()->id, 'patrol_or_six' => 'Eagle Patrol', 'troop_or_group' => 'Group', 'start_date' => '2026-01-10']);
+        $record = LeadershipRecord::query()->create(['student_id' => Student::factory()->create()->id, 'post' => 'Patrol Leader', 'patrol_or_six' => 'Eagle Patrol', 'troop_or_group' => 'Group', 'start_date' => '2026-01-10']);
 
         $this->actingAs($admin)->get(route('leadership.show', $record))->assertOk()->assertSee('Classic')->assertSee('Modern')->assertDontSee('Other kind');
 
@@ -358,16 +359,58 @@ class CertificateWorkflowTest extends TestCase
         $this->actingAs($leader)->post('/badge-requests/approve-selected', [])->assertSessionHasErrors('requests');
     }
 
+    public function test_a_leadership_certificate_needs_name_post_patrol_and_start_date_first(): void
+    {
+        $admin = $this->admin();
+        $this->template(CertificateType::Leadership);
+        $student = Student::factory()->create(['name' => 'Aisha Ahmed']);
+
+        $this->actingAs($admin)->post('/leadership', ['student_id' => $student->id, 'patrol_or_six' => 'Eagle', 'start_date' => '2026-01-01'])->assertSessionHasErrors('post');
+        $this->actingAs($admin)->post('/leadership', ['student_id' => $student->id, 'post' => 'Patrol Leader', 'start_date' => '2026-01-01'])->assertSessionHasErrors('patrol_or_six');
+        $this->actingAs($admin)->post('/leadership', ['post' => 'Patrol Leader', 'patrol_or_six' => 'Eagle', 'start_date' => '2026-01-01'])->assertSessionHasErrors('student_id');
+        $this->actingAs($admin)->post('/leadership', ['student_id' => $student->id, 'post' => 'Patrol Leader', 'patrol_or_six' => 'Eagle'])->assertSessionHasErrors('start_date');
+
+        $old = LeadershipRecord::query()->create(['student_id' => $student->id, 'patrol_or_six' => 'Eagle', 'troop_or_group' => 'Group', 'start_date' => '2026-01-10']);
+        $this->actingAs($admin)->post("/leadership/{$old->uuid}/generate")->assertRedirect(route('leadership.edit', $old))->assertSessionHas('error');
+        $this->assertNull($old->fresh()->certificate);
+    }
+
+    public function test_the_post_is_printed_and_slides_templates_can_use_angle_bracket_placeholders(): void
+    {
+        $student = Student::factory()->create(['name' => 'Aisha Ahmed']);
+        $record = LeadershipRecord::query()->create(['student_id' => $student->id, 'post' => 'Patrol Leader', 'patrol_or_six' => 'Eagle Patrol', 'troop_or_group' => 'Group', 'start_date' => '2026-01-10']);
+        $this->template(CertificateType::Leadership);
+        $certificate = app(CertificateGenerationService::class)->generateLeadershipCertificate($record, $this->admin());
+
+        $this->assertStringContainsString('Patrol Leader', app(CertificateGenerationService::class)->previewHtml($certificate));
+
+        $capture = [];
+        $slides = \Mockery::mock(GoogleSlideExporter::class);
+        $slides->shouldReceive('exportPdf')->once()->andReturnUsing(function ($id, $text) use (&$capture) {
+            $capture = $text;
+
+            return "%PDF-1.4\n";
+        });
+        $this->app->instance(GoogleSlideExporter::class, $slides);
+        $template = $this->template(CertificateType::Leadership, ['name' => 'From Slides', 'google_slide_id' => 'realSlideId123']);
+        $certificate->update(['template_id' => $template->id]);
+        app(CertificateGenerationService::class)->regenerate($certificate->fresh(), $this->admin());
+
+        foreach (['<Name>' => 'Aisha Ahmed', '<post>' => 'Patrol Leader', '<patrol>' => 'Eagle Patrol', '<start date>' => '10 January 2026', '{{post}}' => 'Patrol Leader'] as $placeholder => $value) {
+            $this->assertSame($value, $capture[$placeholder] ?? null, $placeholder);
+        }
+    }
+
     public function test_leadership_is_managed_by_scoped_staff_and_viewed_by_families(): void
     {
         $leader = $this->leader();
         $mine = Student::factory()->create();
         $other = Student::factory()->create();
         Group::factory()->ledBy($leader)->withMembers($mine)->create();
-        $record = LeadershipRecord::query()->create(['student_id' => $mine->id, 'patrol_or_six' => 'Lion Six', 'troop_or_group' => 'Group', 'start_date' => '2026-01-01']);
+        $record = LeadershipRecord::query()->create(['student_id' => $mine->id, 'post' => 'Patrol Leader', 'patrol_or_six' => 'Lion Six', 'troop_or_group' => 'Group', 'start_date' => '2026-01-01']);
 
-        $this->actingAs($leader)->post('/leadership', ['student_id' => $other->id, 'patrol_or_six' => 'X', 'start_date' => '2026-01-01'])->assertForbidden();
-        $this->actingAs($leader)->put("/leadership/{$record->uuid}", ['student_id' => $mine->id, 'patrol_or_six' => 'Lion Six', 'start_date' => '2026-01-01', 'end_date' => '2025-01-01'])->assertSessionHasErrors('end_date');
+        $this->actingAs($leader)->post('/leadership', ['student_id' => $other->id, 'post' => 'Y', 'patrol_or_six' => 'X', 'start_date' => '2026-01-01'])->assertForbidden();
+        $this->actingAs($leader)->put("/leadership/{$record->uuid}", ['student_id' => $mine->id, 'post' => 'Leader', 'patrol_or_six' => 'Lion Six', 'start_date' => '2026-01-01', 'end_date' => '2025-01-01'])->assertSessionHasErrors('end_date');
 
         $parent = $this->parentOf($mine);
         $this->actingAs($parent)->get('/leadership')->assertOk()->assertSee('Lion Six');

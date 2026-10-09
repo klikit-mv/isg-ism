@@ -14,10 +14,11 @@
     @if ($records->isEmpty())
         <x-empty message="No records."/>
     @else
-        <x-table :headers="['Scout', 'Patrol or six', 'Troop or group', 'Start', 'End', 'Certificate', '']">
+        <x-table :headers="['Scout', 'Post', 'Patrol or six', 'Troop or group', 'Start', 'End', 'Certificate', '']">
             @foreach ($records as $record)
                 <tr>
                     <td data-label="Scout" class="font-medium">{{ $record->student?->name }}</td>
+                    <td data-label="Post">{{ $record->post ?: '—' }}</td>
                     <td data-label="Patrol or six">{{ $record->patrol_or_six }}</td>
                     <td data-label="Troop or group">{{ $record->troop_or_group }}</td>
                     <td data-label="Start">{{ scout_date($record->start_date) }}</td>
