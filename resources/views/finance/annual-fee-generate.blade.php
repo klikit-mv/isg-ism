@@ -6,6 +6,19 @@
         </x-slot:actions>
     </x-page-header>
 
+    <form method="POST" action="{{ route('annual-fees.import-preview', $year) }}" enctype="multipart/form-data" class="card mb-4 space-y-3 !p-4">
+        @csrf
+        <div>
+            <h2 class="font-semibold">Bulk generate from an Excel list</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Upload your list (.xlsx, .xls or .csv) with a heading row and a <strong>Name</strong> column. A <strong>National ID</strong> column (more exact) and a <strong>Section</strong> column are optional. You see a preview before anything is created.</p>
+        </div>
+        <div class="flex flex-wrap items-end gap-3">
+            <div class="min-w-0 flex-1"><x-form.input name="file" label="List file" type="file" accept=".xlsx,.xls,.csv,.txt" required/></div>
+            <label class="inline-flex items-center gap-2 pb-2 text-sm text-gray-600 dark:text-gray-300"><input type="checkbox" name="inactive" value="1" class="rounded border-gray-300 text-navy-600" @checked(request()->boolean('inactive'))> Include inactive scouts</label>
+            <button class="btn-primary">Preview</button>
+        </div>
+    </form>
+
     <form method="POST" action="{{ route('annual-fees.generate.store', $year) }}"
           x-data="{ search: '', section: '', matches(row) { return (! this.search || row.dataset.name.includes(this.search.toLowerCase())) && (! this.section || row.dataset.section === this.section); } }">
         @csrf

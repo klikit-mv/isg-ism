@@ -15,7 +15,9 @@ use App\Support\Money;
 use App\Support\Pagination;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AnnualFeeController extends Controller
@@ -117,6 +119,30 @@ class AnnualFeeController extends Controller
         $result = $this->fees->generate($year, $people, $request->user());
 
         return redirect()->route('annual-fees.years')->with('success', "{$result['created']} invoice(s) created, {$result['skipped']} skipped (already invoiced).");
+    }
+
+    /**
+     * Read an Excel/CSV list, match its names to people and show what would be invoiced. Nothing is saved until the
+     * preview is confirmed (it posts to the normal generate step).
+     */
+    public function importPreview(Request $request, AnnualFeeYear $year): View
+    {
+        $this->authorizeFees($request);
+        $request->validate(['file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:5120'], 'inactive' => ['nullable', 'boolean']]);
+
+        $file = $request->file('file');
+        $copy = sys_get_temp_dir().'/'.Str::uuid().'.'.(strtolower($file->getClientOriginalExtension()) ?: 'xlsx');
+        copy($file->getRealPath() ?: $file->getPathname(), $copy);
+
+        try {
+            $match = $this->fees->matchSpreadsheet($year, $copy, $request->boolean('inactive'));
+        } catch (\Throwable) {
+            throw ValidationException::withMessages(['file' => 'That file could not be read. Use an .xlsx, .xls or .csv file with a heading row.']);
+        } finally {
+            @unlink($copy);
+        }
+
+        return view('finance.annual-fee-import-preview', ['year' => $year, 'match' => $match, 'fileName' => $file->getClientOriginalName()]);
     }
 
     private function authorizeFees(Request $request): void

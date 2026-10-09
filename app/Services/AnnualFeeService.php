@@ -13,6 +13,7 @@ use App\Models\AnnualFee;
 use App\Models\AnnualFeeYear;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\Import\SpreadsheetReader;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -92,6 +93,91 @@ class AnnualFeeService
             ]);
 
         return $students->concat($leaders)->values();
+    }
+
+    /**
+     * Match the rows of an Excel/CSV list to people by National ID (when the sheet has that column) or by name, so a
+     * ready-made list can be turned into invoices after a preview.
+     *
+     * @return array{rows: int, matched: list<array<string, mixed>>, invoiced: list<array<string, mixed>>, problems: list<array{row: int, name: string, reason: string}>, columns: array{name: ?string, national_id: ?string, section: ?string}}
+     */
+    public function matchSpreadsheet(AnnualFeeYear $year, string $path, bool $includeInactive = false): array
+    {
+        $sheets = SpreadsheetReader::read($path);
+        $sheet = reset($sheets) ?: ['headers' => [], 'rows' => []];
+        $headers = $sheet['headers'];
+
+        $pick = fn (array $names) => collect($names)->first(fn (string $n) => in_array($n, $headers, true));
+        $nameColumn = $pick(['name', 'fullname', 'studentname', 'scoutname', 'membername', 'student', 'scout', 'member']) ?? ($headers[0] ?? null);
+        $idColumn = $pick(['nationalid', 'idcardno', 'idcard', 'idno', 'nid', 'id']);
+        $sectionColumn = $pick(['section']);
+
+        $people = $this->invoicePeople($year, $includeInactive);
+        $byId = $people->filter(fn (array $p) => filled($p['national_id']))->groupBy(fn (array $p) => strtoupper(trim((string) $p['national_id'])));
+        $byName = $people->groupBy(fn (array $p) => $this->normalizeName($p['name']));
+
+        $matched = [];
+        $invoiced = [];
+        $problems = [];
+        $seen = [];
+
+        foreach ($sheet['rows'] as $index => $row) {
+            $number = $index + 2;
+            $name = trim((string) ($row[$nameColumn] ?? ''));
+            $id = $idColumn ? strtoupper(trim((string) ($row[$idColumn] ?? ''))) : '';
+
+            if ($name === '' && $id === '') {
+                continue;
+            }
+
+            $candidates = $id !== '' ? ($byId->get($id) ?? collect()) : collect();
+
+            if ($candidates->isEmpty() && $name !== '') {
+                $candidates = $byName->get($this->normalizeName($name)) ?? collect();
+            }
+
+            $label = $name !== '' ? $name : $id;
+
+            if ($candidates->isEmpty()) {
+                $problems[] = ['row' => $number, 'name' => $label, 'reason' => $includeInactive ? 'No scout or leader with this name.' : 'No active scout or leader with this name.'];
+
+                continue;
+            }
+
+            if ($candidates->count() > 1) {
+                $problems[] = ['row' => $number, 'name' => $label, 'reason' => 'More than one person has this name. Add a National ID column to the list.'];
+
+                continue;
+            }
+
+            $person = $candidates->first();
+
+            if (isset($seen[$person['key']])) {
+                $problems[] = ['row' => $number, 'name' => $label, 'reason' => 'Listed more than once; counted once.'];
+
+                continue;
+            }
+
+            $seen[$person['key']] = true;
+            $person['file_name'] = $name;
+            $person['row'] = $number;
+            $person['file_section'] = $sectionColumn ? (ScoutSection::tryFrom(trim((string) ($row[$sectionColumn] ?? '')))?->value) : null;
+
+            $person['invoiced'] ? $invoiced[] = $person : $matched[] = $person;
+        }
+
+        return [
+            'rows' => count($sheet['rows']),
+            'matched' => $matched,
+            'invoiced' => $invoiced,
+            'problems' => $problems,
+            'columns' => ['name' => $nameColumn, 'national_id' => $idColumn, 'section' => $sectionColumn],
+        ];
+    }
+
+    private function normalizeName(string $name): string
+    {
+        return trim((string) preg_replace('/\s+/', ' ', (string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', mb_strtolower($name))));
     }
 
     /**

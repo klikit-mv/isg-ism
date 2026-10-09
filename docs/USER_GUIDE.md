@@ -35,7 +35,7 @@ Your details, attendance and fees, plus certificates, badge requests and the sho
 
 - **Bank** (admins and leaders): set up the group's single bank account with the money already in it, then record **deposits** (amount, date, collected from, deposit slip attached) and **spending** (amount, requested by, purpose, optional receipt). Spending is deducted from the balance and cannot exceed it. Every online payment a leader verifies is added to its balance automatically, shown in its own "Online payments (verified)" area, separate from deposit slips (it counts from the date you set). Only admins can delete an entry. Slips and receipts are filed in the Google Drive payments folder when it is set.
 
-Leaders with extra permissions also see: **Verification** (approve or reject online payments; rejecting needs a reason), shop item management, delivery (**Ready** / **Deliver**), and annual fee years (**Generate invoices**).
+Leaders with extra permissions also see: **Verification** (approve or reject online payments; rejecting needs a reason), shop item management, delivery (**Ready** / **Deliver**), and annual fee years (**Generate invoices**, including **Bulk generate from an Excel list**: upload a list with a Name column, optionally National ID and Section, check the preview, then generate).
 
 ## Admins (Administration)
 
