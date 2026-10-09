@@ -275,6 +275,31 @@ class CertificateWorkflowTest extends TestCase
         $this->assertStringContainsString('<select', $short);
     }
 
+    public function test_the_badge_request_page_only_offers_badges_of_the_chosen_section(): void
+    {
+        $admin = $this->admin();
+        $this->badge(['name' => 'Cub Camping', 'section' => 'Cub Scout']);
+        $this->badge(['name' => 'Scout Knots', 'section' => 'Scout']);
+        $this->badge(['name' => 'Any Section Service', 'section' => null]);
+
+        $response = $this->actingAs($admin)->get('/badge-requests/create?section=Cub+Scout')->assertOk();
+        $response->assertSee('Cub Camping')->assertSee('Any Section Service')->assertDontSee('Scout Knots');
+        $this->actingAs($admin)->get('/badge-requests/create')->assertSee('Cub Camping')->assertSee('Scout Knots');
+    }
+
+    public function test_inactive_templates_are_not_offered_in_dropdowns(): void
+    {
+        $admin = $this->admin();
+        $this->template(CertificateType::Badge, ['name' => 'Live badge layout']);
+        $this->template(CertificateType::Badge, ['name' => 'Retired badge layout', 'active' => false]);
+        $this->template(CertificateType::General, ['name' => 'Live general layout']);
+        $this->template(CertificateType::General, ['name' => 'Retired general layout', 'active' => false]);
+
+        $this->actingAs($admin)->get('/badges')->assertOk()->assertSee('Live badge layout')->assertDontSee('Retired badge layout');
+        $this->actingAs($admin)->get('/activities')->assertOk()->assertSee('Live general layout')->assertDontSee('Retired general layout');
+        $this->actingAs($admin)->get('/certificates/create')->assertOk()->assertSee('Live general layout')->assertDontSee('Retired general layout');
+    }
+
     public function test_leadership_is_managed_by_scoped_staff_and_viewed_by_families(): void
     {
         $leader = $this->leader();

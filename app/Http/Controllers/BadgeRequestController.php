@@ -36,7 +36,9 @@ class BadgeRequestController extends Controller
 
         return view('badge-requests.create', [
             'students' => $students->mapWithKeys(fn ($s) => [$s->uuid => $s->name.' ('.$s->section?->value.')'])->all(),
-            'badges' => Badge::query()->orderBy('name')->get()->mapWithKeys(fn ($b) => [$b->uuid => $b->name.($b->section ? ' — '.$b->section->value : '')])->all(),
+            'badges' => Badge::query()
+                ->when($request->query('section'), fn ($q, $section) => $q->where(fn ($w) => $w->where('section', $section)->orWhereNull('section')))
+                ->orderBy('name')->get()->mapWithKeys(fn ($b) => [$b->uuid => $b->name.($b->section ? ' — '.$b->section->value : '')])->all(),
             'selectedStudent' => $request->query('student'),
         ]);
     }

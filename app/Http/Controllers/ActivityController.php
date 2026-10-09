@@ -87,7 +87,7 @@ class ActivityController extends Controller
             'groups.*' => ['integer', 'exists:groups,id'],
             'charge_fee' => ['sometimes', 'boolean'],
             'fee_amount' => ['nullable', 'numeric', 'min:0', 'max:9999999'],
-            'certificate_template_id' => ['nullable', 'integer', Rule::exists('certificate_templates', 'id')->where('type', CertificateType::General->value)],
+            'certificate_template_id' => ['nullable', 'integer', Rule::exists('certificate_templates', 'id')->where('type', CertificateType::General->value)->where('active', true)],
         ]);
 
         $data['all_students'] = $request->boolean('all_students');
