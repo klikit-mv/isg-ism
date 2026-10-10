@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Ui;
 
+use App\Models\Badge;
 use App\Models\Student;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -61,5 +62,18 @@ class SortingTest extends TestCase
                 }
             }
         }
+    }
+
+    public function test_long_dropdowns_are_searchable_everywhere_including_the_bulk_badge_window(): void
+    {
+        $leader = $this->leader();
+        foreach (range(1, 12) as $n) {
+            Badge::query()->create(['badge_id' => "B{$n}", 'name' => "Badge {$n}", 'code' => "C{$n}", 'section' => 'Scout', 'category' => 'proficiency']);
+        }
+
+        $html = $this->actingAs($leader)->get('/badge-requests')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Type to search', $html);
+        $this->assertStringNotContainsString('<select id="bulk-badge"', $html);
     }
 }

@@ -18,7 +18,7 @@
 >
     <div x-show="show" class="fixed inset-0 bg-gray-900/60" x-on:click="show = false" x-transition.opacity></div>
 
-    <div x-show="show" x-transition class="relative mx-auto mt-10 w-full overflow-hidden rounded-xl bg-white shadow-xl dark:bg-gray-800 {{ $width }}">
+    <div x-show="show" x-transition class="relative mx-auto mt-10 w-full rounded-xl bg-white shadow-xl dark:bg-gray-800 {{ $width }}">
         @if ($title)
             <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $title }}</h2>

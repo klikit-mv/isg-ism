@@ -84,12 +84,19 @@
 
                 {{-- Step 1 --}}
                 <div x-show="step === 1" class="space-y-3">
-                    <div>
+                    <div x-data="{ open: false, q: '', get shown() { const q = this.q.trim().toLowerCase(); return q === '' ? data.badges : data.badges.filter((b) => (b.name + ' ' + (b.section || '')).toLowerCase().includes(q)); }, get label() { const b = data.badges.find((x) => x.id === badge); return b ? b.name + (b.section ? ' — ' + b.section : '') : ''; }, pick(id) { badge = id; open = false; q = ''; chooseBadge(); } }" x-on:click.outside="open = false" x-on:keydown.escape.stop="open = false">
                         <label for="bulk-badge" class="label">Badge</label>
-                        <select id="bulk-badge" class="input" x-model="badge" x-on:change="chooseBadge()">
-                            <option value="">Choose a badge</option>
-                            <template x-for="b in data.badges" :key="b.id"><option :value="b.id" x-text="b.name + (b.section ? ' — ' + b.section : '')"></option></template>
-                        </select>
+                        <div class="relative">
+                            <input type="text" id="bulk-badge" readonly class="input cursor-pointer pr-9" placeholder="Choose a badge" x-bind:value="label" x-on:click="open = ! open; if (open) $nextTick(() => $refs.find.focus())" autocomplete="off" aria-haspopup="listbox">
+                            <svg class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                        <div x-show="open" x-cloak class="mt-1 w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                            <div class="border-b border-gray-100 p-2 dark:border-gray-700"><input type="search" x-ref="find" x-model="q" class="input !py-1.5 text-sm" x-bind:placeholder="'Type to search… (' + data.badges.length + ' badges)'" autocomplete="off" x-on:keydown.enter.prevent="shown.length && pick(shown[0].id)"></div>
+                            <ul class="max-h-60 overflow-y-auto py-1 text-sm" role="listbox">
+                                <template x-for="b in shown" :key="b.id"><li><button type="button" role="option" class="block w-full px-3 py-1.5 text-left hover:bg-gray-50 dark:hover:bg-gray-700" x-bind:class="b.id === badge ? 'bg-navy-50 font-medium text-navy-800 dark:bg-navy-900/40 dark:text-navy-200' : ''" x-on:click="pick(b.id)" x-text="b.name + (b.section ? ' — ' + b.section : '')"></button></li></template>
+                                <li x-show="shown.length === 0" class="px-3 py-2 text-gray-500">No matches</li>
+                            </ul>
+                        </div>
                     </div>
                     <div x-show="badge !== ''" class="space-y-2">
                         <div class="flex flex-wrap items-center gap-2">
