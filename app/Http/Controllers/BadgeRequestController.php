@@ -26,7 +26,7 @@ class BadgeRequestController extends Controller
         $canBulk = $user->isActive() && $user->isLeader();
 
         return view('badge-requests.index', [
-            'requests' => $this->certificates->accessibleRequests($user, $request->only('status', 'q')),
+            'requests' => $this->certificates->accessibleRequests($user, $request->only('status', 'q', 'sort', 'dir')),
             'canBulk' => $canBulk,
             'bulk' => $canBulk ? [
                 'badges' => Badge::query()->orderBy('name')->get()->map(fn (Badge $b) => ['id' => $b->uuid, 'name' => $b->name, 'section' => $b->section?->value])->values()->all(),

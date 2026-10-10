@@ -14,7 +14,7 @@
     @if ($users->isEmpty())
         <x-empty message="No users match these filters."/>
     @else
-        <x-table :headers="['Name', 'National ID', 'Email', 'Roles', 'Status', '']">
+        <x-table :headers="[['label' => 'Name', 'sort' => 'name'], ['label' => 'National ID', 'sort' => 'national_id'], ['label' => 'Email', 'sort' => 'email'], 'Roles', ['label' => 'Status', 'sort' => 'status'], '']">
             @foreach ($users as $user)
                 <tr>
                     <td data-label="Name" class="font-medium">{{ $user->name }}</td>

@@ -8,6 +8,7 @@ use App\Services\LeaderScopeService;
 use App\Services\StudentPhotoService;
 use App\Services\StudentService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use App\Support\StudentRecord;
 use App\Support\StudentValidation;
 use Illuminate\Http\RedirectResponse;
@@ -31,11 +32,12 @@ class StudentController extends Controller
 
         $this->scope->constrainStudents($query, $user);
 
-        $students = $query
-            ->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [StudentStatus::Pending->value])
-            ->orderBy('name')
-            ->paginate(Pagination::MAX)
-            ->withQueryString();
+        Sort::apply($query, $request, [
+            'pending' => fn ($q, $dir) => $q->orderByRaw('CASE WHEN status = ? THEN 0 ELSE 1 END', [StudentStatus::Pending->value])->orderBy('name'),
+            'name' => 'name', 'index' => 'index_number', 'national_id' => 'national_id', 'section' => 'section', 'status' => 'status',
+        ], 'pending');
+
+        $students = $query->paginate(Pagination::MAX)->withQueryString();
 
         $pendingCount = $user->isStaff() ? Student::query()->where('status', StudentStatus::Pending->value)->count() : 0;
 

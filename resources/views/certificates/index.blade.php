@@ -63,7 +63,7 @@
             <form id="bulk-download" method="POST" action="{{ route('certificates.bulk-download') }}">@csrf</form>
             <div class="mb-2 flex justify-end"><button form="bulk-download" class="btn-secondary btn-sm">Download selected as ZIP</button></div>
         @endcan
-        <x-table :headers="['', 'Number', 'Scout', 'Certificate', 'Type', 'Awarded', 'Status', '']">
+        <x-table :headers="['', ['label' => 'Number', 'sort' => 'number'], ['label' => 'Scout', 'sort' => 'scout'], ['label' => 'Certificate', 'sort' => 'title'], ['label' => 'Type', 'sort' => 'type'], ['label' => 'Awarded', 'sort' => 'awarded'], ['label' => 'Status', 'sort' => 'status'], '']" default-sort="awarded:desc">
             @foreach ($certificates as $certificate)
                 <tr>
                     <td>@can('bulkDownload', \App\Models\Certificate::class)<input form="bulk-download" type="checkbox" name="certificates[]" value="{{ $certificate->uuid }}" class="rounded border-gray-300 text-navy-600" aria-label="Select {{ $certificate->cert_number }}">@endcan</td>

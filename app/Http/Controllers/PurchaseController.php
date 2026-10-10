@@ -7,6 +7,7 @@ use App\Models\Purchase;
 use App\Services\LeaderScopeService;
 use App\Services\PurchaseService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -34,7 +35,10 @@ class PurchaseController extends Controller
         }
 
         return view('shop.purchases', [
-            'purchases' => $query->orderByDesc('purchases.created_at')->paginate(Pagination::MAX)->withQueryString(),
+            'purchases' => tap($query, fn ($q) => Sort::apply($q, $request, [
+                'date' => 'purchases.created_at', 'scout' => 'students.name', 'total' => 'purchases.total_amount', 'paid' => 'purchases.paid_amount',
+                'payment' => 'purchases.payment_status', 'order' => 'purchases.purchase_status',
+            ], 'date', 'desc', 'purchases.id'))->paginate(Pagination::MAX)->withQueryString(),
             'canDeliver' => $this->purchases->canProcessDelivery($user),
         ]);
     }

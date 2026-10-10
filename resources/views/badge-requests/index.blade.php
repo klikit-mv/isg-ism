@@ -27,7 +27,7 @@
                 <button form="approve-selected" class="btn-accent btn-sm">Approve selected</button>
             </div>
         @endif
-        <x-table :headers="array_merge($canBulk ? [''] : [], ['Request', 'Scout', 'Badge', 'Status', 'Certificate', 'Requested', ''])">
+        <x-table :headers="array_merge($canBulk ? [''] : [], [['label' => 'Request', 'sort' => 'request'], ['label' => 'Scout', 'sort' => 'scout'], ['label' => 'Badge', 'sort' => 'badge'], ['label' => 'Status', 'sort' => 'status'], ['label' => 'Certificate', 'sort' => 'certificate'], ['label' => 'Requested', 'sort' => 'requested'], ''])" default-sort="requested:desc">
             @foreach ($requests as $item)
                 <tr>
                     @if ($canBulk)

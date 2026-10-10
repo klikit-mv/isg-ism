@@ -21,7 +21,7 @@ class LeadershipController extends Controller
     {
         $this->authorize('viewAny', LeadershipRecord::class);
 
-        return view('leadership.index', ['records' => $this->records->paginate($request->user(), $request->only('q'))]);
+        return view('leadership.index', ['records' => $this->records->paginate($request->user(), $request->only('q', 'sort', 'dir'))]);
     }
 
     public function create(Request $request): View

@@ -11,7 +11,7 @@
     @if ($logs->isEmpty())
         <x-empty message="No audit entries match these filters."/>
     @else
-        <x-table :headers="['When', 'Action', 'Entity', 'By', 'Details']">
+        <x-table :headers="[['label' => 'When', 'sort' => 'when'], ['label' => 'Action', 'sort' => 'action'], ['label' => 'Entity', 'sort' => 'entity'], ['label' => 'By', 'sort' => 'by'], 'Details']" default-sort="when:desc">
             @foreach ($logs as $log)
                 <tr>
                     <td data-label="When" class="whitespace-nowrap">{{ scout_datetime($log->created_at) }}</td>

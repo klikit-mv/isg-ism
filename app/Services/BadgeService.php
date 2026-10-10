@@ -6,8 +6,10 @@ use App\Exceptions\ScoutException;
 use App\Models\Badge;
 use App\Models\User;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class BadgeService
@@ -19,7 +21,7 @@ class BadgeService
     ) {}
 
     /**
-     * @param  array{q?: ?string, section?: ?string}  $filters
+     * @param  array{q?: ?string, section?: ?string, sort?: ?string, dir?: ?string}  $filters
      */
     public function paginate(array $filters): LengthAwarePaginator
     {
@@ -27,7 +29,10 @@ class BadgeService
             ->with('certificateTemplate')
             ->when($filters['q'] ?? null, fn ($q, $term) => $q->where(fn ($w) => $w->where('name', 'like', "%{$term}%")->orWhere('code', 'like', "%{$term}%")))
             ->when($filters['section'] ?? null, fn ($q, $section) => $q->where('section', $section))
-            ->orderBy('name')
+            ->tap(fn ($q) => Sort::applyKey($q, $filters['sort'] ?? null, $filters['dir'] ?? null, [
+                'name' => 'name', 'code' => 'code', 'section' => 'section', 'category' => 'category',
+                'template' => fn ($q, $dir) => $q->orderBy(DB::table('certificate_templates')->select('name')->whereColumn('certificate_templates.id', 'badges.certificate_template_id'), $dir),
+            ], 'name'))
             ->paginate(Pagination::MAX)
             ->withQueryString();
     }

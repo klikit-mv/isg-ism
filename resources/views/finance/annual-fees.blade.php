@@ -23,7 +23,7 @@
     @if ($fees->isEmpty())
         <x-empty message="No annual fees match these filters."/>
     @else
-        <x-table :headers="['Year', 'Person', 'Type', 'Section', 'Fee', 'Paid', 'Outstanding', 'Status', '']">
+        <x-table :headers="[['label' => 'Year', 'sort' => 'year'], ['label' => 'Person', 'sort' => 'person'], ['label' => 'Type', 'sort' => 'type'], ['label' => 'Section', 'sort' => 'section'], ['label' => 'Fee', 'sort' => 'fee'], ['label' => 'Paid', 'sort' => 'paid'], ['label' => 'Outstanding', 'sort' => 'outstanding'], ['label' => 'Status', 'sort' => 'status'], '']" default-sort="created:desc">
             @foreach ($fees as $fee)
                 <tr>
                     <td data-label="Year">{{ $fee->feeYear?->year }}</td>

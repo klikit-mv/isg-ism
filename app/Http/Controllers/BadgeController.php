@@ -24,7 +24,7 @@ class BadgeController extends Controller
         $this->authorize('viewAny', Badge::class);
 
         return view('badges.index', [
-            'badges' => $this->badges->paginate($request->only('q', 'section')),
+            'badges' => $this->badges->paginate($request->only('q', 'section', 'sort', 'dir')),
             'numbers' => $this->numbers,
             'sectionCodes' => collect(ScoutSection::cases())->mapWithKeys(fn (ScoutSection $s) => [$s->value => app(SettingsService::class)->sectionBadgeCode($s)])->all(),
             'templates' => $this->templateOptions(),

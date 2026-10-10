@@ -76,7 +76,7 @@ class GroupTest extends TestCase
     {
         $admin = $this->admin();
         $cub = Student::factory()->section(ScoutSection::CubScout)->create();
-        $scout = Student::factory()->create();
+        $scout = Student::factory()->section(ScoutSection::Scout)->create();
 
         $this->actingAs($admin)->post('/groups', ['name' => 'Cub Pack', 'type' => 'Patrol', 'section' => 'Cub Scout'])->assertSessionHasNoErrors();
         $group = Group::query()->where('name', 'Cub Pack')->firstOrFail();

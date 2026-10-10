@@ -11,6 +11,7 @@ use App\Models\Group;
 use App\Services\ActivityService;
 use App\Services\LeaderScopeService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -36,7 +37,9 @@ class ActivityController extends Controller
         $this->scope->constrainActivities($query, $request->user());
 
         return view('activities.index', [
-            'activities' => $query->orderByDesc('date')->paginate(Pagination::MAX)->withQueryString(),
+            'activities' => tap($query, fn ($q) => Sort::apply($q, $request, [
+                'date' => 'date', 'activity' => 'name', 'fee' => 'charge_fee', 'certificate' => 'certificate_template_id', 'marked' => 'attendance_records_count',
+            ], 'date', 'desc', 'id'))->paginate(Pagination::MAX)->withQueryString(),
         ] + $this->formOptions());
     }
 

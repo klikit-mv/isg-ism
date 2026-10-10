@@ -14,7 +14,7 @@
     @if ($groups->isEmpty())
         <x-empty message="No groups yet."/>
     @else
-        <x-table :headers="['Group', 'Type', 'Section', 'Members', 'Leaders', 'Rover assistants', 'Status', '']">
+        <x-table :headers="[['label' => 'Group', 'sort' => 'name'], ['label' => 'Type', 'sort' => 'type'], ['label' => 'Section', 'sort' => 'section'], ['label' => 'Members', 'sort' => 'members'], ['label' => 'Leaders', 'sort' => 'leaders'], ['label' => 'Rover assistants', 'sort' => 'assistants'], ['label' => 'Status', 'sort' => 'status'], '']" default-sort="name:asc">
             @foreach ($groups as $group)
                 <tr>
                     <td data-label="Group" class="font-medium"><a href="{{ route('groups.show', $group) }}" class="hover:underline">{{ $group->name }}</a></td>

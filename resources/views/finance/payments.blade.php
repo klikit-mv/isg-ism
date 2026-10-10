@@ -10,7 +10,7 @@
     @if ($payments->isEmpty())
         <x-empty message="No payments yet."/>
     @else
-        <x-table :headers="['Submitted', 'For', 'Scout', 'Amount', 'Method', 'Status', 'Verified by', '']">
+        <x-table :headers="[['label' => 'Submitted', 'sort' => 'submitted'], ['label' => 'For', 'sort' => 'for'], ['label' => 'Scout', 'sort' => 'scout'], ['label' => 'Amount', 'sort' => 'amount'], ['label' => 'Method', 'sort' => 'method'], ['label' => 'Status', 'sort' => 'status'], ['label' => 'Verified by', 'sort' => 'verifier'], '']" default-sort="submitted:desc">
             @foreach ($payments as $payment)
                 <tr>
                     <td data-label="Submitted" class="whitespace-nowrap">{{ scout_datetime($payment->submitted_at) }}</td>

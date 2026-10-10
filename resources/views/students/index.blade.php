@@ -19,7 +19,7 @@
     @if ($students->isEmpty())
         <x-empty message="No scouts match these filters."/>
     @else
-        <x-table :headers="['Scout', 'Index', 'National ID', 'Section', 'Status', '']">
+        <x-table :headers="[['label' => 'Scout', 'sort' => 'name'], ['label' => 'Index', 'sort' => 'index'], ['label' => 'National ID', 'sort' => 'national_id'], ['label' => 'Section', 'sort' => 'section'], ['label' => 'Status', 'sort' => 'status'], '']">
             @foreach ($students as $student)
                 <tr>
                     <td data-label="Scout">

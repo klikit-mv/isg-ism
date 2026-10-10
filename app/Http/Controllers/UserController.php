@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\User;
 use App\Services\UserService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -30,7 +31,7 @@ class UserController extends Controller
                 ->orWhere('email', 'like', "%{$search}%")))
             ->when($request->query('role'), fn ($q, $role) => $q->whereHas('roleRows', fn ($r) => $r->where('role', $role)))
             ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
-            ->orderBy('name')
+            ->tap(fn ($q) => Sort::apply($q, $request, ['name' => 'name', 'national_id' => 'national_id', 'email' => 'email', 'status' => 'status'], 'name'))
             ->paginate(Pagination::MAX)
             ->withQueryString();
 

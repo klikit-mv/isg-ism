@@ -8,7 +8,7 @@
     @if ($registrations->isEmpty())
         <x-empty message="No event registrations yet."/>
     @else
-        <x-table :headers="['Event', 'Participant', 'Items', 'Total', 'Paid', 'Payment', 'Status', '']">
+        <x-table :headers="[['label' => 'Event', 'sort' => 'event'], ['label' => 'Participant', 'sort' => 'participant'], 'Items', ['label' => 'Total', 'sort' => 'total'], ['label' => 'Paid', 'sort' => 'paid'], ['label' => 'Payment', 'sort' => 'payment'], ['label' => 'Status', 'sort' => 'status'], '']" default-sort="registered:desc">
             @foreach ($registrations as $registration)
                 <tr>
                     <td data-label="Event">

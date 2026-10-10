@@ -10,8 +10,10 @@ use App\Models\Student;
 use App\Services\EventService;
 use App\Services\LeaderScopeService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -36,8 +38,13 @@ class EventRegistrationController extends Controller
             ->with('event', 'student', 'items')
             ->with('user')
             ->when($ids !== null, fn ($q) => $q->where(fn ($w) => $w->whereIn('student_id', $ids === [] ? [0] : $ids)->orWhere('user_id', $user->id)->orWhere('registered_by', $user->id)))
-            ->latest()
-            ->paginate(Pagination::MAX);
+            ->tap(fn ($q) => Sort::apply($q, $request, [
+                'registered' => 'event_registrations.created_at',
+                'event' => fn ($q, $dir) => $q->orderBy(DB::table('events')->select('name')->whereColumn('events.id', 'event_registrations.event_id'), $dir),
+                'participant' => fn ($q, $dir) => $q->orderBy(DB::table('students')->select('name')->whereColumn('students.id', 'event_registrations.student_id'), $dir),
+                'total' => 'total_amount', 'paid' => 'paid_amount', 'payment' => 'payment_status', 'status' => 'status',
+            ], 'registered', 'desc', 'event_registrations.id'))
+            ->paginate(Pagination::MAX)->withQueryString();
 
         return view('events.registrations', ['registrations' => $registrations]);
     }

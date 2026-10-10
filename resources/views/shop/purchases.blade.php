@@ -10,7 +10,7 @@
     @if ($purchases->isEmpty())
         <x-empty message="No purchases yet."/>
     @else
-        <x-table :headers="['Date', 'Scout', 'Items', 'Total', 'Paid', 'Payment', 'Order', '']">
+        <x-table :headers="[['label' => 'Date', 'sort' => 'date'], ['label' => 'Scout', 'sort' => 'scout'], 'Items', ['label' => 'Total', 'sort' => 'total'], ['label' => 'Paid', 'sort' => 'paid'], ['label' => 'Payment', 'sort' => 'payment'], ['label' => 'Order', 'sort' => 'order'], '']" default-sort="date:desc">
             @foreach ($purchases as $purchase)
                 <tr>
                     <td data-label="Date" class="whitespace-nowrap">{{ scout_date($purchase->created_at) }}</td>

@@ -18,7 +18,7 @@
     @if ($fees->isEmpty())
         <x-empty message="No class fees match these filters."/>
     @else
-        <x-table :headers="['Scout', 'Activity', 'Fee', 'Paid', 'Outstanding', 'Due', 'Status', '']">
+        <x-table :headers="[['label' => 'Scout', 'sort' => 'scout'], ['label' => 'Activity', 'sort' => 'activity'], ['label' => 'Fee', 'sort' => 'fee'], ['label' => 'Paid', 'sort' => 'paid'], ['label' => 'Outstanding', 'sort' => 'outstanding'], ['label' => 'Due', 'sort' => 'due'], ['label' => 'Status', 'sort' => 'status'], '']" default-sort="created:desc">
             @foreach ($fees as $fee)
                 <tr>
                     <td data-label="Scout" class="font-medium">{{ $fee->student?->name }}</td>

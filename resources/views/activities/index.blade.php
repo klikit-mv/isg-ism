@@ -18,7 +18,7 @@
     @if ($activities->isEmpty())
         <x-empty message="No activities match these filters."/>
     @else
-        <x-table :headers="['Date', 'Activity', 'Roster', 'Fee', 'Certificate', 'Marked', '']">
+        <x-table :headers="[['label' => 'Date', 'sort' => 'date'], ['label' => 'Activity', 'sort' => 'activity'], 'Roster', ['label' => 'Fee', 'sort' => 'fee'], ['label' => 'Certificate', 'sort' => 'certificate'], ['label' => 'Marked', 'sort' => 'marked'], '']" default-sort="date:desc">
             @foreach ($activities as $activity)
                 <tr>
                     <td data-label="Date" class="whitespace-nowrap">{{ scout_date($activity->date) }}</td>

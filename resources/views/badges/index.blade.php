@@ -29,7 +29,7 @@
     @if ($badges->isEmpty())
         <x-empty message="No badges yet."/>
     @else
-        <x-table :headers="['Badge', 'Code', 'Section', 'Category', 'Template', 'Next number', '']">
+        <x-table :headers="[['label' => 'Badge', 'sort' => 'name'], ['label' => 'Code', 'sort' => 'code'], ['label' => 'Section', 'sort' => 'section'], ['label' => 'Category', 'sort' => 'category'], ['label' => 'Template', 'sort' => 'template'], 'Next number', '']" default-sort="name:asc">
             @foreach ($badges as $badge)
                 <tr>
                     <td data-label="Badge" class="font-medium">

@@ -1,5 +1,9 @@
 # User guide
 
+## Sorting tables
+
+Click a column heading to order the table by that column; click again to reverse it (▲ ascending, ▼ descending). On long lists the whole list is re-ordered across every page and your search and filters are kept. Headings without a server-side order sort the rows on the page you are looking at.
+
 ## Signing in
 
 Use your **National ID** and **PIN**. New scouts register at **Register as a scout**; parents at **Register as a parent**, adding each child by National ID. You can sign in once a leader verifies you. Change your PIN, email, notification choices and light/dark mode under **Profile**.

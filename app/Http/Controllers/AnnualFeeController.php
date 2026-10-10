@@ -13,8 +13,10 @@ use App\Services\AnnualFeeService;
 use App\Services\LeaderScopeService;
 use App\Support\Money;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -48,7 +50,14 @@ class AnnualFeeController extends Controller
         $stats = (clone $query)->toBase()->reorder()->select([])->selectRaw('COUNT(*) as records, SUM(CASE WHEN annual_fees.status = ? THEN 1 ELSE 0 END) as paid, COALESCE(SUM(annual_fees.amount), 0) as billed', [FeeStatus::Paid->value])->first();
 
         return view('finance.annual-fees', [
-            'fees' => $query->with('student', 'user', 'feeYear')->orderByDesc('annual_fees.created_at')->paginate(Pagination::MAX)->withQueryString(),
+            'fees' => tap($query->with('student', 'user', 'feeYear'), fn ($q) => Sort::apply($q, $request, [
+                'created' => 'annual_fees.created_at',
+                'year' => fn ($q, $dir) => $q->orderBy(DB::table('annual_fee_years')->select('year')->whereColumn('annual_fee_years.id', 'annual_fees.annual_fee_year_id'), $dir),
+                'person' => fn ($q, $dir) => $q->orderByRaw('COALESCE(students.name, users.name) '.$dir),
+                'type' => 'annual_fees.person_type',
+                'section' => fn ($q, $dir) => $q->orderByRaw('COALESCE(annual_fees.section, students.section) '.$dir),
+                'fee' => 'annual_fees.amount', 'paid' => 'annual_fees.paid_amount', 'outstanding' => 'annual_fees.outstanding_amount', 'status' => 'annual_fees.status',
+            ], 'created', 'desc'))->paginate(Pagination::MAX)->withQueryString(),
             'stats' => ['records' => (int) $stats->records, 'paid' => (int) $stats->paid, 'billed' => Money::normalize($stats->billed)],
             'years' => AnnualFeeYear::query()->orderByDesc('year')->pluck('year', 'year')->all(),
             'canManageYears' => $user->hasPermission(Permission::ManageFees),

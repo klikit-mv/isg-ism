@@ -32,7 +32,7 @@
     @if ($transactions->isEmpty())
         <x-empty message="No entries yet."/>
     @else
-        <x-table :headers="['Date', 'Type', 'Collected from / requested by', 'Purpose and details', 'Amount', 'Recorded by', '']">
+        <x-table :headers="[['label' => 'Date', 'sort' => 'date'], ['label' => 'Type', 'sort' => 'type'], ['label' => 'Collected from / requested by', 'sort' => 'party'], ['label' => 'Purpose and details', 'sort' => 'purpose'], ['label' => 'Amount', 'sort' => 'amount'], ['label' => 'Recorded by', 'sort' => 'recorder'], '']" default-sort="date:desc">
             @foreach ($transactions as $entry)
                 <tr>
                     <td data-label="Date" class="whitespace-nowrap">{{ scout_date($entry->transaction_date) }}</td>

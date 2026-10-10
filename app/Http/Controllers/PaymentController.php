@@ -5,16 +5,19 @@ namespace App\Http\Controllers;
 use App\Enums\PaymentMethod;
 use App\Enums\Permission;
 use App\Models\Payment;
+use App\Services\GoogleDrivePaymentService;
 use App\Services\LeaderScopeService;
 use App\Services\PaymentService;
 use App\Services\SettingsService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class PaymentController extends Controller
 {
@@ -41,7 +44,15 @@ class PaymentController extends Controller
         }
 
         return view('finance.payments', [
-            'payments' => $query->orderByDesc('payments.submitted_at')->paginate(Pagination::MAX)->withQueryString(),
+            'payments' => tap($query, fn ($q) => Sort::apply($q, $request, [
+                'submitted' => 'payments.submitted_at',
+                'for' => 'payments.payable_type',
+                'scout' => 'students.name',
+                'amount' => 'payments.amount',
+                'method' => 'payments.method',
+                'status' => 'payments.status',
+                'verifier' => fn ($q, $dir) => $q->orderBy(DB::table('users')->select('name')->whereColumn('users.id', 'payments.verified_by'), $dir),
+            ], 'submitted', 'desc'))->paginate(Pagination::MAX)->withQueryString(),
         ]);
     }
 
@@ -65,14 +76,14 @@ class PaymentController extends Controller
         return back()->with('success', $message);
     }
 
-    public function proof(Payment $payment): \Symfony\Component\HttpFoundation\Response
+    public function proof(Payment $payment): Response
     {
         $this->authorize('view', $payment);
         $proof = $payment->proof;
         abort_if($proof === null, 404);
 
         if ($proof->disk === 'drive') {
-            $contents = app(\App\Services\GoogleDrivePaymentService::class)->contents($proof->path);
+            $contents = app(GoogleDrivePaymentService::class)->contents($proof->path);
             abort_if($contents === null, 404);
 
             return response($contents, 200, [

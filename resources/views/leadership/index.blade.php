@@ -14,7 +14,7 @@
     @if ($records->isEmpty())
         <x-empty message="No records."/>
     @else
-        <x-table :headers="['Scout', 'Post', 'Patrol or six', 'Troop or group', 'Start', 'End', 'Certificate', '']">
+        <x-table :headers="[['label' => 'Scout', 'sort' => 'scout'], ['label' => 'Post', 'sort' => 'post'], ['label' => 'Patrol or six', 'sort' => 'patrol'], ['label' => 'Troop or group', 'sort' => 'troop'], ['label' => 'Start', 'sort' => 'start'], ['label' => 'End', 'sort' => 'end'], ['label' => 'Certificate', 'sort' => 'certificate'], '']" default-sort="start:desc">
             @foreach ($records as $record)
                 <tr>
                     <td data-label="Scout" class="font-medium">{{ $record->student?->name }}</td>

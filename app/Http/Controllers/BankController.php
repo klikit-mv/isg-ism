@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\BankAccount;
 use App\Models\BankTransaction;
 use App\Services\BankService;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,7 +40,10 @@ class BankController extends Controller
                 ->orWhere('purpose', 'like', "%{$term}%")
                 ->orWhere('details', 'like', "%{$term}%")
                 ->orWhere('reference', 'like', "%{$term}%")))
-            ->orderByDesc('transaction_date')->orderByDesc('id')
+            ->tap(fn ($q) => Sort::apply($q, $request, [
+                'date' => 'transaction_date', 'type' => 'type', 'party' => 'party', 'purpose' => 'purpose', 'amount' => 'amount',
+                'recorder' => fn ($q, $dir) => $q->orderBy(DB::table('users')->select('name')->whereColumn('users.id', 'bank_transactions.recorded_by'), $dir),
+            ], 'date', 'desc', 'id'))
             ->paginate(25)->withQueryString();
 
         $online = $account->receives_online

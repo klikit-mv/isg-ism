@@ -17,6 +17,7 @@ use App\Models\CertificateTemplate;
 use App\Models\Student;
 use App\Models\User;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -57,9 +58,13 @@ class CertificateService
 
         $this->scope->constrainByStudent($query, $user);
 
-        return ($filters['sort'] ?? 'newest') === 'oldest'
-            ? $query->orderBy('date_awarded')->orderBy('id')
-            : $query->orderByDesc('date_awarded')->orderByDesc('id');
+        // The Order dropdown sends newest/oldest; the table headings send a column key.
+        $legacy = ($filters['sort'] ?? '') === 'oldest' ? 'asc' : 'desc';
+        Sort::applyKey($query, $filters['sort'] ?? null, $filters['dir'] ?? null, [
+            'awarded' => 'date_awarded', 'number' => 'cert_number', 'scout' => 'student_name', 'title' => 'title', 'type' => 'type', 'status' => 'status',
+        ], 'awarded', $legacy, 'id');
+
+        return $query;
     }
 
     /**
@@ -112,10 +117,12 @@ class CertificateService
                 ->orWhere('badge_name', 'like', "%{$term}%")
                 ->orWhere('request_id', 'like', "%{$term}%")));
 
-        return $this->scope->constrainByStudent($query, $user)
-            ->latest()
-            ->paginate(Pagination::MAX)
-            ->withQueryString();
+        $this->scope->constrainByStudent($query, $user);
+        Sort::applyKey($query, $filters['sort'] ?? null, $filters['dir'] ?? null, [
+            'requested' => 'badge_requests.created_at', 'request' => 'request_id', 'scout' => 'student_name', 'badge' => 'badge_name', 'status' => 'status', 'certificate' => 'certificate_number',
+        ], 'requested', 'desc', 'badge_requests.id');
+
+        return $query->paginate(Pagination::MAX)->withQueryString();
     }
 
     public function requestBadge(Student $student, Badge $badge, User $actor): BadgeRequest

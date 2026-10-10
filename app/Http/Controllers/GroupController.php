@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\RecordStatus;
 use App\Enums\Role;
 use App\Enums\ScoutSection;
 use App\Models\Group;
 use App\Models\Student;
 use App\Models\Subgroup;
-use App\Enums\RecordStatus;
 use App\Models\User;
 use App\Services\GroupService;
 use App\Services\LeaderScopeService;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -30,7 +31,9 @@ class GroupController extends Controller
             ->withCount(['members', 'leaders', 'assistantLeaders'])
             ->when(! $user->isAdmin(), fn ($q) => $q->whereIn('id', $this->scope->getLeaderGroupIds($user) ?: [0]))
             ->when($request->query('q'), fn ($q, $term) => $q->where('name', 'like', "%{$term}%"))
-            ->orderBy('name')
+            ->tap(fn ($q) => Sort::apply($q, $request, [
+                'name' => 'name', 'type' => 'type', 'section' => 'section', 'members' => 'members_count', 'leaders' => 'leaders_count', 'assistants' => 'assistant_leaders_count', 'status' => 'status',
+            ], 'name'))
             ->paginate(Pagination::MAX)
             ->withQueryString();
 

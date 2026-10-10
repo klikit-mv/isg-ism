@@ -5,14 +5,16 @@ namespace App\Services;
 use App\Models\LeadershipRecord;
 use App\Models\User;
 use App\Support\Pagination;
+use App\Support\Sort;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class LeadershipRecordService
 {
     public function __construct(private AuditLogService $audit, private LeaderScopeService $scope) {}
 
     /**
-     * @param  array{q?: ?string}  $filters
+     * @param  array{q?: ?string, sort?: ?string, dir?: ?string}  $filters
      */
     public function paginate(User $user, array $filters): LengthAwarePaginator
     {
@@ -23,10 +25,14 @@ class LeadershipRecordService
                 ->orWhere('troop_or_group', 'like', "%{$term}%")
                 ->orWhereHas('student', fn ($s) => $s->where('name', 'like', "%{$term}%"))));
 
-        return $this->scope->constrainByStudent($query, $user)
-            ->orderByDesc('start_date')
-            ->paginate(Pagination::MAX)
-            ->withQueryString();
+        $this->scope->constrainByStudent($query, $user);
+        Sort::applyKey($query, $filters['sort'] ?? null, $filters['dir'] ?? null, [
+            'start' => 'start_date', 'end' => 'end_date', 'post' => 'post', 'patrol' => 'patrol_or_six', 'troop' => 'troop_or_group',
+            'scout' => fn ($q, $dir) => $q->orderBy(DB::table('students')->select('name')->whereColumn('students.id', 'leadership_records.student_id'), $dir),
+            'certificate' => 'certificate_id',
+        ], 'start', 'desc', 'leadership_records.id');
+
+        return $query->paginate(Pagination::MAX)->withQueryString();
     }
 
     /**
