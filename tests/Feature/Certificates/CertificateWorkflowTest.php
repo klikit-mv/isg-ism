@@ -313,7 +313,7 @@ class CertificateWorkflowTest extends TestCase
         $cub = Student::factory()->section(ScoutSection::CubScout)->create();
         Group::factory()->ledBy($leader)->withMembers($one, $two, $cub)->create();
 
-        $this->actingAs($leader)->get('/badge-requests')->assertOk()->assertSee('Bulk badge request');
+        $this->actingAs($leader)->get('/badge-requests')->assertOk()->assertSee('Bulk badge request')->assertSee('Choose a section')->assertSee('All sections');
 
         $response = $this->actingAs($leader)->postJson('/badge-requests/bulk', [
             'badge' => $badge->uuid, 'students' => [$one->uuid, $two->uuid, $cub->uuid], 'approve' => true, 'date_awarded' => '2026-05-05',
