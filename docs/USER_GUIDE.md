@@ -1,0 +1,55 @@
+# User guide
+
+## Sorting tables
+
+Click a column heading to order the table by that column; click again to reverse it (▲ ascending, ▼ descending). On long lists the whole list is re-ordered across every page and your search and filters are kept. Headings without a server-side order sort the rows on the page you are looking at.
+
+## Signing in
+
+Use your **National ID** and **PIN**. New scouts register at **Register as a scout**; parents at **Register as a parent**, adding each child by National ID. You can sign in once a leader verifies you. Change your PIN, email, notification choices and light/dark mode under **Profile**.
+
+After signing in you see the **module hub**. Open a module; the left menu then shows only that module's pages. **Modules** in the header returns to the hub.
+
+## On your phone
+
+Open the website in Chrome (Android) and choose *Install app*, or in Safari (iPhone/iPad) choose Share → *Add to Home Screen*. It then opens like an app. To get alerts when the app is closed, open **Profile → Phone and browser notifications → Turn on notifications** and allow them (on iPhone this works only from the Home Screen app).
+
+## Parents (Family)
+
+- **My students:** each approved child's profile, certificates, badge requests and leadership records.
+- **Attendance:** filter by child, status and dates.
+- **Fees and payments:** press **Pay**, transfer the money (see **Show bank details**; the account number has a Copy button) and upload the receipt. A leader checks it and you are notified.
+- **Scout shop:** choose an item and child, place the order, then pay for it. It is confirmed once fully paid.
+- **Certificates → Badge requests:** ask for a badge for your child.
+
+## Scouts (My record)
+
+Your details, attendance and fees, plus certificates, badge requests and the shop, just as for parents.
+
+## Leaders (Scout operations)
+
+- **Students:** your groups' scouts plus every pending registration. Press **Verify** or **Decline** on new registrations. Upload photos; import scouts from Excel (download the template first).
+- **Parent registrations:** verify parents; their requested children are linked.
+- **Groups:** manage members, leaders and Rover assistant leaders.
+- **Activities:** create an activity for all scouts, sections or groups, optionally charging a fee or linking a certificate template. Scouts and parents are notified.
+- **Mark attendance:** Present, Late, Absent or Excused. On charged activities choose what was paid now (0, 5, 10, 15 or Other); cash taken here is recorded automatically. Excused scouts are not charged. Rows left blank are not saved.
+- **Rover attendance:** required Rovers take Present/Absent/Excused; optional and extra Rovers can only be Present.
+- **Certificates:** issue general certificates (one or in bulk), approve badge requests and generate their certificates, keep leadership records. Upload your signature in Profile first.
+- **Reports:** attendance, Rover attendance, annual fees, class fees, payments and shop, with print and XLSX/CSV export.
+
+- **Bank** (admins and leaders): set up the group's single bank account with the money already in it, then record **deposits** (amount, date, collected from, deposit slip attached) and **spending** (amount, requested by, purpose, optional receipt). Spending is deducted from the balance and cannot exceed it. Every online payment a leader verifies is added to its balance automatically, shown in its own "Online payments (verified)" area, separate from deposit slips (it counts from the date you set). Only admins can delete an entry. Slips and receipts are filed in the Google Drive payments folder when it is set.
+
+Leaders with extra permissions also see: **Verification** (approve or reject online payments; rejecting needs a reason), shop item management, delivery (**Ready** / **Deliver**), and annual fee years (**Invoice all scouts** each year, or **Choose people**, including **Bulk generate from an Excel list**: upload a list with a Name column, optionally National ID and Section, check the preview, then generate).
+
+## Admins (Administration)
+
+- **Users:** create accounts, set roles and permissions, reset PINs (signs the user out everywhere).
+- **Parent links:** a scout can have only one pending or approved parent.
+- **Settings:** default class fee, bank details, shop open/closed, proof size, footer, Google Drive folders, Telegram bot. Use the **Test** buttons to check connections.
+- **Audit logs:** every financial, membership, attendance, import and sign-in event.
+- **Import:** upload the legacy workbook; a dry run shows what would happen before **Import for real**. Download the messages as CSV.
+- **Section promotion** (Scout operations): move scouts one section forward.
+
+## Checking a certificate
+
+Anyone can open **Verify a certificate** (link on the sign-in page) and enter the number printed on it, such as `FLHSG-PB-2026-001`.
