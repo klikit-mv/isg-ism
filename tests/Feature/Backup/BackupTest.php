@@ -34,6 +34,7 @@ class BackupTest extends TestCase
         config(['services.google.service_account_json' => json_encode(['client_email' => 'bot@example.iam.gserviceaccount.com', 'private_key' => $pem])]);
         Cache::put('google.access_token.'.md5('bot@example.iam.gserviceaccount.com'), 'token', 600);
         app(SettingsService::class)->set('google_drive_folder_id', 'mainroot');
+        app(SettingsService::class)->set('google_drive_backup_folder_id', 'privateBackupFolder');
     }
 
     public function test_the_dump_holds_the_structure_and_rows_and_leaves_out_sessions(): void
@@ -107,36 +108,51 @@ class BackupTest extends TestCase
         $this->assertTrue($backups->isDue(), 'the next day tries again');
     }
 
-    public function test_a_backup_is_uploaded_to_the_drive_backup_folder_and_old_ones_are_removed(): void
+    public function test_a_backup_is_uploaded_to_the_separate_backup_folder_and_old_ones_are_removed(): void
     {
         $this->connectDrive();
         $this->schedule(['keep' => 2]);
         Http::fake([
             'www.googleapis.com/upload/*' => Http::response(['id' => 'newBackup']),
+            'www.googleapis.com/drive/v3/files/privateBackupFolder*' => Http::response(['id' => 'privateBackupFolder', 'mimeType' => 'application/vnd.google-apps.folder']),
             'www.googleapis.com/drive/v3/files*' => function ($request) {
                 if ($request->method() === 'DELETE') {
                     return Http::response('', 204);
                 }
-                if ($request->method() === 'POST') {
-                    return Http::response(['id' => 'backupFolder']);
-                }
 
-                return str_contains($request->url(), 'mimeType')
-                    ? Http::response(['files' => []])
-                    : Http::response(['files' => [['id' => 'f1', 'name' => 'scout-backup-3', 'createdTime' => '3'], ['id' => 'f2', 'name' => 'scout-backup-2', 'createdTime' => '2'], ['id' => 'f3', 'name' => 'scout-backup-1', 'createdTime' => '1']]]);
+                return Http::response(['files' => [['id' => 'f1', 'name' => 'scout-backup-3', 'createdTime' => '3'], ['id' => 'f2', 'name' => 'scout-backup-2', 'createdTime' => '2'], ['id' => 'f3', 'name' => 'scout-backup-1', 'createdTime' => '1']]]);
             },
         ]);
 
         $result = app(DatabaseBackupService::class)->run($this->admin());
 
         $this->assertTrue($result['ok'], $result['message']);
-        $this->assertSame('backupFolder', app(SettingsService::class)->get('google_drive_backup_folder_id'));
-        Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":"Database backups"') && str_contains($r->body(), '"parents":["mainroot"]'));
-        Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive') && str_contains($r->body(), 'scout-backup-') && str_contains($r->body(), '"parents":["backupFolder"]'));
+        Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive') && str_contains($r->body(), 'scout-backup-') && str_contains($r->body(), '"parents":["privateBackupFolder"]'));
+        Http::assertNotSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), 'mainroot'));
         Http::assertSent(fn ($r) => $r->method() === 'DELETE' && str_contains($r->url(), 'f3'));
         Http::assertNotSent(fn ($r) => $r->method() === 'DELETE' && str_contains($r->url(), 'f1'));
         $this->assertSame([], glob(storage_path('app/private/backups/*.sql.gz')) ?: []);
         $this->assertTrue(app(DatabaseBackupService::class)->lastResult()['ok']);
+    }
+
+    public function test_a_backup_needs_its_own_folder_and_never_uses_the_shared_ones(): void
+    {
+        $this->connectDrive();
+        app(SettingsService::class)->set('google_drive_backup_folder_id', null);
+
+        $result = app(DatabaseBackupService::class)->run($this->admin());
+        $this->assertFalse($result['ok']);
+        $this->assertStringContainsString('Database backup folder', $result['message']);
+
+        $admin = $this->admin();
+        $payload = ['frequency' => 'daily', 'time' => '02:00', 'weekday' => 1, 'monthday' => 1, 'keep' => 7];
+        $this->actingAs($admin)->post('/settings/backup', $payload + ['enabled' => '1'])->assertSessionHasErrors('google_drive_backup_folder');
+        $this->actingAs($admin)->post('/settings/backup', $payload + ['google_drive_backup_folder' => 'https://drive.google.com/drive/folders/mainroot12345'])->assertSessionHasNoErrors();
+        app(SettingsService::class)->set('google_drive_folder_id', 'mainroot12345');
+        $this->actingAs($admin)->post('/settings/backup', $payload + ['google_drive_backup_folder' => 'https://drive.google.com/drive/folders/mainroot12345'])->assertSessionHasErrors('google_drive_backup_folder');
+        Http::fake(['www.googleapis.com/drive/v3/files/*' => Http::response(['id' => 'PrivateOne123', 'mimeType' => 'application/vnd.google-apps.folder'])]);
+        $this->actingAs($admin)->post('/settings/backup', $payload + ['enabled' => '1', 'google_drive_backup_folder' => 'https://drive.google.com/drive/folders/PrivateOne123'])->assertSessionHas('success');
+        $this->assertSame('PrivateOne123', app(SettingsService::class)->get('google_drive_backup_folder_id'));
     }
 
     public function test_without_google_the_backup_fails_clearly(): void
@@ -152,7 +168,7 @@ class BackupTest extends TestCase
     {
         $this->actingAs($this->admin())->get('/settings')->assertOk()->assertSee('Database backup to Google Drive')->assertSee('Back up now');
 
-        $this->actingAs($this->admin())->post('/settings/backup', ['enabled' => '1', 'frequency' => 'weekly', 'time' => '03:15', 'weekday' => 0, 'monthday' => 1, 'keep' => 7])->assertSessionHas('success');
+        $this->actingAs($this->admin())->post('/settings/backup', ['enabled' => '1', 'frequency' => 'weekly', 'time' => '03:15', 'weekday' => 0, 'monthday' => 1, 'keep' => 7, 'google_drive_backup_folder' => 'https://drive.google.com/drive/folders/BackupFolder123'])->assertSessionHas('success');
         $schedule = app(DatabaseBackupService::class)->schedule();
         $this->assertSame(['enabled' => true, 'frequency' => 'weekly', 'time' => '03:15', 'weekday' => 0, 'monthday' => 1, 'keep' => 7], $schedule);
 

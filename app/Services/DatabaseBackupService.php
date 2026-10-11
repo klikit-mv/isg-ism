@@ -15,13 +15,11 @@ use Throwable;
 
 /**
  * Database backups: a compressed SQL dump written in plain PHP (no mysqldump needed, so it works on shared hosting),
- * uploaded to a "Database backups" folder inside the main Google Drive folder on a daily, weekly or monthly schedule
+ * uploaded to its own private Google Drive folder (set in Settings) on a daily, weekly or monthly schedule
  * set in Settings. Times are Maldives time.
  */
 class DatabaseBackupService
 {
-    public const FOLDER_NAME = 'Database backups';
-
     public const FREQUENCIES = ['daily' => 'Every day', 'weekly' => 'Every week', 'monthly' => 'Every month'];
 
     public const WEEKDAYS = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 0 => 'Sunday'];
@@ -286,32 +284,27 @@ class DatabaseBackupService
         };
     }
 
+    /**
+     * The folder set for backups in Settings. It is separate from the other Drive folders on purpose, so it can be kept
+     * private (not shared with the people who see photos and certificates).
+     */
     private function folderId(): string
     {
         if (! $this->drive->configured()) {
             throw new ScoutException('Google Drive is not connected. Connect a Google account (or upload the service account key) in Settings first.');
         }
 
-        $cached = $this->settings->get('google_drive_backup_folder_id');
-        $main = $this->settings->driveFolderId();
+        $folder = $this->settings->get('google_drive_backup_folder_id');
 
-        if ($cached && $this->drive->folderAccessible($cached)) {
-            return $cached;
+        if (! $folder) {
+            throw new ScoutException('Set the Database backup folder (a private Google Drive folder) in Settings first.');
         }
 
-        if (! $main) {
-            throw new ScoutException('Set the Google Drive folder (Photos folder) in Settings first: the backups are kept in a "'.self::FOLDER_NAME.'" folder inside it.');
+        if (! $this->drive->folderAccessible($folder)) {
+            throw new ScoutException('The database backup folder could not be opened. '.app(Google\GoogleApiClient::class)->shareHint());
         }
 
-        $id = $this->drive->findOrCreateFolder(self::FOLDER_NAME, $main);
-
-        if ($id === null) {
-            throw new ScoutException('The "'.self::FOLDER_NAME.'" folder could not be created in Google Drive. '.$this->drive->lastError());
-        }
-
-        $this->settings->set('google_drive_backup_folder_id', $id);
-
-        return $id;
+        return $folder;
     }
 
     private function prune(string $folderId): int

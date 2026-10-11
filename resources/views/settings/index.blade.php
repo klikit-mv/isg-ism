@@ -137,13 +137,14 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="font-semibold">Database backup to Google Drive</h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400">A compressed copy of the whole database is uploaded to a “{{ \App\Services\DatabaseBackupService::FOLDER_NAME }}” folder inside your main Google Drive folder. Times are Maldives time.</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">A compressed copy of the whole database is uploaded to its own Google Drive folder, kept separate from the photo, certificate and payment folders so you can keep it private. Times are Maldives time.</p>
             </div>
             <form method="POST" action="{{ route('settings.backup.run') }}">@csrf<button class="btn-accent">Back up now</button></form>
         </div>
 
         <form method="POST" action="{{ route('settings.backup.update') }}" class="space-y-4">
             @csrf
+            <x-form.input name="google_drive_backup_folder" label="Database backup folder (link or ID)" :value="$settings->get('google_drive_backup_folder')" help="Create a new Drive folder just for backups and do not share it with anyone. Share it as Editor only with the Google service account, if you use one."/>
             <x-form.checkbox name="enabled" label="Back up automatically" :checked="$backup['enabled']"/>
             <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <div>
