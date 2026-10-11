@@ -6,6 +6,7 @@ use App\Models\AuditLog;
 use App\Support\Pagination;
 use App\Support\Sort;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -17,8 +18,8 @@ class AuditLogController extends Controller
             ->with('actor')
             ->when($request->query('action'), fn ($q, $action) => $q->where('action', 'like', $action.'%'))
             ->when($request->query('entity'), fn ($q, $entity) => $q->where('entity_type', $entity))
-            ->when($request->query('from'), fn ($q, $from) => $q->whereDate('created_at', '>=', $from))
-            ->when($request->query('to'), fn ($q, $to) => $q->whereDate('created_at', '<=', $to))
+            ->when($request->query('from'), fn ($q, $from) => $q->where('created_at', '>=', Carbon::parse($from, config('scout.timezone'))->startOfDay()->utc()))
+            ->when($request->query('to'), fn ($q, $to) => $q->where('created_at', '<=', Carbon::parse($to, config('scout.timezone'))->endOfDay()->utc()))
             ->tap(fn ($q) => Sort::apply($q, $request, ['when' => 'id', 'action' => 'action', 'entity' => 'entity_type', 'by' => fn ($q, $dir) => $q->orderBy(DB::table('users')->select('name')->whereColumn('users.id', 'audit_logs.actor_id'), $dir)], 'when', 'desc'))
             ->paginate(Pagination::MAX)
             ->withQueryString();

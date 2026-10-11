@@ -41,7 +41,7 @@ class BankService
             'status' => 'Active',
             'created_by' => $actor->id,
             'receives_online' => true,
-            'online_from' => $data['online_from'] ?? now()->toDateString(),
+            'online_from' => $data['online_from'] ?? scout_today(),
         ]);
         $this->audit->record('bank_account.created', $account, ['name' => $account->name, 'opening_balance' => $account->opening_balance], $actor);
 
@@ -176,7 +176,7 @@ class BankService
 
         $mime = (string) ($file->getMimeType() ?: 'application/octet-stream');
         $name = mb_substr($file->getClientOriginalName(), 0, 255);
-        $ref = $this->drive->put('bank_'.$type, now()->format('Y-m-d').' '.Str::limit(pathinfo($name, PATHINFO_FILENAME), 60, '').' '.Str::random(5).'.'.$extension, (string) $file->get(), $mime, $actor->name);
+        $ref = $this->drive->put('bank_'.$type, scout_now()->format('Y-m-d').' '.Str::limit(pathinfo($name, PATHINFO_FILENAME), 60, '').' '.Str::random(5).'.'.$extension, (string) $file->get(), $mime, $actor->name);
 
         if ($ref !== null) {
             return ['attachment_disk' => 'drive', 'attachment_path' => $ref, 'attachment_name' => $name, 'attachment_mime' => $mime];

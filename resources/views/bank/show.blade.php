@@ -86,7 +86,7 @@
         <form method="POST" action="{{ route('bank.record', [$account, 'deposit']) }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <x-form.input name="amount" label="Amount" type="number" step="0.01" min="0.01" required/>
-            <x-form.input name="date" label="Deposit date" type="date" :value="now()->toDateString()" max="{{ now()->toDateString() }}" required/>
+            <x-form.input name="date" label="Deposit date" type="date" :value="scout_today()" max="{{ scout_today() }}" required/>
             <x-form.input name="party" label="Collected from" placeholder="Who or what the money was collected from" required/>
             <x-form.input name="purpose" label="Collected for" placeholder="Annual fees, camp, shop sales…"/>
             <x-form.textarea name="details" label="Details"/>
@@ -104,7 +104,7 @@
             @csrf
             <p class="text-sm text-gray-500">Available: <strong>{{ scout_money($account->balance()) }}</strong>. The amount is deducted from the balance.</p>
             <x-form.input name="amount" label="Amount" type="number" step="0.01" min="0.01" required/>
-            <x-form.input name="date" label="Date" type="date" :value="now()->toDateString()" max="{{ now()->toDateString() }}" required/>
+            <x-form.input name="date" label="Date" type="date" :value="scout_today()" max="{{ scout_today() }}" required/>
             <x-form.input name="party" label="Requested by" required/>
             <x-form.input name="purpose" label="Purpose" required/>
             <x-form.textarea name="details" label="Details"/>

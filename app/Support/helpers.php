@@ -21,6 +21,17 @@ if (! function_exists('scout_now')) {
     }
 }
 
+if (! function_exists('scout_today')) {
+    /**
+     * Today's date (Y-m-d) in the organisation timezone. Storage is UTC, so a plain now() is a day behind for the first
+     * five hours of every Maldives day.
+     */
+    function scout_today(): string
+    {
+        return scout_now()->toDateString();
+    }
+}
+
 if (! function_exists('scout_date')) {
     function scout_date(CarbonInterface|string|null $value): string
     {
@@ -28,9 +39,9 @@ if (! function_exists('scout_date')) {
             return '';
         }
 
-        $date = $value instanceof CarbonInterface ? $value : Carbon::parse($value);
+        $date = $value instanceof CarbonInterface ? $value->copy() : Carbon::parse($value);
 
-        return $date->format('d.m.Y');
+        return $date->setTimezone(config('scout.timezone'))->format('d.m.Y');
     }
 }
 
@@ -57,9 +68,9 @@ if (! function_exists('scout_long_date')) {
             return '';
         }
 
-        $date = $value instanceof CarbonInterface ? $value : Carbon::parse($value);
+        $date = $value instanceof CarbonInterface ? $value->copy() : Carbon::parse($value);
 
-        return $date->format('j F Y');
+        return $date->setTimezone(config('scout.timezone'))->format('j F Y');
     }
 }
 

@@ -81,6 +81,10 @@ The portal is an installable web app (PWA) with the group's logo as its icon, so
   Then paste the photos and certificates folder links in Settings. Optionally set a **Finance folder** (left empty, a "Finance" folder is created inside the main Drive folder): every payment proof, bank deposit slip and spending receipt is filed in a sub-folder per module (Class fees, Annual fees, Shop purchases, Events, Bank deposits, Bank expenses), created automatically and press **Test Google Drive**. API keys cannot be used: they only reach public data. Without Google, photos go to `storage/app/public` and PDFs to `storage/app/certificates`.
 - **Telegram:** create a bot with @BotFather and paste the token in Settings (it is stored encrypted and never shown again). Linking uses `getUpdates`, so the bot must **not** have a webhook set. Users connect from Profile.
 
+## Time zone
+
+Times are stored in UTC and shown in the organisation time zone, **Indian/Maldives (UTC+5)** (`SCOUT_TIMEZONE`). "Today" in forms, date limits, event dates, report and audit date ranges, certificate years and yearly numbering all use Maldives time, so they roll over at midnight in the Maldives, not at 05:00. Do not change `APP_TIMEZONE`/`config/app.php`: that would shift every stored time.
+
 ## Commands
 
 | Command | Purpose |

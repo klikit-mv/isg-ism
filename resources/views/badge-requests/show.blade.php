@@ -35,7 +35,7 @@
                     <form method="POST" action="{{ route('badge-requests.generate', $badgeRequest) }}" class="card space-y-3">
                         @csrf
                         <h2 class="font-semibold">Generate certificate</h2>
-                        <x-form.input name="date_awarded" label="Date awarded" type="date" :value="now()->toDateString()" required/>
+                        <x-form.input name="date_awarded" label="Date awarded" type="date" :value="scout_today()" required/>
                         <x-form.select name="template" label="Template" :options="$templates" placeholder="The badge's template (default)"/>
                         <button class="btn-primary">Generate</button>
                     </form>

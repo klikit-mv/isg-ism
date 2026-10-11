@@ -9,6 +9,7 @@ use App\Support\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 class BankAccount extends Model
 {
@@ -52,7 +53,7 @@ class BankAccount extends Model
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->when($this->online_from, fn ($q, $from) => $q->where('verified_at', '>=', $from->copy()->startOfDay()));
+        return $query->when($this->online_from, fn ($q, $from) => $q->where('verified_at', '>=', Carbon::parse($from->toDateString(), config('scout.timezone'))->startOfDay()->utc()));
     }
 
     public function totalOnline(): string

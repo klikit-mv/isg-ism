@@ -30,7 +30,7 @@ class EventController extends Controller
             ->when(! $user->isAdmin(), fn ($q) => $q->where(fn ($w) => $w
                 ->where('status', '!=', EventStatus::Draft->value)
                 ->when($user->isLeader(), fn ($x) => $x->orWhere('created_by', $user->id))))
-            ->when($past, fn ($q) => $q->where('starts_at', '<', now()->startOfDay()), fn ($q) => $q->where('starts_at', '>=', now()->startOfDay()))
+            ->when($past, fn ($q) => $q->where('starts_at', '<', scout_now()->startOfDay()->utc()), fn ($q) => $q->where('starts_at', '>=', scout_now()->startOfDay()->utc()))
             ->orderBy('starts_at', $past ? 'desc' : 'asc')
             ->paginate(Pagination::MAX)
             ->withQueryString();

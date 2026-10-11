@@ -14,6 +14,7 @@ use App\Services\LeaderScopeService;
 use App\Support\Money;
 use App\Support\Pagination;
 use App\Support\Sort;
+use App\Support\YearFilter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +31,8 @@ class AnnualFeeController extends Controller
     {
         $user = $request->user();
         $ids = $this->scope->getLeaderStudentIds($user);
+        $years = AnnualFeeYear::query()->orderByDesc('year')->pluck('year', 'year')->all();
+        YearFilter::applyDefault($request, $years);
 
         $query = AnnualFee::query()
             ->select('annual_fees.*')
@@ -59,7 +62,7 @@ class AnnualFeeController extends Controller
                 'fee' => 'annual_fees.amount', 'paid' => 'annual_fees.paid_amount', 'outstanding' => 'annual_fees.outstanding_amount', 'status' => 'annual_fees.status',
             ], 'created', 'desc'))->paginate(Pagination::MAX)->withQueryString(),
             'stats' => ['records' => (int) $stats->records, 'paid' => (int) $stats->paid, 'billed' => Money::normalize($stats->billed)],
-            'years' => AnnualFeeYear::query()->orderByDesc('year')->pluck('year', 'year')->all(),
+            'years' => $years,
             'canManageYears' => $user->hasPermission(Permission::ManageFees),
         ]);
     }

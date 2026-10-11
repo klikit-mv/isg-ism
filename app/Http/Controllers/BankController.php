@@ -77,7 +77,7 @@ class BankController extends Controller
 
         $data = $request->validate([
             'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999'],
-            'date' => ['required', 'date', 'before_or_equal:today'],
+            'date' => ['required', 'date', 'before_or_equal:'.scout_today()],
             'party' => ['required', 'string', 'max:255'],
             'purpose' => [$deposit ? 'nullable' : 'required', 'string', 'max:255'],
             'details' => ['nullable', 'string', 'max:2000'],

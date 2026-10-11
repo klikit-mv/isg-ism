@@ -1,5 +1,5 @@
 @php
-    $activity ??= new \App\Models\Activity(['date' => now()]);
+    $activity ??= new \App\Models\Activity(['date' => scout_now()]);
     $selectedSections = old('sections', $activity->exists ? array_map(fn ($s) => $s->value, $activity->sections()) : []);
 @endphp
 <div class="space-y-4" x-data="{ charge: @js((bool) old('charge_fee', $activity->charge_fee)), all: @js((bool) old('all_students', $activity->exists ? $activity->all_students : false)) }">

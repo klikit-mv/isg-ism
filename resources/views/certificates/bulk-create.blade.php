@@ -12,7 +12,7 @@
         @csrf
         <div class="card grid gap-4 sm:grid-cols-3">
             <x-form.input name="title" label="Title" required/>
-            <x-form.input name="date_awarded" label="Date awarded" type="date" :value="now()->toDateString()" required/>
+            <x-form.input name="date_awarded" label="Date awarded" type="date" :value="scout_today()" required/>
             <x-form.select name="template" label="Template" :options="$templates" placeholder="Choose a template" required/>
         </div>
         @if ($students->isEmpty())

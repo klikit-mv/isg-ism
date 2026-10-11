@@ -142,19 +142,19 @@ class CertificateGenerationService
             'title' => 'Sample Achievement',
             'badge_name' => 'Sample Badge',
             'cert_number' => match ($template->type) {
-                CertificateType::Leadership => 'FLHSG-LEAD-'.date('Y').'-001',
-                CertificateType::General => 'FLHSG-CERT-'.date('Y').'-001',
-                default => 'FLHSG-PB-'.date('Y').'-001',
+                CertificateType::Leadership => 'FLHSG-LEAD-'.scout_now()->format('Y').'-001',
+                CertificateType::General => 'FLHSG-CERT-'.scout_now()->format('Y').'-001',
+                default => 'FLHSG-PB-'.scout_now()->format('Y').'-001',
             },
             'id_card_no' => 'A000000',
-            'date_awarded' => now()->toDateString(),
+            'date_awarded' => scout_today(),
         ]);
 
         $values = $this->valuesFor($sample);
         $values['post'] = 'Patrol Leader';
         $values['patrol_or_six'] = $values['patrol'] = 'Eagle Patrol';
         $values['troop_or_group'] = (string) config('scout.organisation');
-        $values['start_date'] = scout_long_date(now());
+        $values['start_date'] = scout_long_date(scout_now());
 
         return $this->fillTemplate($this->htmlFor($template, $template->type), $values);
     }

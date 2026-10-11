@@ -170,7 +170,7 @@ class SettingsService
 
     public function footerText(): string
     {
-        return (string) $this->get('footer_text', '© '.date('Y').' '.config('scout.name'));
+        return (string) $this->get('footer_text', '© '.scout_now()->format('Y').' '.config('scout.name'));
     }
 
     public function driveFolderId(): ?string

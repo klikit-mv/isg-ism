@@ -7,7 +7,7 @@
         @csrf
         <x-form.select name="student" label="Scout" :options="$students" placeholder="Choose a scout" required/>
         <x-form.input name="title" label="Title" required placeholder="e.g. Best Patrol Leader 2026"/>
-        <x-form.input name="date_awarded" label="Date awarded" type="date" :value="now()->toDateString()" required/>
+        <x-form.input name="date_awarded" label="Date awarded" type="date" :value="scout_today()" required/>
         <div class="grid gap-4 sm:grid-cols-2">
             <x-form.select name="template" label="Template" :options="$templates" placeholder="Choose a template"/>
             <x-form.select name="activity" label="…or the template of an activity" :options="$activities" placeholder="None"/>

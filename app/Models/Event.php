@@ -110,7 +110,7 @@ class Event extends Model
     public function scopePubliclyVisible(Builder $query): void
     {
         $query->whereIn('status', [EventStatus::Open->value, EventStatus::Closed->value])
-            ->where('starts_at', '>=', now()->startOfDay());
+            ->where('starts_at', '>=', scout_now()->startOfDay()->utc());
     }
 
     /**

@@ -115,7 +115,7 @@ class PaymentDriveTest extends TestCase
 
         $student = $this->submit();
 
-        Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":"'.$student->name.' ('.$student->national_id.')"') && str_contains($r->body(), '"parents":["classfolder"]'));
+        Http::assertSent(fn ($r) => $r->method() === 'POST' && str_contains($r->body(), '"name":'.json_encode($student->name.' ('.$student->national_id.')')) && str_contains($r->body(), '"parents":["classfolder"]'));
         Http::assertSent(fn ($r) => str_contains($r->url(), 'upload/drive') && str_contains($r->body(), '"parents":["scoutFolder"]'));
     }
 

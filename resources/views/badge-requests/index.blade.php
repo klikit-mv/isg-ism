@@ -51,7 +51,7 @@
             <div
                 x-data="{
                     step: 1, busy: false, error: '', data: @js($bulk), url: @js(route('badge-requests.bulk')),
-                    section: '', badge: '', search: '', picked: [], approve: true, date: @js(now()->toDateString()), template: '', result: null,
+                    section: '', badge: '', search: '', picked: [], approve: true, date: @js(scout_today()), template: '', result: null,
                     get sectionBadges() { return this.section === '' || this.section === 'all' ? this.data.badges : this.data.badges.filter((b) => ! b.section || b.section === this.section); },
                     get chosenBadge() { return this.data.badges.find((b) => b.id === this.badge) || null; },
                     get scouts() {
