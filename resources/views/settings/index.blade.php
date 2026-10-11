@@ -127,6 +127,60 @@
         <div class="lg:col-span-2"><button class="btn-primary">Save settings</button></div>
     </form>
 
+
+    @php
+        $backups = app(\App\Services\DatabaseBackupService::class);
+        $backup = $backups->schedule();
+        $backupLast = $backups->lastResult();
+    @endphp
+    <section class="card mt-6 space-y-4" data-testid="backup-card" x-data="{ frequency: @js(old('frequency', $backup['frequency'])) }">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 class="font-semibold">Database backup to Google Drive</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400">A compressed copy of the whole database is uploaded to a “{{ \App\Services\DatabaseBackupService::FOLDER_NAME }}” folder inside your main Google Drive folder. Times are Maldives time.</p>
+            </div>
+            <form method="POST" action="{{ route('settings.backup.run') }}">@csrf<button class="btn-accent">Back up now</button></form>
+        </div>
+
+        <form method="POST" action="{{ route('settings.backup.update') }}" class="space-y-4">
+            @csrf
+            <x-form.checkbox name="enabled" label="Back up automatically" :checked="$backup['enabled']"/>
+            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label for="backup_frequency" class="label">How often</label>
+                    <select id="backup_frequency" name="frequency" class="input" x-model="frequency">
+                        @foreach (\App\Services\DatabaseBackupService::FREQUENCIES as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                    </select>
+                </div>
+                <x-form.input name="time" label="At what time" type="time" :value="$backup['time']" required/>
+                <div x-show="frequency === 'weekly'" x-cloak>
+                    <x-form.select name="weekday" label="On" :options="\App\Services\DatabaseBackupService::WEEKDAYS" :value="$backup['weekday']"/>
+                </div>
+                <div x-show="frequency === 'monthly'" x-cloak>
+                    <x-form.select name="monthday" label="On day of the month" :options="array_combine(range(1, 31), range(1, 31))" :value="$backup['monthday']"/>
+                </div>
+                <x-form.input name="keep" label="Backups to keep" type="number" min="0" max="365" :value="$backup['keep']" help="Older ones are deleted from Drive. 0 keeps all."/>
+            </div>
+            <button class="btn-primary">Save backup schedule</button>
+        </form>
+
+        <div class="space-y-1 text-sm">
+            @if ($backup['enabled'])
+                <p class="text-gray-600 dark:text-gray-300">Next automatic backup: <strong>{{ scout_datetime($backups->nextSlot(now())) }}</strong> (Maldives time).</p>
+            @else
+                <p class="text-gray-500">Automatic backups are off.</p>
+            @endif
+            @if ($backupLast['at'])
+                <p class="{{ $backupLast['ok'] ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300' }}">
+                    Last attempt {{ scout_datetime($backupLast['at']) }}: {{ $backupLast['message'] }}
+                </p>
+            @else
+                <p class="text-gray-500">No backup has been made yet.</p>
+            @endif
+            <p class="text-xs text-gray-400">The server must run the scheduler (<code>php artisan schedule:run</code> every minute). Backups contain personal data: keep the Drive folder private.</p>
+        </div>
+    </section>
+
     <form id="google-disconnect" method="POST" action="{{ route('settings.google.disconnect') }}" class="hidden">@csrf</form>
 
     @if ($telegramConfigured)

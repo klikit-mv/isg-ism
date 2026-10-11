@@ -132,6 +132,35 @@ class GoogleDriveClient
         }
     }
 
+    /**
+     * Files in a folder whose name starts with a prefix, newest first.
+     *
+     * @return list<array{id: string, name: string, createdTime: string}>
+     */
+    public function listFiles(string $folderId, string $namePrefix): array
+    {
+        $escaped = str_replace("'", "\\'", $namePrefix);
+        $response = $this->request()?->get(self::API.'/files', [
+            'q' => "'{$folderId}' in parents and name contains '{$escaped}' and trashed = false",
+            'fields' => 'files(id,name,createdTime)',
+            'orderBy' => 'createdTime desc',
+            'pageSize' => 200,
+            'supportsAllDrives' => 'true',
+            'includeItemsFromAllDrives' => 'true',
+        ]);
+
+        if (! $response?->successful()) {
+            $this->failed('Listing the Drive folder', $response);
+
+            return [];
+        }
+
+        return collect($response->json('files', []))
+            ->filter(fn ($f) => str_starts_with((string) ($f['name'] ?? ''), $namePrefix))
+            ->values()
+            ->all();
+    }
+
     public function download(string $fileId): ?string
     {
         $response = $this->request()?->get(self::API.'/files/'.$fileId, ['alt' => 'media', 'supportsAllDrives' => 'true']);

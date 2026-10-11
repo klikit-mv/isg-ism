@@ -46,6 +46,7 @@ Leaders with extra permissions also see: **Verification** (approve or reject onl
 - **Users:** create accounts, set roles and permissions, reset PINs (signs the user out everywhere).
 - **Parent links:** a scout can have only one pending or approved parent.
 - **Settings:** default class fee, bank details, shop open/closed, proof size, footer, Google Drive folders, Telegram bot. Use the **Test** buttons to check connections.
+- **Backups:** under Settings → *Database backup to Google Drive* choose daily, weekly or monthly, the time, and how many copies to keep; *Back up now* makes one immediately.
 - **Audit logs:** every financial, membership, attendance, import and sign-in event.
 - **Import:** upload the legacy workbook; a dry run shows what would happen before **Import for real**. Download the messages as CSV.
 - **Section promotion** (Scout operations): move scouts one section forward.

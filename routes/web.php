@@ -4,6 +4,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AnnualFeeController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AuditLogController;
+use App\Http\Controllers\BackupController;
 use App\Http\Controllers\BadgeController;
 use App\Http\Controllers\BadgeRequestController;
 use App\Http\Controllers\BankController;
@@ -255,6 +256,8 @@ Route::middleware(['auth', 'module.access'])->group(function () {
         Route::get('/settings/google/connect', [GoogleConnectController::class, 'connect'])->name('settings.google.connect');
         Route::get('/settings/google/callback', [GoogleConnectController::class, 'callback'])->name('settings.google.callback');
         Route::post('/settings/google/disconnect', [GoogleConnectController::class, 'disconnect'])->name('settings.google.disconnect');
+        Route::post('/settings/backup', [BackupController::class, 'update'])->name('settings.backup.update');
+        Route::post('/settings/backup/run', [BackupController::class, 'run'])->middleware('throttle:integration-tests')->name('settings.backup.run');
         Route::post('/settings/test/drive', [SettingsController::class, 'testDrive'])->middleware('throttle:integration-tests')->name('settings.test.drive');
         Route::post('/settings/telegram/test-message', [SettingsController::class, 'sendTelegramTest'])->middleware('throttle:integration-tests')->name('settings.telegram.test-message');
         Route::post('/settings/test/telegram', [SettingsController::class, 'testTelegram'])->middleware('throttle:integration-tests')->name('settings.test.telegram');
