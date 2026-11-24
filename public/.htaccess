@@ -23,3 +23,10 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# The app's service worker must always be fetched fresh so a fixed version reaches every device.
+<IfModule mod_headers.c>
+    <Files "sw.js">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </Files>
+</IfModule>

@@ -128,7 +128,7 @@ class AttendanceTest extends TestCase
         $this->assertSame('10.00', $fee->paid_amount);
     }
 
-    public function test_roster_payments_preset_custom_zero_and_cap(): void
+    public function test_each_scout_pays_the_amount_chosen_in_the_register_not_the_default(): void
     {
         [$a, $b, $c, $d] = Student::factory()->count(4)->create();
         $activity = Activity::factory()->forAll()->charged('12.00')->create();
@@ -144,8 +144,11 @@ class AttendanceTest extends TestCase
         $this->assertSame('5.00', $paid($a)->paid_amount);
         $this->assertSame('7.50', $paid($b)->paid_amount);
         $this->assertSame('0.00', $paid($c)->paid_amount);
-        $this->assertSame('12.00', $paid($d)->paid_amount);
+        $this->assertSame('15.00', $paid($d)->paid_amount);
+        $this->assertSame('15.00', $paid($d)->amount, 'the fee follows what was paid');
         $this->assertSame(FeeStatus::Paid, $paid($d)->status);
+        $this->assertSame('12.00', $paid($a)->amount, 'others keep the default fee');
+        $this->assertSame('7.00', $paid($a)->outstanding_amount);
 
         $roster = Payment::query()->where('student_id', $a->id)->firstOrFail();
         $this->assertSame(Payment::SOURCE_ROSTER, $roster->source);
@@ -167,7 +170,27 @@ class AttendanceTest extends TestCase
         $this->assertSame(1, Payment::query()->count());
     }
 
-    public function test_roster_payment_subtracts_other_approved_payments(): void
+    public function test_editing_the_register_amount_changes_the_scouts_total_both_ways(): void
+    {
+        $student = Student::factory()->create();
+        $activity = Activity::factory()->forAll()->charged('10.00')->create();
+
+        $this->mark($activity, [$student->id => ['status' => 'Present', 'payment' => '15']]);
+        $fee = ClassFee::query()->firstOrFail();
+        $this->assertSame(['15.00', '15.00', '0.00'], [$fee->amount, $fee->paid_amount, $fee->outstanding_amount]);
+
+        $this->mark($activity, [$student->id => ['status' => 'Present', 'payment' => '5']]);
+        $fee = $fee->fresh();
+        $this->assertSame(['10.00', '5.00', '5.00'], [$fee->amount, $fee->paid_amount, $fee->outstanding_amount], 'lowering the amount brings the fee back to the default');
+        $this->assertSame(FeeStatus::Partial, $fee->status);
+
+        $this->mark($activity, [$student->id => ['status' => 'Present', 'payment' => '20']]);
+        $fee = $fee->fresh();
+        $this->assertSame(['20.00', '20.00', '0.00'], [$fee->amount, $fee->paid_amount, $fee->outstanding_amount]);
+        $this->assertSame(1, Payment::query()->where('source', 'roster')->count());
+    }
+
+    public function test_roster_payment_is_added_to_other_approved_payments(): void
     {
         $student = Student::factory()->create();
         $activity = Activity::factory()->forAll()->charged('10.00')->create();
@@ -180,7 +203,9 @@ class AttendanceTest extends TestCase
 
         $this->mark($activity, [$student->id => ['status' => 'Present', 'payment' => '10']]);
 
-        $this->assertSame('4.00', Payment::query()->where('source', 'roster')->firstOrFail()->amount);
+        $this->assertSame('10.00', Payment::query()->where('source', 'roster')->firstOrFail()->amount);
+        $this->assertSame('16.00', $fee->fresh()->amount);
+        $this->assertSame('16.00', $fee->fresh()->paid_amount);
         $this->assertSame(FeeStatus::Paid, $fee->fresh()->status);
     }
 
@@ -304,5 +329,66 @@ class AttendanceTest extends TestCase
             $this->assertNotFalse($position, "{$text} is missing or out of order");
             $last = $position;
         }
+    }
+
+    public function test_saving_the_register_shows_a_summary_of_attendance_and_fee_collection(): void
+    {
+        [$a, $b, $c, $d, $e] = Student::factory()->count(5)->section(ScoutSection::Scout)->create();
+        $activity = Activity::factory()->forAll()->charged('10.00')->create();
+        $activity->update(['sections' => null]);
+        $component = Livewire::actingAs($this->admin())->test(Mark::class, ['activity' => $activity]);
+        $total = count($component->get('rows'));
+
+        $component
+            ->set("rows.{$a->id}.status", 'Present')->set("rows.{$a->id}.payment", '10')
+            ->set("rows.{$b->id}.status", 'Present')->set("rows.{$b->id}.payment", '15')
+            ->set("rows.{$c->id}.status", 'Late')->set("rows.{$c->id}.payment", '0')
+            ->set("rows.{$d->id}.status", 'Absent')
+            ->set("rows.{$e->id}.status", 'Excused')
+            ->assertSee('Collected')
+            ->call('save')
+            ->assertSet('summary.counts', ['Present' => 2, 'Late' => 1, 'Absent' => 1, 'Excused' => 1])
+            ->assertSet('summary.unmarked', $total - 5)
+            ->assertSet('summary.fee.collected', '25.00')
+            ->assertSet('summary.fee.paid_count', 2)
+            ->assertSet('summary.fee.not_paid_count', 2)
+            ->assertSet('summary.fee.not_paid_amount', '20.00')
+            ->assertSee('Attendance saved')
+            ->assertSee('Need to report (not marked)')
+            ->assertSee('Sub total collected')
+            ->assertSee('Sub total not paid')
+            ->call('closeSummary')
+            ->assertSet('summary', null)
+            ->assertDontSee('Attendance saved');
+    }
+
+    public function test_the_register_shows_live_totals_that_follow_status_and_amount_changes(): void
+    {
+        $student = Student::factory()->section(ScoutSection::Scout)->create();
+        $activity = Activity::factory()->forAll()->charged('10.00')->create();
+
+        Livewire::actingAs($this->admin())->test(Mark::class, ['activity' => $activity])
+            ->assertSee('Register now')
+            ->assertSee('Collected '.scout_money('0.00'))
+            ->set("rows.{$student->id}.status", 'Present')
+            ->set("rows.{$student->id}.payment", '10')
+            ->assertSee('Collected '.scout_money('10.00'))
+            ->set("rows.{$student->id}.payment", 'other')
+            ->set("rows.{$student->id}.other", '25.5')
+            ->assertSee('Collected '.scout_money('25.50'))
+            ->set("rows.{$student->id}.status", 'Excused')
+            ->assertSee('Collected '.scout_money('0.00'));
+    }
+
+    public function test_status_buttons_have_their_own_colours(): void
+    {
+        $student = Student::factory()->section(ScoutSection::Scout)->create();
+        $activity = Activity::factory()->forAll()->create();
+
+        Livewire::actingAs($this->admin())->test(Mark::class, ['activity' => $activity])
+            ->assertSee('peer-checked:bg-emerald-600', false)
+            ->assertSee('peer-checked:bg-amber-500', false)
+            ->assertSee('peer-checked:bg-rose-600', false)
+            ->assertSee('peer-checked:bg-sky-600', false);
     }
 }

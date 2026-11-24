@@ -20,7 +20,7 @@
                                 @foreach (\App\Enums\RoverAttendanceStatus::cases() as $status)
                                     <label class="cursor-pointer">
                                         <input type="radio" class="peer sr-only" value="{{ $status->value }}" wire:model="marks.{{ $rover->id }}">
-                                        <span class="inline-block rounded-md border border-gray-300 px-2 py-1 text-xs peer-checked:border-navy-600 peer-checked:bg-navy-600 peer-checked:text-white dark:border-gray-600">{{ $status->value }}</span>
+                                        <span class="inline-block rounded-md border px-2 py-1 text-xs font-medium {{ $status->buttonClasses() }}">{{ $status->value }}</span>
                                     </label>
                                 @endforeach
                             </div>

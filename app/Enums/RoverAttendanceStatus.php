@@ -22,6 +22,18 @@ enum RoverAttendanceStatus: string
         return $this->value;
     }
 
+    /**
+     * Register button colours, the same as the scouts' register.
+     */
+    public function buttonClasses(): string
+    {
+        return match ($this) {
+            self::Present => AttendanceStatus::Present->buttonClasses(),
+            self::Absent => AttendanceStatus::Absent->buttonClasses(),
+            self::Excused => AttendanceStatus::Excused->buttonClasses(),
+        };
+    }
+
     public function tone(): string
     {
         return match ($this) {

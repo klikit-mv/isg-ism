@@ -1,6 +1,20 @@
 /* Scout portal service worker: lets the app install on Android and iOS. Pages are never cached (they hold private data);
-   only the offline page and the built CSS/JS are. */
-const CACHE = 'scout-shell-v2';
+   only the offline page and the built CSS/JS are, and only when the server answered properly (a failed or wrong answer
+   used to be kept for good, which left some devices without styles). */
+const CACHE = 'scout-shell-v3';
+
+const EXPECTED = { css: /text\/css/i, js: /javascript|ecmascript/i };
+
+// A response is worth keeping only if it is a real 200 of the right kind for the file.
+function isGood(response, url) {
+    if (! response || ! response.ok || response.status !== 200 || response.type === 'opaque' || response.redirected) {
+        return false;
+    }
+
+    const kind = url.pathname.endsWith('.css') ? 'css' : (url.pathname.endsWith('.js') ? 'js' : null);
+
+    return kind === null || EXPECTED[kind].test(response.headers.get('content-type') || '');
+}
 
 self.addEventListener('install', (event) => {
     event.waitUntil(caches.open(CACHE).then((cache) => cache.add('/offline')).then(() => self.skipWaiting()));
@@ -28,13 +42,16 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (url.origin === self.location.origin && url.pathname.startsWith('/build/')) {
+        // Network first: a good answer refreshes the copy; the copy is only used when the network fails.
         event.respondWith(
-            caches.match(request).then((hit) => hit || fetch(request).then((response) => {
-                const copy = response.clone();
-                caches.open(CACHE).then((cache) => cache.put(request, copy));
+            fetch(request).then((response) => {
+                if (isGood(response, url)) {
+                    const copy = response.clone();
+                    caches.open(CACHE).then((cache) => cache.put(request, copy));
+                }
 
                 return response;
-            })),
+            }).catch(() => caches.match(request).then((hit) => (hit && isGood(hit, url) ? hit : Response.error()))),
         );
     }
 });

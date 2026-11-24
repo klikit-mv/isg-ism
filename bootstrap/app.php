@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureUserIsActive::class,
             SecurityHeaders::class,
         ]);
+        // The site usually sits behind the host's reverse proxy (Plesk/nginx, Cloudflare): trust its forwarded https/host headers.
+        $middleware->trustProxies(at: '*');
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('dashboard'));
     })

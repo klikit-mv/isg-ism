@@ -13,14 +13,9 @@
     @include('layouts.partials.head', ['title' => $title ?? null])
 </head>
 <body class="min-h-screen bg-gray-50 font-sans text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100">
-<div x-data="{ sidebar: false }" class="flex min-h-screen flex-col">
+<div class="flex min-h-screen flex-col">
     <header class="sticky top-0 z-40 border-b border-navy-900 bg-navy-800 text-white dark:bg-navy-950">
         <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
-            @if ($nav)
-                <button type="button" class="rounded p-1 hover:bg-navy-700 md:hidden" x-on:click="sidebar = !sidebar" aria-label="Menu">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                </button>
-            @endif
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-semibold">
                 <x-logo class="h-8 w-8"/>
                 <span class="hidden sm:inline">{{ config('scout.short_name') }}</span>
@@ -83,26 +78,28 @@
     </header>
 
     <div class="mx-auto flex w-full max-w-7xl flex-1">
-        @if ($nav)
-            <aside class="fixed inset-y-14 left-0 z-30 w-60 -translate-x-full overflow-y-auto border-r border-gray-200 bg-white p-3 transition md:static md:inset-auto md:translate-x-0 md:bg-transparent dark:border-gray-800 dark:bg-gray-900 md:dark:bg-transparent"
-                :class="sidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
-                @if ($module)
-                    <div class="mb-2 px-3 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{{ $module['title'] }}</div>
-                @endif
-                <nav class="space-y-1">
+        <main class="min-w-0 flex-1 px-4 py-6 sm:px-6">
+            @if ($nav)
+                {{-- The module menu: one card per page. --}}
+                <nav aria-label="{{ $module['title'] ?? 'Menu' }} menu" class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" data-testid="menu-cards">
                     @foreach ($nav as $item)
-                        <a href="{{ $item['url'] }}" @class([
-                            'block rounded-lg px-3 py-2 text-sm font-medium',
-                            'bg-navy-100 text-navy-800 dark:bg-navy-900/60 dark:text-navy-100' => $item['active'],
-                            'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800' => ! $item['active'],
-                        ])>{{ $item['label'] }}</a>
+                        <a href="{{ $item['url'] }}" @if ($item['active']) aria-current="page" @endif @class([
+                            'group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium shadow-sm transition',
+                            'border-navy-500 bg-navy-50 text-navy-900 ring-1 ring-navy-500 dark:border-navy-400 dark:bg-navy-900/50 dark:text-navy-100 dark:ring-navy-400' => $item['active'],
+                            'border-gray-200 bg-white text-gray-700 hover:border-navy-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-navy-500' => ! $item['active'],
+                        ])>
+                            <span @class([
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                                'bg-navy-600 text-white' => $item['active'],
+                                'bg-navy-100 text-navy-700 group-hover:bg-navy-700 group-hover:text-white dark:bg-navy-900/60 dark:text-navy-200' => ! $item['active'],
+                            ])>
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Icons::path($personal ? 'id' : ($module['icon'] ?? null)) }}"/></svg>
+                            </span>
+                            <span class="min-w-0 leading-tight">{{ $item['label'] }}</span>
+                        </a>
                     @endforeach
                 </nav>
-            </aside>
-            <div x-show="sidebar" x-cloak x-on:click="sidebar = false" class="fixed inset-0 top-14 z-20 bg-black/30 md:hidden"></div>
-        @endif
-
-        <main class="min-w-0 flex-1 px-4 py-6 sm:px-6">
+            @endif
             <x-flash/>
             <div x-data="scoutPushBanner()" x-show="show" x-cloak class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-900 dark:border-navy-800 dark:bg-navy-900/40 dark:text-navy-100" data-testid="push-banner">
                 <span class="min-w-0 flex-1">Turn on notifications to get alerts from the portal on this device, even when the app is closed.</span>

@@ -3,6 +3,7 @@
 namespace App\Livewire\Attendance;
 
 use App\Enums\AttendanceStatus;
+use App\Enums\FeeStatus;
 use App\Exceptions\ScoutException;
 use App\Models\Activity;
 use App\Models\AttendanceRecord;
@@ -43,6 +44,9 @@ class Mark extends Component
     public ?string $flash = null;
 
     public ?string $error = null;
+
+    /** @var array<string, mixed>|null Shown in a window after a save. */
+    public ?array $summary = null;
 
     public function mount(Activity $activity): void
     {
@@ -161,6 +165,7 @@ class Mark extends Component
         $this->flash = "Saved {$result['marked']} mark(s).";
         $this->afterSave($activity);
         $this->loadRows();
+        $this->summary = $this->buildSummary($activity);
     }
 
     /**
@@ -224,6 +229,80 @@ class Mark extends Component
         return collect($buckets)->map(fn (array $list, string $title): array => ['title' => $title, 'students' => collect($list)])->values()->all();
     }
 
+    public function closeSummary(): void
+    {
+        $this->summary = null;
+    }
+
+    /**
+     * Attendance counts and the fee collection for the scouts on this register, as saved.
+     *
+     * @return array<string, mixed>
+     */
+    private function buildSummary(Activity $activity): array
+    {
+        $counts = ['Present' => 0, 'Late' => 0, 'Absent' => 0, 'Excused' => 0];
+        $unmarked = 0;
+
+        foreach ($this->rows as $row) {
+            isset($counts[$row['status']]) ? $counts[$row['status']]++ : $unmarked++;
+        }
+
+        $summary = ['activity' => $activity->name, 'date' => scout_date($activity->date), 'total' => count($this->rows), 'counts' => $counts, 'unmarked' => $unmarked, 'fee' => null];
+
+        if ($activity->charge_fee) {
+            $fees = ClassFee::query()
+                ->where('activity_id', $activity->id)
+                ->whereIn('student_id', array_keys($this->rows) ?: [0])
+                ->where('status', '!=', FeeStatus::Void->value)
+                ->get();
+
+            $summary['fee'] = [
+                'due' => Money::add('0', ...$fees->pluck('amount')->all()),
+                'collected' => Money::add('0', ...$fees->pluck('paid_amount')->all()),
+                'paid_count' => $fees->filter(fn (ClassFee $f) => Money::isPositive($f->paid_amount))->count(),
+                'not_paid_count' => $fees->filter(fn (ClassFee $f) => Money::isPositive($f->outstanding_amount))->count(),
+                'not_paid_amount' => Money::add('0', ...$fees->pluck('outstanding_amount')->all()),
+            ];
+        }
+
+        return $summary;
+    }
+
+    /**
+     * Running totals of what is on screen (before saving), so changing a status or an amount updates them at once.
+     *
+     * @return array{counts: array<string, int>, unmarked: int, collected: string, not_paid: int}
+     */
+    private function liveStats(): array
+    {
+        $counts = ['Present' => 0, 'Late' => 0, 'Absent' => 0, 'Excused' => 0];
+        $unmarked = 0;
+        $collected = '0';
+        $notPaid = 0;
+
+        foreach ($this->rows as $row) {
+            if (! isset($counts[$row['status']])) {
+                $unmarked++;
+
+                continue;
+            }
+
+            $counts[$row['status']]++;
+
+            if ($row['status'] === AttendanceStatus::Excused->value) {
+                continue;
+            }
+
+            $amount = $row['payment'] === 'other' ? $row['other'] : $row['payment'];
+            $amount = is_numeric($amount) && (float) $amount > 0 ? Money::normalize($amount) : '0';
+            $collected = Money::add($collected, $amount);
+            $notPaid += Money::isPositive($amount) ? 0 : 1;
+        }
+
+        return ['counts' => $counts, 'unmarked' => $unmarked, 'collected' => $collected, 'not_paid' => $notPaid];
+    }
+
     private function resetMessages(): void
     {
         $this->flash = null;
@@ -264,6 +343,7 @@ class Mark extends Component
             'students' => $visible,
             'sections' => $sections,
             'total' => $students->count(),
+            'live' => $this->liveStats(),
             'fees' => $fees,
             'choices' => app(ClassFeeService::class)->rosterPaymentChoices(),
         ]);

@@ -127,8 +127,10 @@ class ClassFeeService
     }
 
     /**
-     * Record the cash taken while marking. The amount is capped at the fee due
-     * less other approved (non-roster) payments. Zero rejects the roster payment.
+     * Record the cash taken while marking. The amount is exactly what was chosen in the register: scouts pay different
+     * amounts, so it is never cut down to the default fee. The scout's fee follows it: the activity's default fee, or
+     * more when more was paid. Choosing a smaller amount (or not paid) later brings the total back down. Zero rejects
+     * the roster payment.
      */
     public function settleRosterPayment(ClassFee $fee, string $choice, User $actor): ?Payment
     {
@@ -144,10 +146,10 @@ class ClassFeeService
             ->pluck('amount')
             ->all());
 
-        $room = Money::max('0', Money::sub($fee->amount, $otherPaid));
-        $amount = Money::min(Money::max('0', $choice), $room);
+        $amount = Money::max('0', $choice);
 
         $payment = $this->payments->upsertRosterCash($fee, $amount, $actor);
+        $fee->forceFill(['amount' => Money::max($this->amountFor($fee->activity), Money::add($otherPaid, $amount))])->save();
         $this->balances->calculateClassFeeBalance($fee);
 
         return $payment;
