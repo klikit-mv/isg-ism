@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('bank_accounts', 'receives_online')) {
+            return;
+        }
+
         Schema::table('bank_accounts', function (Blueprint $table) {
             $table->boolean('receives_online')->default(false)->after('status');
             $table->date('online_from')->nullable()->after('receives_online');

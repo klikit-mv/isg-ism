@@ -12,9 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('students', function (Blueprint $table) {
-            $table->text('status_reason')->nullable();
-            $table->timestamp('status_changed_at')->nullable();
-            $table->foreignId('status_changed_by')->nullable()->constrained('users')->nullOnDelete();
+            if (! Schema::hasColumn('students', 'status_reason')) {
+                $table->text('status_reason')->nullable();
+            }
+
+            if (! Schema::hasColumn('students', 'status_changed_at')) {
+                $table->timestamp('status_changed_at')->nullable();
+            }
+
+            if (! Schema::hasColumn('students', 'status_changed_by')) {
+                $table->foreignId('status_changed_by')->nullable()->constrained('users')->nullOnDelete();
+            }
         });
     }
 
