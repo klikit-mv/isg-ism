@@ -27,4 +27,13 @@ class LayoutTest extends TestCase
         $this->assertStringContainsString('isGood', $worker);
         $this->assertStringContainsString('scout-shell-v3', $worker);
     }
+
+    public function test_each_dashboard_card_holds_links_to_its_own_pages(): void
+    {
+        $this->actingAs($this->admin())
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertSee('data-testid="module-pages"', false)
+            ->assertSee('Mark attendance');
+    }
 }
