@@ -9,13 +9,22 @@ class LayoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_the_module_menu_is_a_row_of_cards_not_a_sidebar(): void
+    public function test_entering_a_module_shows_only_its_sub_cards_and_each_page_opens_on_its_own(): void
     {
-        $this->actingAs($this->admin())
-            ->get('/students')
+        $admin = $this->admin();
+
+        $this->actingAs($admin)
+            ->get('/modules/operations')
             ->assertOk()
             ->assertSee('data-testid="menu-cards"', false)
-            ->assertSee('data-testid="page-card"', false)
+            ->assertSee('Mark attendance')
+            ->assertDontSee('Enrol scout');
+
+        $this->actingAs($admin)
+            ->get('/students')
+            ->assertOk()
+            ->assertSee('data-testid="back-to-menu"', false)
+            ->assertDontSee('data-testid="menu-cards"', false)
             ->assertDontSee('<aside', false);
     }
 

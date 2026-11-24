@@ -79,29 +79,22 @@
 
     <div class="mx-auto flex w-full max-w-7xl flex-1">
         <main class="min-w-0 flex-1 px-4 py-6 sm:px-6">
-            <div @class(['rounded-2xl border border-navy-200 bg-navy-50/40 p-3 sm:p-4 dark:border-navy-800 dark:bg-navy-950/40' => $nav]) data-testid="module-shell">
-            @if ($nav)
-                {{-- Sub-cards of the module: one per page; the open page shows inside the card below. --}}
-                <nav aria-label="{{ $module['title'] ?? 'Menu' }} menu" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" data-testid="menu-cards">
+            @if ($nav && $personal)
+                <nav aria-label="My account menu" class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" data-testid="menu-cards">
                     @foreach ($nav as $item)
                         <a href="{{ $item['url'] }}" @if ($item['active']) aria-current="page" @endif @class([
-                            'group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium shadow-sm transition',
-                            'border-navy-500 bg-navy-50 text-navy-900 ring-1 ring-navy-500 dark:border-navy-400 dark:bg-navy-900/50 dark:text-navy-100 dark:ring-navy-400' => $item['active'],
-                            'border-gray-200 bg-white text-gray-700 hover:border-navy-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-navy-500' => ! $item['active'],
-                        ])>
-                            <span @class([
-                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-                                'bg-navy-600 text-white' => $item['active'],
-                                'bg-navy-100 text-navy-700 group-hover:bg-navy-700 group-hover:text-white dark:bg-navy-900/60 dark:text-navy-200' => ! $item['active'],
-                            ])>
-                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Icons::path($personal ? 'id' : ($module['icon'] ?? null)) }}"/></svg>
-                            </span>
-                            <span class="min-w-0 leading-tight">{{ $item['label'] }}</span>
-                        </a>
+                            'rounded-xl border px-4 py-3 text-sm font-medium shadow-sm transition',
+                            'border-navy-500 bg-navy-50 text-navy-900 ring-1 ring-navy-500 dark:bg-navy-900/50 dark:text-navy-100' => $item['active'],
+                            'border-gray-200 bg-white text-gray-700 hover:border-navy-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200' => ! $item['active'],
+                        ])>{{ $item['label'] }}</a>
                     @endforeach
                 </nav>
+            @elseif (count($nav) > 1 && $moduleKey && \Illuminate\Support\Facades\Route::currentRouteName() !== 'modules.enter')
+                <a href="{{ route('modules.enter', $moduleKey) }}" class="mb-4 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-navy-700 shadow-sm hover:border-navy-300 dark:border-gray-700 dark:bg-gray-800 dark:text-navy-200" data-testid="back-to-menu">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    {{ $module['title'] }}
+                </a>
             @endif
-            <div @class(['mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-900' => $nav]) data-testid="page-card">
             <x-flash/>
             <div x-data="scoutPushBanner()" x-show="show" x-cloak class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-900 dark:border-navy-800 dark:bg-navy-900/40 dark:text-navy-100" data-testid="push-banner">
                 <span class="min-w-0 flex-1">Turn on notifications to get alerts from the portal on this device, even when the app is closed.</span>
@@ -109,8 +102,6 @@
                 <button type="button" class="btn-secondary btn-sm" x-on:click="later()">Not now</button>
             </div>
             {{ $slot }}
-            </div>
-            </div>
         </main>
     </div>
 

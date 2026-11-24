@@ -47,7 +47,7 @@ class ModuleAccessTest extends TestCase
             ->assertSee('data-module="family"', false)
             ->assertSee('data-module="self"', false);
 
-        $this->actingAs($user)->get('/modules/family')->assertRedirect(route('family.index'));
+        $this->actingAs($user)->get('/modules/family')->assertOk()->assertSee(route('family.index'), false);
         $this->assertSame('family', session('current_module'));
         $this->actingAs($user)->get('/me')->assertOk();
         $this->assertSame('self', session('current_module'));
