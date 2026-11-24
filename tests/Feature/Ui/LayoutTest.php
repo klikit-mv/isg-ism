@@ -15,6 +15,7 @@ class LayoutTest extends TestCase
             ->get('/students')
             ->assertOk()
             ->assertSee('data-testid="menu-cards"', false)
+            ->assertSee('data-testid="page-card"', false)
             ->assertDontSee('<aside', false);
     }
 
@@ -28,12 +29,12 @@ class LayoutTest extends TestCase
         $this->assertStringContainsString('scout-shell-v3', $worker);
     }
 
-    public function test_each_dashboard_card_holds_links_to_its_own_pages(): void
+    public function test_the_home_page_shows_only_the_main_module_cards(): void
     {
         $this->actingAs($this->admin())
             ->get('/dashboard')
             ->assertOk()
-            ->assertSee('data-testid="module-pages"', false)
-            ->assertSee('Mark attendance');
+            ->assertSee('data-module="operations"', false)
+            ->assertDontSee('data-testid="module-pages"', false);
     }
 }

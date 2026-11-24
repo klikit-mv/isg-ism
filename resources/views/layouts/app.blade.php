@@ -79,56 +79,29 @@
 
     <div class="mx-auto flex w-full max-w-7xl flex-1">
         <main class="min-w-0 flex-1 px-4 py-6 sm:px-6">
+            <div @class(['rounded-2xl border border-navy-200 bg-navy-50/40 p-3 sm:p-4 dark:border-navy-800 dark:bg-navy-950/40' => $nav]) data-testid="module-shell">
             @if ($nav)
-                @php
-                    $menuModules = $personal
-                        ? [['key' => 'personal', 'title' => 'My account', 'icon' => 'id', 'pages' => $nav]]
-                        : collect(\App\Support\ScoutModules::cards($user))->map(fn ($m) => [
-                            'key' => $m['key'], 'title' => $m['title'], 'icon' => $m['icon'],
-                            'pages' => $m['key'] === $moduleKey ? $nav : \App\Support\Navigation::for($user, $m['key']),
-                        ])->filter(fn ($m) => $m['pages'] !== [])->values()->all();
-                    $currentPage = collect($nav)->firstWhere('active', true)['label'] ?? ($module['title'] ?? 'Menu');
-                @endphp
-                {{-- The menu: one card per module, its pages inside the card. --}}
-                <div x-data="{ menu: false }" class="mb-6" data-testid="menu-cards">
-                    <button type="button" x-on:click="menu = !menu" x-bind:aria-expanded="menu" class="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-800 shadow-sm md:hidden dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-                        <span class="flex items-center gap-2">
-                            <svg class="h-5 w-5 text-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
-                            Menu <span class="font-normal text-gray-500 dark:text-gray-400">· {{ $currentPage }}</span>
-                        </span>
-                        <svg class="h-4 w-4 transition" x-bind:class="menu && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                    </button>
-                    <nav aria-label="Menu" x-bind:class="menu ? 'mt-3 grid' : 'hidden md:grid'" class="grid-cols-1 gap-3 md:mt-0 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        @foreach ($menuModules as $entry)
-                            @php($isCurrent = $personal || $entry['key'] === $moduleKey)
-                            <section x-data="{ open: {{ $isCurrent ? 'true' : 'false' }} }" data-menu-module="{{ $entry['key'] }}" @class([
-                                'self-start rounded-xl border bg-white shadow-sm dark:bg-gray-800',
-                                'border-navy-400 ring-1 ring-navy-400 dark:border-navy-400 dark:ring-navy-400' => $isCurrent,
-                                'border-gray-200 dark:border-gray-700' => ! $isCurrent,
+                {{-- Sub-cards of the module: one per page; the open page shows inside the card below. --}}
+                <nav aria-label="{{ $module['title'] ?? 'Menu' }} menu" class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6" data-testid="menu-cards">
+                    @foreach ($nav as $item)
+                        <a href="{{ $item['url'] }}" @if ($item['active']) aria-current="page" @endif @class([
+                            'group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium shadow-sm transition',
+                            'border-navy-500 bg-navy-50 text-navy-900 ring-1 ring-navy-500 dark:border-navy-400 dark:bg-navy-900/50 dark:text-navy-100 dark:ring-navy-400' => $item['active'],
+                            'border-gray-200 bg-white text-gray-700 hover:border-navy-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-navy-500' => ! $item['active'],
+                        ])>
+                            <span @class([
+                                'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+                                'bg-navy-600 text-white' => $item['active'],
+                                'bg-navy-100 text-navy-700 group-hover:bg-navy-700 group-hover:text-white dark:bg-navy-900/60 dark:text-navy-200' => ! $item['active'],
                             ])>
-                                <button type="button" x-on:click="open = !open" x-bind:aria-expanded="open" class="flex w-full items-center gap-3 px-3 py-3 text-left">
-                                    <span @class(['flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', 'bg-navy-600 text-white' => $isCurrent, 'bg-navy-100 text-navy-700 dark:bg-navy-900/60 dark:text-navy-200' => ! $isCurrent])>
-                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Icons::path($entry['icon']) }}"/></svg>
-                                    </span>
-                                    <span class="min-w-0 flex-1 text-sm font-semibold leading-tight text-gray-900 dark:text-gray-100">{{ $entry['title'] }}</span>
-                                    <svg class="h-4 w-4 shrink-0 text-gray-400 transition" x-bind:class="open && 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                                </button>
-                                <ul x-show="open" @unless ($isCurrent) x-cloak @endunless class="space-y-1 border-t border-gray-100 p-2 dark:border-gray-700">
-                                    @foreach ($entry['pages'] as $item)
-                                        <li>
-                                            <a href="{{ $item['url'] }}" @if ($item['active']) aria-current="page" @endif @class([
-                                                'block rounded-lg px-3 py-2.5 text-sm',
-                                                'bg-navy-600 font-semibold text-white' => $item['active'],
-                                                'text-gray-700 hover:bg-navy-50 hover:text-navy-800 dark:text-gray-200 dark:hover:bg-gray-700' => ! $item['active'],
-                                            ])>{{ $item['label'] }}</a>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                            </section>
-                        @endforeach
-                    </nav>
-                </div>
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Icons::path($personal ? 'id' : ($module['icon'] ?? null)) }}"/></svg>
+                            </span>
+                            <span class="min-w-0 leading-tight">{{ $item['label'] }}</span>
+                        </a>
+                    @endforeach
+                </nav>
             @endif
+            <div @class(['mt-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-6 dark:border-gray-700 dark:bg-gray-900' => $nav]) data-testid="page-card">
             <x-flash/>
             <div x-data="scoutPushBanner()" x-show="show" x-cloak class="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-navy-200 bg-navy-50 px-4 py-3 text-sm text-navy-900 dark:border-navy-800 dark:bg-navy-900/40 dark:text-navy-100" data-testid="push-banner">
                 <span class="min-w-0 flex-1">Turn on notifications to get alerts from the portal on this device, even when the app is closed.</span>
@@ -136,6 +109,8 @@
                 <button type="button" class="btn-secondary btn-sm" x-on:click="later()">Not now</button>
             </div>
             {{ $slot }}
+            </div>
+            </div>
         </main>
     </div>
 
