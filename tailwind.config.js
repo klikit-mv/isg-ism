@@ -12,6 +12,7 @@ export default {
         './resources/views/**/*.blade.php',
         './app/Enums/**/*.php',
         './app/Livewire/**/*.php',
+        './app/Support/Tones.php',
     ],
 
     theme: {
@@ -20,8 +21,8 @@ export default {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
             colors: {
-                // Brand purple surfaces.
-                navy: colors.purple,
+                // Brand indigo surfaces.
+                navy: colors.indigo,
                 // Emerald accent.
                 gold: colors.emerald,
             },

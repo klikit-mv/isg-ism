@@ -25,7 +25,7 @@ class Student extends Model
         'index_number', 'name', 'national_id', 'email', 'photo_path', 'gender',
         'permanent_address', 'present_address', 'date_of_birth', 'parent_name',
         'primary_mobile', 'secondary_mobile', 'section',
-        'status', 'verified_at', 'verified_by', 'legacy_id',
+        'status', 'status_reason', 'status_changed_at', 'status_changed_by', 'verified_at', 'verified_by', 'legacy_id',
     ];
 
     protected function casts(): array
@@ -36,6 +36,7 @@ class Student extends Model
             'status' => StudentStatus::class,
             'date_of_birth' => 'date',
             'verified_at' => 'datetime',
+            'status_changed_at' => 'datetime',
         ];
     }
 

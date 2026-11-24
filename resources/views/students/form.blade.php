@@ -1,6 +1,6 @@
 @php $editing = $student->exists; @endphp
 <x-app-layout :title="$editing ? 'Edit scout' : 'Enrol scout'">
-    <x-page-header :title="$editing ? 'Edit '.$student->name : 'Enrol a scout'" :description="$editing ? 'Changes to name, National ID, email and status are copied to their account.' : 'Creates the scout and their sign-in account.'">
+    <x-page-header :title="$editing ? 'Edit '.$student->name : 'Enrol a scout'" :description="$editing ? 'Changes to name, National ID and email are copied to their account.' : 'Creates the scout and their sign-in account.'">
         <x-slot:actions>
             <a href="{{ $editing ? route('students.show', $student) : route('students.index') }}" class="btn-secondary">Cancel</a>
         </x-slot:actions>
@@ -12,9 +12,11 @@
 
         @include('students.partials.fields', ['student' => $student])
 
-        <div class="grid gap-4 sm:grid-cols-3">
-            <x-form.select name="status" label="Status" :options="\App\Enums\StudentStatus::options()" :value="$student->status"/>
-        </div>
+        @unless ($editing)
+            <div class="grid gap-4 sm:grid-cols-3">
+                <x-form.select name="status" label="Status" :options="\App\Enums\StudentStatus::options()" :value="$student->status"/>
+            </div>
+        @endunless
 
         <div class="grid gap-4 sm:grid-cols-2">
             @unless ($editing)

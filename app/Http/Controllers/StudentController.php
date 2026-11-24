@@ -14,6 +14,7 @@ use App\Support\StudentValidation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class StudentController extends Controller
@@ -140,6 +141,21 @@ class StudentController extends Controller
         $photos->assign($student, $request->file('photo'));
 
         return back()->with('success', 'The photo was updated.');
+    }
+
+    public function changeStatus(Request $request, Student $student): RedirectResponse
+    {
+        $this->authorize('update', $student);
+        abort_unless($student->status !== StudentStatus::Pending, 422, 'Verify or decline a pending registration instead.');
+
+        $data = $request->validate([
+            'status' => ['required', Rule::in([StudentStatus::Active->value, StudentStatus::Inactive->value])],
+            'reason' => ['required', 'string', 'min:3', 'max:500'],
+        ]);
+
+        $this->students->setStatus($student, StudentStatus::from($data['status']), $request->user(), trim($data['reason']));
+
+        return back()->with('success', "{$student->name} is now {$student->status->value}.");
     }
 
     public function verify(Request $request, Student $student): RedirectResponse

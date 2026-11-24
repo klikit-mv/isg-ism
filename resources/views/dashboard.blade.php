@@ -7,13 +7,13 @@
     @else
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($modules as $module)
-                <a href="{{ route('modules.enter', $module['key']) }}" class="card group flex items-start gap-4 transition hover:border-navy-300 hover:shadow-md" data-module="{{ $module['key'] }}">
-                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-navy-100 text-navy-700 group-hover:bg-navy-700 group-hover:text-white dark:bg-navy-900/60 dark:text-navy-200">
+                <a href="{{ route('modules.enter', $module['key']) }}" class="group flex items-start gap-4 rounded-2xl border p-5 text-white shadow-md transition hover:-translate-y-0.5 hover:shadow-lg {{ \App\Support\Tones::for($module['key']) }}" data-module="{{ $module['key'] }}">
+                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="{{ \App\Support\Icons::path($module['icon']) }}"/></svg>
                     </span>
                     <span>
-                        <span class="block font-semibold text-gray-900 dark:text-gray-100">{{ $module['title'] }}</span>
-                        <span class="mt-1 block text-sm text-gray-500 dark:text-gray-400">{{ $module['description'] }}</span>
+                        <span class="block text-lg font-semibold">{{ $module['title'] }}</span>
+                        <span class="mt-1 block text-sm text-white/85">{{ $module['description'] }}</span>
                     </span>
                 </a>
             @endforeach

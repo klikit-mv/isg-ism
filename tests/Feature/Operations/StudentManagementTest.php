@@ -64,14 +64,22 @@ class StudentManagementTest extends TestCase
             'national_id' => 'B111222',
             'email' => 'new@example.com',
             'name' => 'New Name',
-            'status' => 'inactive',
         ]))->assertSessionHasNoErrors();
 
         $user->refresh();
         $this->assertSame('New Name', $user->name);
         $this->assertSame('B111222', $user->national_id);
         $this->assertSame('new@example.com', $user->email);
-        $this->assertSame(UserStatus::Inactive, $user->status);
+    }
+
+    public function test_changing_status_with_a_reason_mirrors_onto_the_account(): void
+    {
+        $student = Student::factory()->create();
+        $user = $this->studentUser($student);
+
+        $this->actingAs($this->admin())->post(route('students.status', $student), ['status' => 'inactive', 'reason' => 'Left the group'])->assertSessionHasNoErrors();
+
+        $this->assertSame(UserStatus::Inactive, $user->refresh()->status);
     }
 
     public function test_delete_soft_deletes_student_and_account(): void

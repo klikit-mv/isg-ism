@@ -22,6 +22,9 @@
                 <x-confirm :action="route('students.reject', $student)" label="Decline" size="md" message="Decline this registration? The account stays inactive." confirm="Decline"/>
             @endif
             @can('update', $student)
+                @unless ($isPending)
+                    <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('open-modal', 'student-status')" data-testid="change-status">Change status</button>
+                @endunless
                 <a href="{{ route('students.edit', $student) }}" class="btn-secondary">Edit</a>
             @endcan
             @can('delete', $student)
@@ -30,6 +33,30 @@
         </div>
     @endif
 </div>
+
+@if ($context === 'students' && $student->status_reason && ! $isPending)
+    <div class="mb-6 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm dark:border-gray-700 dark:bg-gray-800" data-testid="status-reason">
+        <span class="font-semibold">Marked {{ $student->status->value }}</span>
+        @if ($student->status_changed_at) <span class="text-gray-500 dark:text-gray-400">on {{ $student->status_changed_at->format('d M Y') }}</span> @endif
+        <span class="text-gray-500 dark:text-gray-400">·</span> {{ $student->status_reason }}
+    </div>
+@endif
+
+@if ($context === 'students')
+    @can('update', $student)
+        <x-modal name="student-status" title="Change status" maxWidth="md">
+            <form method="POST" action="{{ route('students.status', $student) }}" class="space-y-4">
+                @csrf
+                <x-form.select name="status" label="Status" :options="['active' => 'Active', 'inactive' => 'Inactive']" :value="$student->status === \App\Enums\StudentStatus::Active ? 'inactive' : 'active'"/>
+                <x-form.textarea name="reason" label="Reason" rows="3" required/>
+                <div class="flex justify-end gap-2">
+                    <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('close-modal', 'student-status')">Cancel</button>
+                    <button class="btn-primary">Save status</button>
+                </div>
+            </form>
+        </x-modal>
+    @endcan
+@endif
 
 <nav class="mb-6 flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-700" aria-label="Record tabs">
     @foreach ($tabs as $key => $label)

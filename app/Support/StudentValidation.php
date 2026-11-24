@@ -42,7 +42,9 @@ final class StudentValidation
             return $rules;
         }
 
-        $rules['status'] = ['required', Rule::enum(StudentStatus::class)];
+        if ($student === null) {
+            $rules['status'] = ['required', Rule::enum(StudentStatus::class)];
+        }
 
         if ($student === null) {
             $rules['pin'] = ['nullable', 'string', 'min:4', 'max:32'];

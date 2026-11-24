@@ -12,9 +12,9 @@
 <head>
     @include('layouts.partials.head', ['title' => $title ?? null])
 </head>
-<body class="min-h-screen bg-gray-50 font-sans text-gray-900 antialiased dark:bg-gray-900 dark:text-gray-100">
+<body class="min-h-screen bg-slate-100 font-sans text-gray-900 antialiased dark:bg-slate-950 dark:text-gray-100">
 <div class="flex min-h-screen flex-col">
-    <header class="sticky top-0 z-40 border-b border-navy-900 bg-navy-800 text-white dark:bg-navy-950">
+    <header class="sticky top-0 z-40 border-b border-indigo-900/40 bg-gradient-to-r from-indigo-800 via-violet-700 to-fuchsia-700 text-white dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900">
         <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4">
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2 font-semibold">
                 <x-logo class="h-8 w-8"/>
@@ -26,13 +26,13 @@
             @endif
 
             <div class="ml-auto flex items-center gap-2">
-                <a href="{{ route('dashboard') }}" class="hidden rounded-lg px-3 py-1.5 text-sm hover:bg-navy-700 sm:inline-block">Modules</a>
+                <a href="{{ route('dashboard') }}" class="hidden rounded-lg px-3 py-1.5 text-sm hover:bg-white/15 sm:inline-block">Modules</a>
 
                 <x-theme-switch/>
 
                 {{-- Notifications bell --}}
                 <div x-data="{ open: false, expanded: null }" class="relative">
-                    <button type="button" x-on:click="open = !open" class="relative rounded-lg p-1.5 hover:bg-navy-700" aria-label="Notifications">
+                    <button type="button" x-on:click="open = !open" class="relative rounded-lg p-1.5 hover:bg-white/15" aria-label="Notifications">
                         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
                         @if ($unreadCount > 0)
                             <span class="absolute -right-0.5 -top-0.5 rounded-full bg-gold-500 px-1.5 text-[10px] font-bold" data-testid="unread-count">{{ $unreadCount }}</span>
@@ -59,7 +59,7 @@
 
                 {{-- User menu --}}
                 <div x-data="{ open: false }" class="relative">
-                    <button type="button" x-on:click="open = !open" class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-navy-700">
+                    <button type="button" x-on:click="open = !open" class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-white/15">
                         <x-avatar :user="$user" class="h-7 w-7 text-xs"/>
                         <span class="hidden max-w-[10rem] truncate md:inline">{{ $user->name }}</span>
                     </button>
