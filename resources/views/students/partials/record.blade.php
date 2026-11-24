@@ -48,6 +48,7 @@
             <form method="POST" action="{{ route('students.status', $student) }}" class="space-y-4">
                 @csrf
                 <x-form.select name="status" label="Status" :options="['active' => 'Active', 'inactive' => 'Inactive']" :value="$student->status === \App\Enums\StudentStatus::Active ? 'inactive' : 'active'"/>
+                <x-form.input name="effective_date" type="date" label="Date" :value="scout_today()" :max="scout_today()" required/>
                 <x-form.textarea name="reason" label="Reason" rows="3" required/>
                 <div class="flex justify-end gap-2">
                     <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('close-modal', 'student-status')">Cancel</button>

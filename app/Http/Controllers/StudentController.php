@@ -13,6 +13,7 @@ use App\Support\StudentRecord;
 use App\Support\StudentValidation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -151,9 +152,10 @@ class StudentController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in([StudentStatus::Active->value, StudentStatus::Inactive->value])],
             'reason' => ['required', 'string', 'min:3', 'max:500'],
+            'effective_date' => ['required', 'date', 'before_or_equal:'.scout_today()],
         ]);
 
-        $this->students->setStatus($student, StudentStatus::from($data['status']), $request->user(), trim($data['reason']));
+        $this->students->setStatus($student, StudentStatus::from($data['status']), $request->user(), trim($data['reason']), Carbon::parse($data['effective_date']));
 
         return back()->with('success', "{$student->name} is now {$student->status->value}.");
     }

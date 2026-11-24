@@ -167,18 +167,18 @@ class StudentService
     /**
      * Make a scout active or inactive. The reason is kept on the record and in the audit trail.
      */
-    public function setStatus(Student $student, StudentStatus $status, User $actor, ?string $reason = null): void
+    public function setStatus(Student $student, StudentStatus $status, User $actor, ?string $reason = null, ?\DateTimeInterface $on = null): void
     {
-        DB::transaction(function () use ($student, $status, $actor, $reason): void {
+        DB::transaction(function () use ($student, $status, $actor, $reason, $on): void {
             $from = $student->status;
             $student->update([
                 'status' => $status,
                 'status_reason' => $reason,
-                'status_changed_at' => scout_now(),
+                'status_changed_at' => $on ?? scout_now(),
                 'status_changed_by' => $actor->id,
             ]);
             $this->mirrorAccount($student);
-            $this->audit->record('student.status_changed', $student, ['from' => $from?->value, 'status' => $status->value, 'reason' => $reason], $actor);
+            $this->audit->record('student.status_changed', $student, ['from' => $from?->value, 'status' => $status->value, 'reason' => $reason, 'effective' => ($on ?? scout_now())->format('Y-m-d')], $actor);
         });
     }
 

@@ -77,7 +77,7 @@ class StudentManagementTest extends TestCase
         $student = Student::factory()->create();
         $user = $this->studentUser($student);
 
-        $this->actingAs($this->admin())->post(route('students.status', $student), ['status' => 'inactive', 'reason' => 'Left the group'])->assertSessionHasNoErrors();
+        $this->actingAs($this->admin())->post(route('students.status', $student), ['status' => 'inactive', 'reason' => 'Left the group', 'effective_date' => scout_today()])->assertSessionHasNoErrors();
 
         $this->assertSame(UserStatus::Inactive, $user->refresh()->status);
     }
