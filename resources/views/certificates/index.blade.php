@@ -4,6 +4,7 @@
             @can('create', \App\Models\Certificate::class)
                 <a href="{{ route('certificates.create') }}" class="btn-primary">Issue certificate</a>
                 <a href="{{ route('certificates.bulk-create') }}" class="btn-secondary">Bulk issue</a>
+                <a href="{{ route('certificates.external') }}" class="btn-secondary" data-testid="upload-external">Upload from another party</a>
             @endcan
         </x-slot:actions>
     </x-page-header>

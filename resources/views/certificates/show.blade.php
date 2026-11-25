@@ -2,9 +2,11 @@
     <x-page-header :title="$certificate->displayTitle()" :description="$certificate->cert_number.' · '.$certificate->student_name">
         <x-slot:actions>
             <a href="{{ route('certificates.download', $certificate) }}" class="btn-primary">Download PDF</a>
+            @if ($certificate->type !== \App\Enums\CertificateType::External)
             @can('manage', $certificate)
                 <form method="POST" action="{{ route('certificates.regenerate', $certificate) }}">@csrf<button class="btn-secondary">Regenerate</button></form>
             @endcan
+            @endif
         </x-slot:actions>
     </x-page-header>
 
@@ -19,6 +21,7 @@
                 <div><dt class="text-gray-500">Status</dt><dd><x-badge :value="$certificate->status"/></dd></div>
                 <div><dt class="text-gray-500">Scout</dt><dd>{{ $certificate->student_name }}</dd></div>
                 <div><dt class="text-gray-500">Awarded</dt><dd>{{ scout_long_date($certificate->date_awarded) }}</dd></div>
+                @if ($certificate->issuer)<div><dt class="text-gray-500">Issued by</dt><dd>{{ $certificate->issuer }}</dd></div>@endif
                 @if ($certificate->activity)<div><dt class="text-gray-500">Activity</dt><dd>{{ $certificate->activity->name }}</dd></div>@endif
                 <div><dt class="text-gray-500">Generated</dt><dd>{{ scout_datetime($certificate->generated_at) }}</dd></div>
                 <div><dt class="text-gray-500">Public check</dt><dd><a class="link" href="{{ route('certificates.verify', ['cert_number' => $certificate->cert_number]) }}">Verification page</a></dd></div>

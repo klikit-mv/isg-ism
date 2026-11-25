@@ -97,7 +97,7 @@ class DemoSeeder extends Seeder
 
         $templates = [];
 
-        foreach (CertificateType::cases() as $type) {
+        foreach (array_filter(CertificateType::cases(), fn (CertificateType $type) => $type !== CertificateType::External) as $type) {
             $templates[$type->value] = CertificateTemplate::query()->create([
                 'template_id' => 'TPL-'.strtoupper($type->value === 'leadership' ? 'LEADER' : str_pad($type->value, 6, 'X')),
                 'name' => ucfirst($type->value).' certificate',

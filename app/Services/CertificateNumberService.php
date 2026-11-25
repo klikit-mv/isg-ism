@@ -62,6 +62,13 @@ class CertificateNumberService
         return $this->format('CERT', $year, $this->nextSequence('general:'.$year, $year, 'CERT'));
     }
 
+    public function nextExternalNumber(): string
+    {
+        $year = $this->currentYear();
+
+        return $this->format('EXT', $year, $this->nextSequence('external:'.$year, $year, 'EXT'));
+    }
+
     public function peekGeneralNumber(): string
     {
         $year = $this->currentYear();

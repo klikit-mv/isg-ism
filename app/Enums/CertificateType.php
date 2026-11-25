@@ -11,6 +11,7 @@ enum CertificateType: string
     case Badge = 'badge';
     case General = 'general';
     case Leadership = 'leadership';
+    case External = 'external';
 
     public function tone(): string
     {
@@ -18,6 +19,7 @@ enum CertificateType: string
             self::Badge => 'green',
             self::General => 'blue',
             self::Leadership => 'purple',
+            self::External => 'amber',
         };
     }
 }

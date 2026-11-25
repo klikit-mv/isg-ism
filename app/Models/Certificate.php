@@ -13,7 +13,7 @@ class Certificate extends Model
     use HasUuid;
 
     protected $fillable = [
-        'cert_id', 'type', 'student_id', 'student_name', 'title', 'cert_number', 'id_card_no',
+        'cert_id', 'type', 'student_id', 'student_name', 'title', 'issuer', 'cert_number', 'id_card_no',
         'date_awarded', 'path', 'status', 'badge_id', 'badge_name', 'template_id', 'activity_id',
         'badge_request_id', 'created_by', 'generated_by', 'generated_at', 'verified_by', 'verified_at',
     ];
@@ -82,6 +82,7 @@ class Certificate extends Model
         return match ($this->type) {
             CertificateType::Badge => (string) ($this->badge_name ?? 'Badge'),
             CertificateType::Leadership => 'Leadership certificate',
+            CertificateType::External => (string) ($this->title ?? 'Certificate').($this->issuer ? ' ('.$this->issuer.')' : ''),
             default => (string) ($this->title ?? 'Certificate'),
         };
     }

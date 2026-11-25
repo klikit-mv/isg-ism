@@ -80,6 +80,44 @@ class CertificateGenerationService
     }
 
     /**
+     * A certificate made by another party (for example SAM): the supplied PDF is stored as it is, never re-rendered.
+     */
+    public function storeExternalCertificate(Student $student, string $title, ?string $issuer, CarbonInterface|string $date, string $pdf, User $actor): Certificate
+    {
+        if (! str_starts_with($pdf, '%PDF')) {
+            throw new ScoutException('The file is not a PDF.');
+        }
+
+        if (trim($title) === '') {
+            throw new ScoutException('A certificate needs a title.');
+        }
+
+        return DB::transaction(function () use ($student, $title, $issuer, $date, $pdf, $actor): Certificate {
+            $certificate = Certificate::query()->create([
+                'cert_id' => 'C'.strtoupper(Str::random(8)),
+                'type' => CertificateType::External,
+                'student_id' => $student->id,
+                'student_name' => $student->name,
+                'id_card_no' => $student->national_id,
+                'title' => $title,
+                'issuer' => filled($issuer) ? $issuer : null,
+                'cert_number' => $this->numbers->nextExternalNumber(),
+                'date_awarded' => Carbon::parse($date)->toDateString(),
+                'status' => CertificateStatus::Verified,
+                'created_by' => $actor->id,
+                'verified_by' => $actor->id,
+                'verified_at' => now(),
+            ]);
+
+            $path = $this->storage->put($student, $certificate->cert_number, $pdf);
+            $certificate->forceFill(['path' => $path, 'generated_by' => $actor->id, 'generated_at' => now()])->save();
+            $this->audit->record('certificate.external_uploaded', $certificate, ['cert_number' => $certificate->cert_number, 'issuer' => $certificate->issuer], $actor);
+
+            return $certificate;
+        });
+    }
+
+    /**
      * First time: a new LEAD number. Again: refresh the same certificate and number.
      */
     public function generateLeadershipCertificate(LeadershipRecord $record, User $actor, ?CertificateTemplate $template = null): Certificate
@@ -116,6 +154,10 @@ class CertificateGenerationService
      */
     public function regenerate(Certificate $certificate, User $actor): Certificate
     {
+        if ($certificate->type === CertificateType::External) {
+            throw new ScoutException('A certificate from another party is kept as uploaded and cannot be regenerated.');
+        }
+
         $template = $certificate->template?->active ? $certificate->template : $this->activeTemplate($certificate->type);
         $certificate->template_id = $template?->id;
         $pdf = $this->renderPdf($certificate, $template);

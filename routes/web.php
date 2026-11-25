@@ -176,6 +176,9 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::post('/certificates', [CertificateController::class, 'store'])->name('certificates.store');
     Route::get('/certificates/bulk-create', [CertificateController::class, 'bulkCreate'])->name('certificates.bulk-create');
     Route::post('/certificates/bulk-create', [CertificateController::class, 'bulkStore'])->name('certificates.bulk-store');
+    Route::get('/certificates/external', [CertificateController::class, 'externalCreate'])->name('certificates.external');
+    Route::post('/certificates/external', [CertificateController::class, 'externalStage'])->name('certificates.external.stage');
+    Route::post('/certificates/external/confirm', [CertificateController::class, 'externalStore'])->name('certificates.external.store');
     Route::post('/certificates/bulk-download', [CertificateController::class, 'bulkDownload'])->name('certificates.bulk-download');
     Route::post('/certificates/activities/{activity}/issue', [CertificateController::class, 'issueActivity'])->name('certificates.activities.issue');
     Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');

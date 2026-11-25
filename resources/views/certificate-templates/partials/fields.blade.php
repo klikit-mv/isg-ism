@@ -1,6 +1,6 @@
 @php $suffix = $template->uuid ?? 'new'; @endphp
 <x-form.input name="name" label="Name" :value="$template->name" required :id="'tname-'.$suffix"/>
-<x-form.select name="type" label="Type" :options="\App\Enums\CertificateType::options()" :value="$template->type" required :id="'ttype-'.$suffix"/>
+<x-form.select name="type" label="Type" :options="\Illuminate\Support\Arr::except(\App\Enums\CertificateType::options(), 'external')" :value="$template->type" required :id="'ttype-'.$suffix"/>
 <div x-data="{ link: @js($template->usesGoogleSlides() ? $template->google_slide_id : ''), result: null, busy: false,
         async test() {
             this.busy = true; this.result = null;

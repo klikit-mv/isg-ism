@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\CertificateType;
 use App\Enums\ScoutSection;
+use App\Exceptions\ScoutException;
 use App\Models\Activity;
 use App\Models\Badge;
 use App\Models\Certificate;
@@ -13,8 +14,10 @@ use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\CertificateGenerationService;
 use App\Services\CertificateService;
+use App\Services\ExternalCertificateService;
 use App\Services\GoogleDriveCertificateService;
 use App\Services\LeaderScopeService;
+use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,6 +33,7 @@ class CertificateController extends Controller
         private GoogleDriveCertificateService $storage,
         private AuditLogService $audit,
         private LeaderScopeService $scope,
+        private ExternalCertificateService $external,
     ) {}
 
     public function index(Request $request): View
@@ -119,6 +123,65 @@ class CertificateController extends Controller
         return $redirect;
     }
 
+    public function externalCreate(): View
+    {
+        $this->authorize('create', Certificate::class);
+
+        return view('certificates.external');
+    }
+
+    public function externalStage(Request $request): View|RedirectResponse
+    {
+        $this->authorize('create', Certificate::class);
+
+        $data = $request->validate([
+            'files' => ['required', 'array', 'min:1', 'max:'.ExternalCertificateService::MAX_FILES],
+            'files.*' => ['file', 'mimes:pdf', 'max:'.($this->settingsKb() * 4)],
+            'issuer' => ['required', 'string', 'max:120'],
+            'date_awarded' => ['required', 'date', 'before_or_equal:'.scout_today()],
+        ]);
+
+        try {
+            $staged = $this->external->stage($request->file('files'), $request->user());
+        } catch (ScoutException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return view('certificates.external-review', [
+            'token' => $staged['token'],
+            'rows' => $staged['rows'],
+            'issuer' => $data['issuer'],
+            'date' => $data['date_awarded'],
+            'students' => $this->studentOptionsById($request),
+        ]);
+    }
+
+    public function externalStore(Request $request): RedirectResponse
+    {
+        $this->authorize('create', Certificate::class);
+
+        $data = $request->validate([
+            'token' => ['required', 'uuid'],
+            'issuer' => ['required', 'string', 'max:120'],
+            'date_awarded' => ['required', 'date', 'before_or_equal:'.scout_today()],
+            'rows' => ['required', 'array', 'max:'.ExternalCertificateService::MAX_FILES],
+            'rows.*.key' => ['required', 'string', 'max:20'],
+            'rows.*.student_id' => ['nullable', 'integer'],
+            'rows.*.title' => ['nullable', 'string', 'max:255'],
+            'rows.*.skip' => ['nullable'],
+        ]);
+
+        $result = $this->external->commit($data['token'], $data['rows'], $data['issuer'], $data['date_awarded'], $request->user());
+        $redirect = redirect()->route('certificates.index')->with('success', $result['created'].' certificate(s) uploaded.');
+
+        if ($result['failed'] !== []) {
+            $lines = collect($result['failed'])->map(fn ($reason, $name) => "{$name}: {$reason}")->implode('; ');
+            $redirect->with('warning', count($result['failed']).' could not be added — '.$lines);
+        }
+
+        return $redirect;
+    }
+
     public function show(Certificate $certificate): View
     {
         $this->authorize('view', $certificate);
@@ -149,6 +212,8 @@ class CertificateController extends Controller
                 'Cache-Control' => 'private, no-store',
             ]);
         }
+
+        abort_if($certificate->type === CertificateType::External, 404);
 
         return response($this->generator->previewHtml($certificate))
             ->header('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'")
@@ -213,7 +278,12 @@ class CertificateController extends Controller
     public function regenerate(Request $request, Certificate $certificate): RedirectResponse
     {
         $this->authorize('manage', $certificate);
-        $this->generator->regenerate($certificate, $request->user());
+
+        try {
+            $this->generator->regenerate($certificate, $request->user());
+        } catch (ScoutException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'The certificate PDF was regenerated.');
     }
@@ -225,7 +295,7 @@ class CertificateController extends Controller
     {
         $pdf = $this->storage->contents($certificate->path);
 
-        if ($pdf === null) {
+        if ($pdf === null && $certificate->type !== CertificateType::External) {
             $this->generator->regenerate($certificate, auth()->user() ?? $certificate->student->user ?? new User);
             $pdf = $this->storage->contents($certificate->fresh()->path);
         }
@@ -238,6 +308,21 @@ class CertificateController extends Controller
             'Content-Disposition' => 'inline; filename="'.$certificate->cert_number.'.pdf"',
             'X-Content-Type-Options' => 'nosniff',
         ]);
+    }
+
+    private function settingsKb(): int
+    {
+        return max(1024, app(SettingsService::class)->proofMaxKb());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function studentOptionsById(Request $request): array
+    {
+        return $this->scope->constrainStudents(Student::query(), $request->user())->orderBy('name')->get(['id', 'name', 'section'])
+            ->mapWithKeys(fn (Student $s) => [$s->id => $s->name.' ('.($s->section?->value ?? '').')'])
+            ->all();
     }
 
     /**
