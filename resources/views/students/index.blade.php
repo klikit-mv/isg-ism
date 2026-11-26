@@ -14,6 +14,7 @@
         <x-form.input name="q" label="Search" :value="request('q')" placeholder="Name, National ID or index"/>
         <x-form.select name="section" label="Section" :options="\App\Enums\ScoutSection::options()" :value="request('section')" placeholder="Any section"/>
         <x-form.select name="status" label="Status" :options="\App\Enums\StudentStatus::options()" :value="request('status')" placeholder="Any status"/>
+        <x-form.select name="group" label="Group" :options="['none' => 'Not in any group']" :value="request('group')" placeholder="Any"/>
     </x-filters>
 
     @if ($students->isEmpty())

@@ -30,7 +30,8 @@ class StudentController extends Controller
         $query = Student::query()
             ->search($request->query('q'))
             ->when($request->query('section'), fn ($q, $section) => $q->where('section', $section))
-            ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status));
+            ->when($request->query('status'), fn ($q, $status) => $q->where('status', $status))
+            ->when($request->query('group') === 'none', fn ($q) => $q->whereDoesntHave('groups'));
 
         $this->scope->constrainStudents($query, $user);
 

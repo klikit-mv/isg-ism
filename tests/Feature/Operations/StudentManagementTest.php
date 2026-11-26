@@ -137,4 +137,18 @@ class StudentManagementTest extends TestCase
         $this->actingAs($this->admin())->get('/students?status='.StudentStatus::Inactive->value)
             ->assertSee('Ina Inactive')->assertDontSee('Aaron Active');
     }
+
+    public function test_students_can_be_filtered_to_those_not_in_any_group(): void
+    {
+        $grouped = Student::factory()->create(['name' => 'Grouped Scout']);
+        $alone = Student::factory()->create(['name' => 'Ungrouped Scout']);
+        Group::factory()->create()->members()->attach($grouped->id);
+
+        $this->actingAs($this->admin())->get('/students?group=none')
+            ->assertOk()
+            ->assertSee('Ungrouped Scout')
+            ->assertDontSee('Grouped Scout');
+
+        $this->actingAs($this->admin())->get('/students')->assertSee('Grouped Scout');
+    }
 }
