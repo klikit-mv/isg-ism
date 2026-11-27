@@ -92,9 +92,10 @@ class CertificateTemplateController extends Controller
             }
 
             $reason = e((string) $generator->lastSlidesError());
+            $embed = 'https://docs.google.com/presentation/d/'.rawurlencode((string) $certificateTemplate->google_slide_id).'/embed';
 
-            return response('<!DOCTYPE html><meta charset="utf-8"><body style="font-family:sans-serif;max-width:36rem;margin:3rem auto;padding:0 1rem"><h2>The Google Slides preview could not be made</h2><p>The built-in layout is not shown here, because it is not what this template produces.</p><p style="color:#b91c1c">'.$reason.'</p><p>Use <b>Test</b> in the template form to check the connection, then try again.</p></body>', 502)
-                ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+            return response('<!DOCTYPE html><meta charset="utf-8"><title>Google Slides template</title><body style="font-family:sans-serif;margin:0;padding:1rem;background:#f8fafc"><p style="margin:0 0 .5rem"><b>Your Google Slides template</b> (placeholders are not filled in here). A filled-in preview could not be made: <span style="color:#b91c1c">'.$reason.'</span></p><iframe src="'.e($embed).'" title="Google Slides template" style="width:100%;height:calc(100vh - 6rem);border:1px solid #cbd5e1;background:#fff" allowfullscreen></iframe></body>', 200)
+                ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; frame-src https://docs.google.com")
                 ->header('X-Content-Type-Options', 'nosniff');
         }
 
@@ -128,12 +129,8 @@ class CertificateTemplateController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::enum(CertificateType::class)],
-            'source' => ['nullable', Rule::in(['builtin', 'slides', 'canva'])],
+            'source' => ['nullable', Rule::in(['builtin', 'slides'])],
             'google_slide' => ['nullable', 'string', 'max:500', 'required_if:source,slides'],
-            'canva_url' => ['nullable', 'url', 'max:500'],
-            'background' => ['nullable', 'file', 'mimes:png,jpg,jpeg', 'max:8192'],
-            'text_top' => ['nullable', 'integer', 'min:0', 'max:90'],
-            'text_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'activity_id' => ['nullable', 'integer', 'exists:activities,id'],
             'active' => ['sometimes', 'boolean'],
         ]);
@@ -143,7 +140,6 @@ class CertificateTemplateController extends Controller
         }
 
         $data['active'] = $request->boolean('active', true);
-        $data['background'] = $request->file('background');
 
         return $data;
     }

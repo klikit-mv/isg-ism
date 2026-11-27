@@ -18,7 +18,6 @@ use App\Support\CertificateTemplateDefaults;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -382,16 +381,6 @@ class CertificateGenerationService
 
     private function htmlFor(?CertificateTemplate $template, CertificateType $type): string
     {
-        if ($template?->usesBackgroundImage()) {
-            $image = Storage::disk('local')->exists((string) $template->background_path) ? Storage::disk('local')->get((string) $template->background_path) : null;
-
-            if ($image !== null) {
-                $mime = str_ends_with(strtolower((string) $template->background_path), '.png') ? 'image/png' : 'image/jpeg';
-
-                return CertificateTemplateDefaults::overImage($type, 'data:'.$mime.';base64,'.base64_encode($image), (int) $template->text_top, (string) $template->text_color);
-            }
-        }
-
         return filled($template?->template_content) ? (string) $template->template_content : CertificateTemplateDefaults::for($type);
     }
 

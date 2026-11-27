@@ -10,41 +10,6 @@ use App\Enums\CertificateType;
 final class CertificateTemplateDefaults
 {
     /**
-     * A page that is only the supplied design (an exported Canva image) with the certificate's text written over it.
-     */
-    public static function overImage(CertificateType $type, string $imageDataUri, int $top, string $color): string
-    {
-        $body = self::parts($type)[1];
-        $color = preg_match('/^#[0-9a-fA-F]{6}$/', $color) ? $color : '#1f2937';
-        $top = max(0, min(90, $top));
-
-        return <<<HTML
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<style>
-    @page { size: A4 landscape; margin: 0; }
-    body { margin: 0; font-family: 'DejaVu Sans', sans-serif; color: {$color}; }
-    .bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-    .text { position: absolute; top: {$top}%; left: 8%; right: 8%; text-align: center; }
-    .lead { font-size: 16px; margin: 8px 0; }
-    .name { font-size: 34px; font-weight: bold; margin: 8px 0; }
-    .title { font-size: 24px; font-weight: bold; margin: 8px 0; }
-    .small { font-size: 12px; margin: 2px 0; }
-    .certno { position: absolute; bottom: 24px; left: 40px; font-size: 11px; }
-</style>
-</head>
-<body>
-<img class="bg" src="{$imageDataUri}" alt="">
-<div class="text">{$body}</div>
-<div class="certno">Certificate no. {{certno}}</div>
-</body>
-</html>
-HTML;
-    }
-
-    /**
      * @return array{0: string, 1: string}
      */
     private static function parts(CertificateType $type): array

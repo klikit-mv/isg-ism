@@ -10,10 +10,7 @@ use App\Models\CertificateTemplate;
 use App\Models\User;
 use App\Support\CertificateTemplateDefaults;
 use App\Support\GoogleSlide;
-use App\Support\Uploads;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class CertificateTemplateService
@@ -38,7 +35,7 @@ class CertificateTemplateService
                 'type' => $type,
                 'template_content' => $this->defaultContent($type),
                 'active' => $data['active'] ?? true,
-            ] + $this->sourceAttributes($data, $type, null));
+            ] + $this->sourceAttributes($data, $type));
 
             $this->linkActivity($template, $data['activity_id'] ?? null);
             $this->audit->record('certificate_template.created', $template, ['name' => $template->name, 'type' => $type], $actor);
@@ -59,7 +56,7 @@ class CertificateTemplateService
                 'type' => $type,
                 'template_content' => $this->defaultContent($type),
                 'active' => $data['active'] ?? $template->active,
-            ] + $this->sourceAttributes($data, $type, $template));
+            ] + $this->sourceAttributes($data, $type));
 
             $this->linkActivity($template, $data['activity_id'] ?? null);
             $this->audit->record('certificate_template.updated', $template, ['name' => $template->name], $actor);
@@ -89,44 +86,14 @@ class CertificateTemplateService
     }
 
     /**
-     * Where the design comes from: the built-in layout, a Google Slides presentation, or an exported Canva image.
-     *
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    private function sourceAttributes(array $data, CertificateType $type, ?CertificateTemplate $existing): array
+    private function sourceAttributes(array $data, CertificateType $type): array
     {
         $source = $data['source'] ?? (filled($data['google_slide'] ?? null) ? 'slides' : 'builtin');
-        $keep = $existing?->background_path;
-        $attributes = ['google_slide_id' => 'local-'.$type->value, 'canva_url' => null, 'background_path' => null];
 
-        if ($source === 'slides') {
-            $attributes['google_slide_id'] = $this->slideId($data['google_slide'] ?? null, $type);
-        } elseif ($source === 'canva') {
-            $upload = $data['background'] ?? null;
-
-            if ($upload instanceof UploadedFile) {
-                $extension = strtolower($upload->getClientOriginalExtension() ?: $upload->extension());
-                $path = Uploads::store($upload, 'certificate-templates', Str::uuid().'.'.($extension === 'png' ? 'png' : 'jpg'), 'local');
-                $attributes['background_path'] = $path;
-            } else {
-                $attributes['background_path'] = $keep;
-            }
-
-            if (blank($attributes['background_path'])) {
-                throw new ScoutException('Upload the design exported from Canva (a PNG or JPG image).');
-            }
-
-            $attributes['canva_url'] = filled($data['canva_url'] ?? null) ? $data['canva_url'] : null;
-            $attributes['text_top'] = (int) ($data['text_top'] ?? 38);
-            $attributes['text_color'] = (string) ($data['text_color'] ?? '#1f2937');
-        }
-
-        if ($keep !== null && $keep !== ($attributes['background_path'] ?? null)) {
-            Storage::disk('local')->delete($keep);
-        }
-
-        return $attributes;
+        return ['google_slide_id' => $source === 'slides' ? $this->slideId($data['google_slide'] ?? null, $type) : 'local-'.$type->value];
     }
 
     private function slideId(?string $input, CertificateType $type): string
