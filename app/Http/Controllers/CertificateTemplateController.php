@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\CertificateType;
+use App\Exceptions\ScoutException;
 use App\Models\Activity;
 use App\Models\CertificateTemplate;
 use App\Services\CertificateGenerationService;
@@ -35,7 +36,12 @@ class CertificateTemplateController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', CertificateTemplate::class);
-        $this->templates->create($this->validated($request), $request->user());
+
+        try {
+            $this->templates->create($this->validated($request), $request->user());
+        } catch (ScoutException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'The template was created.');
     }
@@ -43,7 +49,12 @@ class CertificateTemplateController extends Controller
     public function update(Request $request, CertificateTemplate $certificateTemplate): RedirectResponse
     {
         $this->authorize('update', $certificateTemplate);
-        $this->templates->update($certificateTemplate, $this->validated($request), $request->user());
+
+        try {
+            $this->templates->update($certificateTemplate, $this->validated($request), $request->user());
+        } catch (ScoutException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'The template was saved.');
     }
@@ -67,6 +78,25 @@ class CertificateTemplateController extends Controller
     public function preview(CertificateTemplate $certificateTemplate, CertificateGenerationService $generator): Response
     {
         $this->authorize('view', $certificateTemplate);
+
+        if ($certificateTemplate->usesGoogleSlides()) {
+            $pdf = $generator->previewTemplatePdf($certificateTemplate);
+
+            if ($pdf !== null) {
+                return response($pdf, 200, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="template-preview.pdf"',
+                    'X-Content-Type-Options' => 'nosniff',
+                    'Cache-Control' => 'private, no-store',
+                ]);
+            }
+
+            $reason = e((string) $generator->lastSlidesError());
+
+            return response('<!DOCTYPE html><meta charset="utf-8"><body style="font-family:sans-serif;max-width:36rem;margin:3rem auto;padding:0 1rem"><h2>The Google Slides preview could not be made</h2><p>The built-in layout is not shown here, because it is not what this template produces.</p><p style="color:#b91c1c">'.$reason.'</p><p>Use <b>Test</b> in the template form to check the connection, then try again.</p></body>', 502)
+                ->header('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'")
+                ->header('X-Content-Type-Options', 'nosniff');
+        }
 
         return response($generator->previewTemplate($certificateTemplate))
             ->header('Content-Security-Policy', "default-src 'none'; img-src data:; style-src 'unsafe-inline'")
@@ -98,7 +128,12 @@ class CertificateTemplateController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', Rule::enum(CertificateType::class)],
-            'google_slide' => ['nullable', 'string', 'max:500'],
+            'source' => ['nullable', Rule::in(['builtin', 'slides', 'canva'])],
+            'google_slide' => ['nullable', 'string', 'max:500', 'required_if:source,slides'],
+            'canva_url' => ['nullable', 'url', 'max:500'],
+            'background' => ['nullable', 'file', 'mimes:png,jpg,jpeg', 'max:8192'],
+            'text_top' => ['nullable', 'integer', 'min:0', 'max:90'],
+            'text_color' => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'activity_id' => ['nullable', 'integer', 'exists:activities,id'],
             'active' => ['sometimes', 'boolean'],
         ]);
@@ -108,6 +143,7 @@ class CertificateTemplateController extends Controller
         }
 
         $data['active'] = $request->boolean('active', true);
+        $data['background'] = $request->file('background');
 
         return $data;
     }

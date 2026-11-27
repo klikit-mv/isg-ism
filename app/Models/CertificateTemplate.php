@@ -12,7 +12,7 @@ class CertificateTemplate extends Model
 {
     use HasUuid;
 
-    protected $fillable = ['template_id', 'name', 'type', 'google_slide_id', 'activity_id', 'template_content', 'active'];
+    protected $fillable = ['template_id', 'name', 'type', 'google_slide_id', 'activity_id', 'template_content', 'active', 'canva_url', 'background_path', 'text_top', 'text_color'];
 
     protected function casts(): array
     {
@@ -44,5 +44,25 @@ class CertificateTemplate extends Model
     public function usesGoogleSlides(): bool
     {
         return filled($this->google_slide_id) && ! str_starts_with((string) $this->google_slide_id, 'local-');
+    }
+
+    /**
+     * A design made in Canva (or any tool) and exported as an image: the name, title and date are written over it.
+     */
+    public function usesBackgroundImage(): bool
+    {
+        return filled($this->background_path);
+    }
+
+    /**
+     * @return 'slides'|'canva'|'builtin'
+     */
+    public function source(): string
+    {
+        return match (true) {
+            $this->usesGoogleSlides() => 'slides',
+            $this->usesBackgroundImage() => 'canva',
+            default => 'builtin',
+        };
     }
 }

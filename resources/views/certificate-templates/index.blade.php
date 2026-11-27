@@ -1,5 +1,5 @@
 <x-app-layout title="Certificate templates">
-    <x-page-header title="Certificate templates" description="Google Slides files with placeholders such as name, date and certno in double braces. The built-in layout is used when Slides is unavailable.">
+    <x-page-header title="Certificate templates" description="Attach a Google Slides file (placeholders such as name, date and certno in double braces) or a design exported from Canva. Preview shows exactly what the template makes.">
         <x-slot:actions>
             @can('create', \App\Models\CertificateTemplate::class)
                 <button type="button" class="btn-primary" x-data x-on:click="$dispatch('open-modal', 'template-new')">Add template</button>
@@ -15,7 +15,8 @@
                 <tr>
                     <td data-label="Template" class="font-medium">{{ $template->name }} <span class="block font-mono text-xs text-gray-400">{{ $template->template_id }}</span></td>
                     <td data-label="Type"><x-badge :value="$template->type"/></td>
-                    <td data-label="Source">{{ $template->usesGoogleSlides() ? 'Google Slides' : 'Built-in layout' }}</td>
+                    <td data-label="Source">{{ ['slides' => 'Google Slides', 'canva' => 'Canva design', 'builtin' => 'Built-in layout'][$template->source()] }}
+                        @if ($template->canva_url)<a href="{{ $template->canva_url }}" class="link block text-xs" target="_blank" rel="noopener">Open in Canva</a>@endif</td>
                     <td data-label="Activity">{{ $template->activity?->name ?? '—' }}</td>
                     <td data-label="Used">{{ $template->certificates_count }}</td>
                     <td data-label="Status"><x-badge :value="$template->active ? 'Active' : 'Inactive'" :tone="$template->active ? 'green' : 'gray'"/></td>
@@ -38,7 +39,7 @@
                 </tr>
                 @can('update', $template)
                     <x-modal :name="'template-'.$template->uuid" :title="'Edit '.$template->name" maxWidth="lg">
-                        <form method="POST" action="{{ route('certificate-templates.update', $template) }}" class="space-y-4">
+                        <form method="POST" action="{{ route('certificate-templates.update', $template) }}" class="space-y-4" enctype="multipart/form-data">
                             @csrf
                             @method('PUT')
                             @include('certificate-templates.partials.fields', ['template' => $template])
@@ -53,7 +54,7 @@
 
     @can('create', \App\Models\CertificateTemplate::class)
         <x-modal name="template-new" title="Add template" maxWidth="lg">
-            <form method="POST" action="{{ route('certificate-templates.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('certificate-templates.store') }}" class="space-y-4" enctype="multipart/form-data">
                 @csrf
                 @include('certificate-templates.partials.fields', ['template' => new \App\Models\CertificateTemplate(['active' => true])])
                 <div class="flex justify-end"><button class="btn-primary">Add template</button></div>

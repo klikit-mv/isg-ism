@@ -18,6 +18,7 @@ use App\Support\CertificateTemplateDefaults;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -184,7 +185,37 @@ class CertificateGenerationService
         return $this->fillTemplate($this->htmlFor($template, $certificate->type), $this->valuesFor($certificate));
     }
 
-    public function previewTemplate(CertificateTemplate $template): string
+    /**
+     * The real preview of a Google Slides template: a PDF made from the presentation with sample text. Null when Google
+     * could not make it; lastSlidesError() then says why.
+     */
+    public function previewTemplatePdf(CertificateTemplate $template): ?string
+    {
+        $values = $this->sampleValues($template);
+        $text = [];
+
+        foreach ($values as $key => $value) {
+            if (! in_array($key, self::RAW_PLACEHOLDERS, true)) {
+                foreach ($this->slidePlaceholders($key, $template->type === CertificateType::Leadership) as $placeholder) {
+                    $text[$placeholder] = $value;
+                }
+            }
+        }
+
+        $pdf = $this->slides->exportPdf((string) $template->google_slide_id, $text);
+
+        return $pdf !== null && str_starts_with($pdf, '%PDF') ? $pdf : null;
+    }
+
+    public function lastSlidesError(): ?string
+    {
+        return $this->slides->lastError();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function sampleValues(CertificateTemplate $template): array
     {
         $sample = new Certificate([
             'type' => $template->type,
@@ -206,7 +237,12 @@ class CertificateGenerationService
         $values['troop_or_group'] = (string) config('scout.organisation');
         $values['start_date'] = scout_long_date(scout_now());
 
-        return $this->fillTemplate($this->htmlFor($template, $template->type), $values);
+        return $values;
+    }
+
+    public function previewTemplate(CertificateTemplate $template): string
+    {
+        return $this->fillTemplate($this->htmlFor($template, $template->type), $this->sampleValues($template));
     }
 
     /**
@@ -346,6 +382,16 @@ class CertificateGenerationService
 
     private function htmlFor(?CertificateTemplate $template, CertificateType $type): string
     {
+        if ($template?->usesBackgroundImage()) {
+            $image = Storage::disk('local')->exists((string) $template->background_path) ? Storage::disk('local')->get((string) $template->background_path) : null;
+
+            if ($image !== null) {
+                $mime = str_ends_with(strtolower((string) $template->background_path), '.png') ? 'image/png' : 'image/jpeg';
+
+                return CertificateTemplateDefaults::overImage($type, 'data:'.$mime.';base64,'.base64_encode($image), (int) $template->text_top, (string) $template->text_color);
+            }
+        }
+
         return filled($template?->template_content) ? (string) $template->template_content : CertificateTemplateDefaults::for($type);
     }
 
