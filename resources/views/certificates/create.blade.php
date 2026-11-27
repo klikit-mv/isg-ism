@@ -3,7 +3,7 @@
         <x-slot:actions><a href="{{ route('certificates.index') }}" class="btn-secondary">Back</a></x-slot:actions>
     </x-page-header>
 
-    <form method="POST" action="{{ route('certificates.store') }}" class="card max-w-2xl space-y-4">
+    <form method="POST" action="{{ route('certificates.store') }}" class="card max-w-2xl space-y-4" data-progress="Generating certificate">
         @csrf
         <x-form.select name="student" label="Scout" :options="$students" placeholder="Choose a scout" required/>
         <x-form.input name="title" label="Title" required placeholder="e.g. Best Patrol Leader 2026"/>

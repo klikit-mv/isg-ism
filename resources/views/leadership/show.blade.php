@@ -4,7 +4,7 @@
             <a href="{{ route('leadership.index') }}" class="btn-secondary">All records</a>
             @can('update', $record)
                 <a href="{{ route('leadership.edit', $record) }}" class="btn-secondary">Edit</a>
-                <form method="POST" action="{{ route('leadership.generate', $record) }}" class="flex flex-wrap items-center gap-2">
+                <form method="POST" action="{{ route('leadership.generate', $record) }}" class="flex flex-wrap items-center gap-2" data-progress="Generating certificate">
                     @csrf
                     @if (count($templates) > 0)
                         <select name="template" class="input !w-auto !py-1.5 text-sm" aria-label="Certificate template">

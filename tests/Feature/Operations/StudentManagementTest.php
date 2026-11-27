@@ -94,13 +94,15 @@ class StudentManagementTest extends TestCase
         $this->assertDatabaseHas('audit_logs', ['action' => 'student.deleted']);
     }
 
-    public function test_leaders_cannot_create_edit_or_delete_scouts(): void
+    public function test_a_leader_can_enrol_a_scout_but_not_edit_or_delete(): void
     {
         $leader = $this->leader();
         $student = Student::factory()->create();
         Group::factory()->ledBy($leader)->withMembers($student)->create();
 
-        $this->actingAs($leader)->post('/students', $this->payload())->assertForbidden();
+        $this->actingAs($leader)->get('/students/create')->assertOk();
+        $this->actingAs($leader)->post('/students', $this->payload())->assertRedirect()->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('students', ['national_id' => 'A556677']);
         $this->actingAs($leader)->put("/students/{$student->uuid}", $this->payload())->assertForbidden();
         $this->actingAs($leader)->delete("/students/{$student->uuid}")->assertForbidden();
     }

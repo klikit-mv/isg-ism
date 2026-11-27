@@ -32,7 +32,7 @@
                         </div>
                     </form>
                 @elseif ($badgeRequest->status === \App\Enums\BadgeRequestStatus::Approved)
-                    <form method="POST" action="{{ route('badge-requests.generate', $badgeRequest) }}" class="card space-y-3">
+                    <form method="POST" action="{{ route('badge-requests.generate', $badgeRequest) }}" class="card space-y-3" data-progress="Generating certificate">
                         @csrf
                         <h2 class="font-semibold">Generate certificate</h2>
                         <x-form.input name="date_awarded" label="Date awarded" type="date" :value="scout_today()" required/>

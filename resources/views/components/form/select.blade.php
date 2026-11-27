@@ -24,6 +24,7 @@
                 choose(v) { this.value = v; this.open = false; this.q = ''; },
             }"
             x-on:keydown.escape.stop="open = false"
+            x-on:reset.window="if ($event.target.contains($el)) { value = @js($selected); q = ''; open = false }"
             x-on:click.outside="open = false"
             class="relative"
         >

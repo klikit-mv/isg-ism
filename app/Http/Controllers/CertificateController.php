@@ -275,6 +275,17 @@ class CertificateController extends Controller
         return $redirect;
     }
 
+    public function destroy(Certificate $certificate): RedirectResponse
+    {
+        $this->authorize('delete', $certificate);
+
+        $this->audit->record('certificate.deleted', $certificate, ['cert_number' => $certificate->cert_number, 'student' => $certificate->student_name, 'type' => $certificate->type->value]);
+        $this->storage->delete($certificate->path);
+        $certificate->delete();
+
+        return redirect()->route('certificates.index')->with('success', "Certificate {$certificate->cert_number} was deleted.");
+    }
+
     public function regenerate(Request $request, Certificate $certificate): RedirectResponse
     {
         $this->authorize('manage', $certificate);

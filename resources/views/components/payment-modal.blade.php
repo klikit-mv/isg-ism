@@ -6,7 +6,7 @@
 @endphp
 
 <div x-data="{ open: false, bank: false, type: '', id: '', amount: '', description: '', method: 'online' }"
-     x-on:pay.window="type = $event.detail.type; id = $event.detail.id; amount = $event.detail.amount; description = $event.detail.description; method = 'online'; open = true"
+     x-on:pay.window="let d = $event.detail; $el.querySelector('form').reset(); amount = ''; description = ''; $nextTick(() => { type = d.type; id = d.id; amount = d.amount; description = d.description; method = 'online'; open = true })"
      x-on:keydown.escape.window="open = false; bank = false">
     <div x-show="open" x-cloak class="fixed inset-0 z-50 overflow-y-auto px-4 py-6" role="dialog" aria-modal="true">
         <div class="fixed inset-0 bg-gray-900/60" x-on:click="open = false"></div>

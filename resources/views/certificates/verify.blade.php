@@ -22,7 +22,7 @@
                 </dl>
                 <div class="mt-4 flex flex-wrap gap-2">
                     <a href="{{ route('certificates.verify.view', ['cert_number' => $certificate->cert_number]) }}" class="btn-secondary btn-sm" target="_blank" rel="noopener">View</a>
-                    <a href="{{ route('certificates.verify.download', ['cert_number' => $certificate->cert_number]) }}" class="btn-secondary btn-sm">Download PDF</a>
+                    <a href="{{ route('certificates.verify.download', ['cert_number' => $certificate->cert_number]) }}" target="_blank" rel="noopener" class="btn-secondary btn-sm">Download PDF</a>
                     @if ($canSign && $certificate->status === \App\Enums\CertificateStatus::Issued)
                         <form method="POST" action="{{ route('certificates.sign', $certificate) }}">@csrf<button class="btn-accent btn-sm">Verify and sign</button></form>
                     @endif

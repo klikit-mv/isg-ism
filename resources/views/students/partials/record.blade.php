@@ -122,7 +122,7 @@
                     <td class="whitespace-nowrap text-right">
                         @if (Route::has('certificates.show'))
                             <a href="{{ route('certificates.show', $certificate) }}" class="link">View</a>
-                            <a href="{{ route('certificates.download', $certificate) }}" class="link ml-2">PDF</a>
+                            <a href="{{ route('certificates.download', $certificate) }}" target="_blank" rel="noopener" class="link ml-2">PDF</a>
                         @endif
                     </td>
                 </tr>

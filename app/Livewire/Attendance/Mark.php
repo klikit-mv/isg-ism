@@ -82,14 +82,12 @@ class Mark extends Component
             $record = $records->get($id);
             $fee = $fees->get($id);
             $paid = $fee ? $rosterPayments->get($fee->id)?->amount : null;
-            $choice = '';
+            $choice = '0';
             $other = '';
 
             if ($paid !== null) {
                 $whole = rtrim(rtrim((string) $paid, '0'), '.');
                 in_array($whole, ['5', '10', '15'], true) ? $choice = $whole : [$choice, $other] = ['other', (string) $paid];
-            } elseif ($record !== null && $fee !== null) {
-                $choice = '0';
             }
 
             $this->rows[$id] = [
@@ -111,7 +109,7 @@ class Mark extends Component
     public function clear(): void
     {
         foreach ($this->rows as $id => $row) {
-            $this->rows[$id] = ['status' => '', 'remarks' => '', 'payment' => '', 'other' => ''];
+            $this->rows[$id] = ['status' => '', 'remarks' => '', 'payment' => '0', 'other' => ''];
         }
     }
 

@@ -46,4 +46,13 @@ class LayoutTest extends TestCase
             ->assertSee('data-module="operations"', false)
             ->assertDontSee('data-testid="module-pages"', false);
     }
+
+    public function test_sessions_last_a_month_of_inactivity_and_generate_forms_show_progress(): void
+    {
+        $this->assertSame(43200, config('session.lifetime'));
+
+        $this->actingAs($this->admin())->get(route('certificates.create'))
+            ->assertSee('data-progress="Generating certificate"', false)
+            ->assertSee('data-testid="progress-modal"', false);
+    }
 }

@@ -34,7 +34,7 @@
                             <td data-label="Missing">{{ $summary['missing'] }}</td>
                             <td class="text-right">
                                 @if ($summary['missing'] > 0)
-                                    <form method="POST" action="{{ route('certificates.activities.issue', $summary['activity']) }}">@csrf<button class="btn-accent btn-sm">Issue</button></form>
+                                    <form method="POST" action="{{ route('certificates.activities.issue', $summary['activity']) }}" data-progress="Generating certificates" data-progress-items="{{ $summary['missing'] ?? 1 }}">@csrf<button class="btn-accent btn-sm">Issue</button></form>
                                 @endif
                             </td>
                         </tr>
@@ -76,7 +76,7 @@
                     <td data-label="Status"><x-badge :value="$certificate->status"/></td>
                     <td class="whitespace-nowrap text-right">
                         <a href="{{ route('certificates.show', $certificate) }}" class="link">View</a>
-                        <a href="{{ route('certificates.download', $certificate) }}" class="link ml-2">PDF</a>
+                        <a href="{{ route('certificates.download', $certificate) }}" target="_blank" rel="noopener" class="link ml-2">PDF</a>
                     </td>
                 </tr>
             @endforeach

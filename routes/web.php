@@ -184,6 +184,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/certificates/{certificate}', [CertificateController::class, 'show'])->name('certificates.show');
     Route::get('/certificates/{certificate}/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
     Route::get('/certificates/{certificate}/download', [CertificateController::class, 'download'])->name('certificates.download');
+    Route::delete('/certificates/{certificate}', [CertificateController::class, 'destroy'])->name('certificates.destroy');
     Route::post('/certificates/{certificate}/regenerate', [CertificateController::class, 'regenerate'])->name('certificates.regenerate');
 
     Route::get('/badges', [BadgeController::class, 'index'])->name('badges.index');

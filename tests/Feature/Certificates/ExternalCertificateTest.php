@@ -89,4 +89,20 @@ class ExternalCertificateTest extends TestCase
 
         $this->assertSame(0, Certificate::query()->count());
     }
+
+    public function test_only_an_admin_can_delete_a_certificate(): void
+    {
+        $student = Student::factory()->create();
+        $certificate = Certificate::query()->create([
+            'cert_id' => 'CDEL00001', 'type' => CertificateType::External, 'student_id' => $student->id, 'student_name' => $student->name,
+            'title' => 'Old', 'cert_number' => 'EXT-DEL-001', 'date_awarded' => '2026-11-01', 'status' => 'verified',
+        ]);
+
+        $this->actingAs($this->leader())->delete(route('certificates.destroy', $certificate))->assertForbidden();
+        $this->assertDatabaseHas('certificates', ['id' => $certificate->id]);
+
+        $this->actingAs($this->admin())->get(route('certificates.show', $certificate))->assertSee('Delete');
+        $this->actingAs($this->admin())->delete(route('certificates.destroy', $certificate))->assertRedirect(route('certificates.index'));
+        $this->assertDatabaseMissing('certificates', ['id' => $certificate->id]);
+    }
 }

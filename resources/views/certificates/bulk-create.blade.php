@@ -8,7 +8,7 @@
         <button class="btn-secondary btn-sm">Filter</button>
     </form>
 
-    <form method="POST" action="{{ route('certificates.bulk-store') }}" class="space-y-4">
+    <form method="POST" action="{{ route('certificates.bulk-store') }}" class="space-y-4" data-progress="Generating certificates" data-progress-count="input[name='students[]']:checked">
         @csrf
         <div class="card grid gap-4 sm:grid-cols-3">
             <x-form.input name="title" label="Title" required/>

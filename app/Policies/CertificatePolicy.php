@@ -37,4 +37,12 @@ class CertificatePolicy
     {
         return $user->isActive() && $user->isLeader();
     }
+
+    /**
+     * Only administrators delete a certificate once it exists (admins pass through Gate::before).
+     */
+    public function delete(User $user, Certificate $certificate): bool
+    {
+        return false;
+    }
 }

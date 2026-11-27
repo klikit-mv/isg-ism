@@ -25,7 +25,7 @@ class StudentPolicy
 
     public function create(User $user): bool
     {
-        return false;
+        return $user->isActive() && $user->isLeader();
     }
 
     public function update(User $user, Student $student): bool

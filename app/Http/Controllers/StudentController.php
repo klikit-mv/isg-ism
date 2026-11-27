@@ -72,7 +72,9 @@ class StudentController extends Controller
             $message .= " Their temporary PIN is {$result['pin']} — share it with them privately.";
         }
 
-        return redirect()->route('students.show', $result['student'])->with('success', $message);
+        $destination = $request->user()->can('view', $result['student']) ? route('students.show', $result['student']) : route('students.index');
+
+        return redirect($destination)->with('success', $message);
     }
 
     public function show(Request $request, Student $student, string $tab = 'profile'): View

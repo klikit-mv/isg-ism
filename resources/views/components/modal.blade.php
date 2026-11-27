@@ -7,7 +7,7 @@
 <div
     x-data="{ show: @js($show) }"
     x-init="$watch('show', v => document.body.classList.toggle('overflow-y-hidden', v))"
-    x-on:open-modal.window="$event.detail == '{{ $name }}' ? show = true : null"
+    x-on:open-modal.window="if ($event.detail == '{{ $name }}') { $el.querySelectorAll('form').forEach(f => f.reset()); show = true }"
     x-on:close-modal.window="$event.detail == '{{ $name }}' ? show = false : null"
     x-on:keydown.escape.window="show = false"
     x-show="show"

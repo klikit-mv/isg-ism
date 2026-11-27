@@ -1,12 +1,15 @@
 <x-app-layout :title="$certificate->cert_number">
     <x-page-header :title="$certificate->displayTitle()" :description="$certificate->cert_number.' · '.$certificate->student_name">
         <x-slot:actions>
-            <a href="{{ route('certificates.download', $certificate) }}" class="btn-primary">Download PDF</a>
+            <a href="{{ route('certificates.download', $certificate) }}" target="_blank" rel="noopener" class="btn-primary">Download PDF</a>
             @if ($certificate->type !== \App\Enums\CertificateType::External)
             @can('manage', $certificate)
-                <form method="POST" action="{{ route('certificates.regenerate', $certificate) }}">@csrf<button class="btn-secondary">Regenerate</button></form>
+                <form method="POST" action="{{ route('certificates.regenerate', $certificate) }}" data-progress="Regenerating certificate">@csrf<button class="btn-secondary">Regenerate</button></form>
             @endcan
             @endif
+            @can('delete', $certificate)
+                <x-confirm :action="route('certificates.destroy', $certificate)" method="DELETE" label="Delete" size="md" title="Delete certificate" message="Delete {{ $certificate->cert_number }}? The PDF is removed and this cannot be undone." confirm="Delete"/>
+            @endcan
         </x-slot:actions>
     </x-page-header>
 

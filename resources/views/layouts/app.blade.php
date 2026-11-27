@@ -109,6 +109,16 @@
         {{ app(\App\Services\SettingsService::class)->footerText() }}
     </footer>
 </div>
+<div x-data="scoutProgress()" x-on:scout-progress.window="start($event.detail.label, $event.detail.items)" x-on:scout-progress-stop.window="stop()" x-show="open" x-cloak class="fixed inset-0 z-[70] flex items-center justify-center bg-gray-900/60 px-4" role="alertdialog" aria-modal="true" aria-live="polite" data-testid="progress-modal">
+    <div class="w-full max-w-sm rounded-xl bg-white p-6 text-center shadow-xl dark:bg-gray-800">
+        <p class="font-semibold text-gray-900 dark:text-gray-100" x-text="label + '…'"></p>
+        <div class="mt-4 h-3 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700" role="progressbar" aria-valuemin="0" aria-valuemax="100" x-bind:aria-valuenow="percent">
+            <div class="h-full rounded-full bg-navy-600 transition-all duration-200" x-bind:style="'width:' + percent + '%'"></div>
+        </div>
+        <p class="mt-2 text-sm font-medium text-gray-700 dark:text-gray-200"><span x-text="percent"></span>%</p>
+        <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">Please keep this page open.</p>
+    </div>
+</div>
 @livewireScripts
 @stack('scripts')
 </body>

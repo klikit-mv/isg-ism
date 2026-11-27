@@ -380,6 +380,15 @@ class AttendanceTest extends TestCase
             ->assertSee('Collected '.scout_money('0.00'));
     }
 
+    public function test_the_class_fee_defaults_to_not_paid_for_every_scout(): void
+    {
+        $student = Student::factory()->section(ScoutSection::Scout)->create();
+        $activity = Activity::factory()->forAll()->create();
+
+        Livewire::actingAs($this->admin())->test(Mark::class, ['activity' => $activity])
+            ->assertSet('rows.'.$student->id.'.payment', '0');
+    }
+
     public function test_status_buttons_have_their_own_colours(): void
     {
         $student = Student::factory()->section(ScoutSection::Scout)->create();

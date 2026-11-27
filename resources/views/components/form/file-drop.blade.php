@@ -1,7 +1,7 @@
 {{-- Drag-and-drop file area backed by a normal file input. --}}
 @props(['name', 'label' => null, 'accept' => null, 'help' => null])
 
-<div x-data="{ fileName: '', over: false }">
+<div x-data="{ fileName: '', over: false }" x-on:reset.window="if ($event.target.contains($el)) fileName = ''">
     @if ($label)
         <span class="label">{{ $label }}</span>
     @endif
