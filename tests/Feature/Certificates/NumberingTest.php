@@ -2,7 +2,11 @@
 
 namespace Tests\Feature\Certificates;
 
+use App\Enums\CertificateType;
 use App\Models\Badge;
+use App\Models\Student;
+use App\Models\User;
+use App\Services\CertificateGenerationService;
 use App\Services\CertificateNumberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -48,7 +52,7 @@ class NumberingTest extends TestCase
 
     public function test_parents_cannot_change_section_codes(): void
     {
-        $this->actingAs(\App\Models\User::factory()->parentRole()->create())->post(route('badges.section-codes'), ['codes' => ['Scout' => 'X']])->assertForbidden();
+        $this->actingAs(User::factory()->parentRole()->create())->post(route('badges.section-codes'), ['codes' => ['Scout' => 'X']])->assertForbidden();
     }
 
     public function test_other_badges_have_their_own_sequence_with_prefix_or_code(): void
@@ -74,6 +78,23 @@ class NumberingTest extends TestCase
         $this->assertSame('FLHSG-PB-2027-001', $this->numbers()->nextBadgeNumber($badge));
         $this->assertSame('FLHSG-CERT-2027-001', $this->numbers()->nextGeneralNumber());
         $this->assertSame('FLHSG-LEAD-2027-001', $this->numbers()->nextLeadershipNumber());
+    }
+
+    public function test_a_back_dated_certificate_takes_its_number_from_the_award_year(): void
+    {
+        $this->travelTo(now()->setDate(2026, 11, 27));
+        $student = Student::factory()->create();
+        $template = $this->template(CertificateType::General);
+        $generator = app(CertificateGenerationService::class);
+
+        $old = $generator->generateGeneralCertificate($student, 'Camp 2024', '2024-06-10', $template, $this->admin());
+        $older = $generator->generateGeneralCertificate($student, 'Camp 2024 b', '2024-07-01', $template, $this->admin());
+        $current = $generator->generateGeneralCertificate($student, 'Camp 2026', '2026-05-01', $template, $this->admin());
+
+        $this->assertSame('FLHSG-CERT-2024-001', $old->cert_number);
+        $this->assertSame('FLHSG-CERT-2024-002', $older->cert_number);
+        $this->assertSame('FLHSG-CERT-2026-001', $current->cert_number);
+        $this->assertSame('FLHSG-CERT-2023-001', $this->numbers()->nextGeneralNumber(2023));
     }
 
     public function test_year_follows_the_organisation_timezone(): void

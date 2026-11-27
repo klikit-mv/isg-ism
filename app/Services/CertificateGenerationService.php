@@ -37,6 +37,14 @@ class CertificateGenerationService
         private SettingsService $settings,
     ) {}
 
+    /**
+     * The year a certificate belongs to: the year it was awarded.
+     */
+    private function yearOf(CarbonInterface|string $date): int
+    {
+        return (int) Carbon::parse($date)->format('Y');
+    }
+
     public function activeTemplate(CertificateType $type): ?CertificateTemplate
     {
         return CertificateTemplate::query()->where('type', $type->value)->where('active', true)->orderBy('id')->first();
@@ -48,7 +56,7 @@ class CertificateGenerationService
         $this->assertTemplate($template, CertificateType::Badge);
 
         return $this->issue(CertificateType::Badge, $student, $template, $actor, fn () => [
-            'cert_number' => $this->numbers->nextBadgeNumber($badge),
+            'cert_number' => $this->numbers->nextBadgeNumber($badge, $this->yearOf($date)),
             'date_awarded' => Carbon::parse($date)->toDateString(),
             'badge_id' => $badge->id,
             'badge_name' => $badge->name,
@@ -72,7 +80,7 @@ class CertificateGenerationService
         }
 
         return $this->issue(CertificateType::General, $student, $template, $actor, fn () => [
-            'cert_number' => $this->numbers->nextGeneralNumber(),
+            'cert_number' => $this->numbers->nextGeneralNumber($this->yearOf($date)),
             'date_awarded' => Carbon::parse($date)->toDateString(),
             'title' => $title,
             'activity_id' => $activity?->id,
@@ -101,7 +109,7 @@ class CertificateGenerationService
                 'id_card_no' => $student->national_id,
                 'title' => $title,
                 'issuer' => filled($issuer) ? $issuer : null,
-                'cert_number' => $this->numbers->nextExternalNumber(),
+                'cert_number' => $this->numbers->nextExternalNumber($this->yearOf($date)),
                 'date_awarded' => Carbon::parse($date)->toDateString(),
                 'status' => CertificateStatus::Verified,
                 'created_by' => $actor->id,
@@ -139,7 +147,7 @@ class CertificateGenerationService
         }
 
         $certificate = $this->issue(CertificateType::Leadership, $student, $template, $actor, fn () => [
-            'cert_number' => $this->numbers->nextLeadershipNumber(),
+            'cert_number' => $this->numbers->nextLeadershipNumber((int) $record->start_date->format('Y')),
             'date_awarded' => $record->start_date->toDateString(),
             'title' => 'Leadership — '.$record->patrol_or_six,
         ], function (Certificate $certificate) use ($record): void {

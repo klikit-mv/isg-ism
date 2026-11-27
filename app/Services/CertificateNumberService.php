@@ -8,7 +8,8 @@ use App\Models\CertificateCounter;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Yearly sequences (organisation timezone) behind row-locked counters.
+ * Yearly sequences behind row-locked counters. The year is the certificate's own year (its award date), so a back-dated
+ * certificate takes its number from that year's sequence; without a date the current year (organisation timezone) is used.
  */
 class CertificateNumberService
 {
@@ -39,53 +40,53 @@ class CertificateNumberService
         ];
     }
 
-    public function nextBadgeNumber(Badge $badge): string
+    public function nextBadgeNumber(Badge $badge, ?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
         $sequence = $this->badgeSequence($badge, $year);
 
         return $this->format($sequence['prefix'], $year, $this->nextSequence($sequence['counter'], $year, $sequence['prefix'], $badge->id, $sequence['width']), $sequence['width']);
     }
 
-    public function peekBadgeNumber(Badge $badge): string
+    public function peekBadgeNumber(Badge $badge, ?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
         $sequence = $this->badgeSequence($badge, $year);
 
         return $this->format($sequence['prefix'], $year, $this->peekSequence($sequence['counter']), $sequence['width']);
     }
 
-    public function nextGeneralNumber(): string
+    public function nextGeneralNumber(?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
 
         return $this->format('CERT', $year, $this->nextSequence('general:'.$year, $year, 'CERT'));
     }
 
-    public function nextExternalNumber(): string
+    public function nextExternalNumber(?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
 
         return $this->format('EXT', $year, $this->nextSequence('external:'.$year, $year, 'EXT'));
     }
 
-    public function peekGeneralNumber(): string
+    public function peekGeneralNumber(?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
 
         return $this->format('CERT', $year, $this->peekSequence('general:'.$year));
     }
 
-    public function nextLeadershipNumber(): string
+    public function nextLeadershipNumber(?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
 
         return $this->format('LEAD', $year, $this->nextSequence('leadership:'.$year, $year, 'LEAD'));
     }
 
-    public function peekLeadershipNumber(): string
+    public function peekLeadershipNumber(?int $year = null): string
     {
-        $year = $this->currentYear();
+        $year ??= $this->currentYear();
 
         return $this->format('LEAD', $year, $this->peekSequence('leadership:'.$year));
     }
