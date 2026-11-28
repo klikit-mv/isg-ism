@@ -19,12 +19,19 @@ class ParentRegistrationController extends Controller
     {
         abort_unless($request->user()->isStaff(), 403);
 
-        $parents = $this->pendingQuery()
-            ->with(['parentLinks.student'])
-            ->orderBy('created_at')
-            ->paginate(Pagination::MAX);
+        $tab = $request->query('tab') === 'verified' ? 'verified' : 'pending';
 
-        return view('parent-registrations.index', ['parents' => $parents]);
+        $parents = ($tab === 'verified' ? $this->verifiedQuery()->with('verifier')->orderByDesc('verified_at') : $this->pendingQuery()->orderBy('created_at'))
+            ->with(['parentLinks.student'])
+            ->paginate(Pagination::MAX)
+            ->withQueryString();
+
+        return view('parent-registrations.index', [
+            'parents' => $parents,
+            'tab' => $tab,
+            'pendingCount' => $this->pendingQuery()->count(),
+            'verifiedCount' => $this->verifiedQuery()->count(),
+        ]);
     }
 
     public function verify(Request $request, User $user): RedirectResponse
@@ -45,6 +52,14 @@ class ParentRegistrationController extends Controller
         $this->users->rejectParentRegistration($user, $request->user());
 
         return back()->with('success', "{$user->name}'s registration was declined.");
+    }
+
+    /**
+     * Parents a leader has verified.
+     */
+    private function verifiedQuery()
+    {
+        return User::query()->withRole(Role::Parent)->whereNotNull('verified_at');
     }
 
     /**

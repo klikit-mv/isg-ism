@@ -43,6 +43,14 @@ class StudentPolicy
         return $user->isActive() && $user->isLeader();
     }
 
+    /**
+     * Admins (Gate::before) and leaders may reset the PIN of a scout they can access.
+     */
+    public function resetPin(User $user, Student $student): bool
+    {
+        return $user->isActive() && $user->isLeader() && $this->scope->canAccessStudent($user, $student);
+    }
+
     public function photo(User $user, Student $student): bool
     {
         return $user->isActive() && $user->isLeader() && $this->scope->canAccessStudent($user, $student);

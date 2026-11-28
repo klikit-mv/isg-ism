@@ -49,6 +49,7 @@
         @if (count($students) > 1)
             <x-form.select name="student" label="Scout" :options="$students" :value="request('student')" placeholder="Any scout"/>
         @endif
+        <x-form.select name="section" label="Section" :options="\App\Enums\ScoutSection::options()" :value="request('section')" placeholder="Any section"/>
         <x-form.select name="type" label="Type" :options="\App\Enums\CertificateType::options()" :value="request('type')" placeholder="Any type"/>
         <x-form.select name="status" label="Status" :options="\App\Enums\CertificateStatus::options()" :value="request('status')" placeholder="Any status"/>
         <x-form.select name="badge" label="Badge" :options="$badges" :value="request('badge')" placeholder="Any badge"/>

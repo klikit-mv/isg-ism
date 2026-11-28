@@ -39,7 +39,7 @@ class CertificateController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $filters = $request->only(['q', 'student', 'type', 'status', 'badge', 'from', 'to', 'sort', 'dir']);
+        $filters = $request->only(['q', 'student', 'section', 'type', 'status', 'badge', 'from', 'to', 'sort', 'dir']);
 
         return view('certificates.index', [
             'certificates' => $this->certificates->paginateCertificates($user, $filters),

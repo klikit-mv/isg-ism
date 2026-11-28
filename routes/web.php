@@ -103,6 +103,7 @@ Route::middleware(['auth', 'module.access'])->group(function () {
     Route::get('/students/{student}/badge-requests', [StudentController::class, 'badgeRequests'])->name('students.badge-requests');
     Route::get('/students/{student}/leadership', [StudentController::class, 'leadership'])->name('students.leadership');
     Route::post('/students/{student}/photo', [StudentController::class, 'photo'])->name('students.photo');
+    Route::post('/students/{student}/pin', [StudentController::class, 'resetPin'])->name('students.pin');
     Route::post('/students/{student}/status', [StudentController::class, 'changeStatus'])->name('students.status');
     Route::post('/students/{student}/verify', [StudentController::class, 'verify'])->name('students.verify');
     Route::post('/students/{student}/reject', [StudentController::class, 'reject'])->name('students.reject');

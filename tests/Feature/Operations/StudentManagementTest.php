@@ -153,4 +153,24 @@ class StudentManagementTest extends TestCase
 
         $this->actingAs($this->admin())->get('/students')->assertSee('Grouped Scout');
     }
+
+    public function test_admin_and_a_scoped_leader_can_reset_a_scouts_pin_but_not_other_leaders_scouts(): void
+    {
+        $leader = $this->leader();
+        $mine = Student::factory()->create();
+        $other = Student::factory()->create();
+        Group::factory()->ledBy($leader)->withMembers($mine)->create();
+        $mineUser = $this->studentUser($mine);
+        $otherUser = $this->studentUser($other);
+
+        $this->actingAs($leader)->get(route('students.show', $mine))->assertSee('data-testid="reset-pin"', false);
+        $this->actingAs($leader)->post(route('students.pin', $mine), ['pin' => '4321'])->assertSessionHas('success');
+        $this->assertTrue(Hash::check('4321', $mineUser->fresh()->password));
+
+        $this->actingAs($leader)->post(route('students.pin', $other))->assertForbidden();
+
+        $this->actingAs($this->admin())->post(route('students.pin', $other))->assertSessionHas('success');
+        $this->assertFalse(Hash::check('x', $otherUser->fresh()->password));
+        $this->assertDatabaseHas('audit_logs', ['action' => 'user.pin_reset']);
+    }
 }

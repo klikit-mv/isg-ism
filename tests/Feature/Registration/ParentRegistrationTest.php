@@ -3,6 +3,7 @@
 namespace Tests\Feature\Registration;
 
 use App\Enums\ParentLinkStatus;
+use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Livewire\ParentChildrenLookup;
 use App\Models\Student;
@@ -100,5 +101,18 @@ class ParentRegistrationTest extends TestCase
             ->set('query', 'A2000002')
             ->assertSet('message', 'This scout is already added under another parent.')
             ->assertCount('children', 1);
+    }
+
+    public function test_pending_and_verified_parents_are_on_separate_tabs(): void
+    {
+        $pending = User::factory()->withRoles(Role::Parent)->create(['name' => 'Waiting Parent', 'status' => 'inactive', 'verified_at' => null]);
+        $verified = User::factory()->withRoles(Role::Parent)->create(['name' => 'Done Parent', 'status' => 'active', 'verified_at' => now()]);
+        $leader = $this->leader();
+
+        $this->actingAs($leader)->get('/parent-registrations')
+            ->assertOk()->assertSee('Waiting Parent')->assertDontSee('Done Parent');
+
+        $this->actingAs($leader)->get('/parent-registrations?tab=verified')
+            ->assertOk()->assertSee('Done Parent')->assertDontSee('Waiting Parent')->assertSee('data-testid="parent-tabs"', false);
     }
 }

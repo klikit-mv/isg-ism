@@ -21,6 +21,9 @@
                 <form method="POST" action="{{ route('students.verify', $student) }}">@csrf<button class="btn-accent">Verify</button></form>
                 <x-confirm :action="route('students.reject', $student)" label="Decline" size="md" message="Decline this registration? The account stays inactive." confirm="Decline"/>
             @endif
+            @if ($student->user && $viewer->can('resetPin', $student))
+                <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('open-modal', 'student-pin')" data-testid="reset-pin">Reset PIN</button>
+            @endif
             @can('update', $student)
                 @unless ($isPending)
                     <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('open-modal', 'student-status')" data-testid="change-status">Change status</button>
@@ -40,6 +43,20 @@
         @if ($student->status_changed_at) <span class="text-gray-500 dark:text-gray-400">on {{ $student->status_changed_at->format('d M Y') }}</span> @endif
         <span class="text-gray-500 dark:text-gray-400">·</span> {{ $student->status_reason }}
     </div>
+@endif
+
+@if ($context === 'students' && $student->user && $viewer->can('resetPin', $student))
+    <x-modal name="student-pin" title="Reset PIN" maxWidth="md">
+        <form method="POST" action="{{ route('students.pin', $student) }}" class="space-y-4">
+            @csrf
+            <p class="text-sm text-gray-600 dark:text-gray-300">Sets a new PIN for {{ $student->name }} and signs them out everywhere.</p>
+            <x-form.input name="pin" label="New PIN (optional)" type="password" autocomplete="new-password" help="Leave blank to generate a temporary 4-digit PIN."/>
+            <div class="flex justify-end gap-2">
+                <button type="button" class="btn-secondary" x-data x-on:click="$dispatch('close-modal', 'student-pin')">Cancel</button>
+                <button class="btn-primary">Reset PIN</button>
+            </div>
+        </form>
+    </x-modal>
 @endif
 
 @if ($context === 'students')

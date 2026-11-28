@@ -50,6 +50,7 @@ class CertificateService
                 ->orWhere('student_name', 'like', "%{$term}%")
                 ->orWhere('title', 'like', "%{$term}%")))
             ->when($filters['student'] ?? null, fn ($q, $uuid) => $q->whereHas('student', fn ($s) => $s->where('uuid', $uuid)))
+            ->when($filters['section'] ?? null, fn ($q, $section) => $q->whereHas('student', fn ($s) => $s->where('section', $section)))
             ->when($filters['type'] ?? null, fn ($q, $type) => $q->where('type', $type))
             ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
             ->when($filters['badge'] ?? null, fn ($q, $uuid) => $q->whereHas('badge', fn ($b) => $b->where('uuid', $uuid)))

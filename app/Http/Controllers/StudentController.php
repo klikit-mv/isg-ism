@@ -7,6 +7,7 @@ use App\Models\Student;
 use App\Services\LeaderScopeService;
 use App\Services\StudentPhotoService;
 use App\Services\StudentService;
+use App\Services\UserService;
 use App\Support\Pagination;
 use App\Support\Sort;
 use App\Support\StudentRecord;
@@ -145,6 +146,24 @@ class StudentController extends Controller
         $photos->assign($student, $request->file('photo'));
 
         return back()->with('success', 'The photo was updated.');
+    }
+
+    public function resetPin(Request $request, Student $student, UserService $users): RedirectResponse
+    {
+        $this->authorize('resetPin', $student);
+        abort_if($student->user === null, 422, 'This scout has no sign-in account.');
+
+        $data = $request->validate(['pin' => ['nullable', 'string', 'min:4', 'max:32']]);
+        $pin = filled($data['pin'] ?? null) ? (string) $data['pin'] : $this->students->temporaryPin();
+        $users->resetPin($student->user, $pin, $request->user());
+
+        $message = "{$student->name}'s PIN was reset and they were signed out everywhere.";
+
+        if (blank($data['pin'] ?? null)) {
+            $message .= " Their new temporary PIN is {$pin} — share it with them privately.";
+        }
+
+        return back()->with('success', $message);
     }
 
     public function changeStatus(Request $request, Student $student): RedirectResponse

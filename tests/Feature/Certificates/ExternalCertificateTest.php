@@ -105,4 +105,20 @@ class ExternalCertificateTest extends TestCase
         $this->actingAs($this->admin())->delete(route('certificates.destroy', $certificate))->assertRedirect(route('certificates.index'));
         $this->assertDatabaseMissing('certificates', ['id' => $certificate->id]);
     }
+
+    public function test_certificates_can_be_filtered_by_the_scouts_section(): void
+    {
+        $cub = Student::factory()->create(['section' => 'Cub Scout', 'name' => 'Cub Person']);
+        $scout = Student::factory()->create(['section' => 'Scout', 'name' => 'Scout Person']);
+
+        foreach ([[$cub, 'EXT-S-1'], [$scout, 'EXT-S-2']] as [$student, $number]) {
+            Certificate::query()->create([
+                'cert_id' => 'C'.$number, 'type' => CertificateType::External, 'student_id' => $student->id, 'student_name' => $student->name,
+                'title' => 'Award', 'cert_number' => $number, 'date_awarded' => '2026-11-01', 'status' => 'verified',
+            ]);
+        }
+
+        $this->actingAs($this->admin())->get(route('certificates.index', ['section' => 'Cub Scout']))
+            ->assertOk()->assertSee('EXT-S-1')->assertDontSee('EXT-S-2');
+    }
 }

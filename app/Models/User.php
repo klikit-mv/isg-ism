@@ -271,4 +271,12 @@ class User extends Authenticatable
     {
         return $this->telegram_chat_id;
     }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'verified_by')->withTrashed();
+    }
 }
